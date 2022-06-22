@@ -3,7 +3,7 @@ use std::path::Path;
 
 use rendering::{
     init,
-    renderer::{RenderConfig, RenderType},
+    renderer::renderer::{RenderConfig, RenderType},
     structs::dimensions::Dimensions,
 };
 fn main() {
@@ -14,7 +14,9 @@ fn main() {
 
     let config = RenderConfig {
         dimensions,
-        render_type: RenderType::UV,
+        render_type: RenderType::Skybox {
+            vertical_fov_degrees: 20.0,
+        },
     };
     render_image(file_name, config);
 }

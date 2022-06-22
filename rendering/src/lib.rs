@@ -1,4 +1,4 @@
-use renderer::Renderer;
+use renderer::renderer::Renderer;
 
 pub mod renderer;
 pub mod structs;

@@ -2,7 +2,7 @@
 
 mod tests {
     use rendering::{
-        renderer::{RenderConfig, RenderType, Renderer},
+        renderer::renderer::{RenderConfig, RenderType, Renderer},
         structs::dimensions::Dimensions,
     };
 

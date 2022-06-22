@@ -2,6 +2,7 @@
 members = [
     "rendering",
     "local",
+    "geometry",
 ]
 resolver = "2"
 

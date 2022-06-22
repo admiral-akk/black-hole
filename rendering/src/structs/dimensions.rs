@@ -16,4 +16,8 @@ impl Dimensions {
     pub fn get_buffer(&self) -> Vec<u8> {
         vec![0; 4 * self.width * self.height]
     }
+
+    pub fn aspect_ratio(&self) -> f32 {
+        (self.width as f32) / (self.height as f32)
+    }
 }
