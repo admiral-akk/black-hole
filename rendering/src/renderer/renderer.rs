@@ -2,14 +2,22 @@ use ::image::DynamicImage;
 
 use crate::structs::dimensions::Dimensions;
 
-use super::{image, skybox, uv};
+use super::{image, ray_skybox, skybox, uv};
 
 pub struct Renderer {}
 
 pub enum RenderType {
     UV,
-    Skybox { vertical_fov_degrees: f32 },
-    Image { image: DynamicImage },
+    Skybox {
+        vertical_fov_degrees: f32,
+    },
+    Image {
+        image: DynamicImage,
+    },
+    RaySkybox {
+        vertical_fov_degrees: f32,
+        image: DynamicImage,
+    },
 }
 
 pub struct RenderConfig {
@@ -42,6 +50,17 @@ impl Renderer {
                     RenderType::Image { image } => {
                         image::image_renderer::render(x, y, dimensions, image, out)
                     }
+                    RenderType::RaySkybox {
+                        vertical_fov_degrees,
+                        image,
+                    } => ray_skybox::ray_skybox_renderer::render(
+                        x,
+                        y,
+                        dimensions,
+                        image,
+                        *vertical_fov_degrees,
+                        out,
+                    ),
                 }
             }
         }

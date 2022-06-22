@@ -16,19 +16,23 @@ fn main() {
 
     let config = RenderConfig {
         dimensions,
-        render_type: RenderType::Image { image: img },
+        render_type: RenderType::RaySkybox {
+            image: img,
+            vertical_fov_degrees: 150.0,
+        },
     };
     render_image(file_name, config);
 }
 
 fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
     let args: Vec<String> = env::args().collect();
-    if args.len() > 2 {
-        *file_name = format!("{}.png", args[2]);
+    print!("{:?}", args);
+    if args.len() > 1 {
+        *file_name = format!("{}.png", args[1]);
     }
-    if args.len() == 5 {
-        dimensions.width = str::parse(&args[3]).unwrap();
-        dimensions.height = str::parse(&args[4]).unwrap();
+    if args.len() == 4 {
+        dimensions.width = str::parse(&args[2]).unwrap();
+        dimensions.height = str::parse(&args[3]).unwrap();
     }
 }
 
