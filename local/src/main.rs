@@ -12,10 +12,11 @@ fn main() {
     let mut dimensions = Dimensions::new(200, 100);
 
     set_up(&mut file_name, &mut dimensions);
+    let img = image::open("space-background.jpg").unwrap();
 
     let config = RenderConfig {
         dimensions,
-        render_type: RenderType::fBM,
+        render_type: RenderType::Image { image: img },
     };
     render_image(file_name, config);
 }

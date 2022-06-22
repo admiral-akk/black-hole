@@ -29,11 +29,13 @@ pub fn renderer_benchmark(c: &mut Criterion) {
         let mut buf = config.dimensions.get_buffer();
         b.iter(|| black_box(renderer.render(&mut buf, &config)));
     });
-    c.bench_function("fbm small", |b| {
+    c.bench_function("stars small", |b| {
         let renderer = get_renderer();
         let config = RenderConfig {
             dimensions: Dimensions::new(10, 10),
-            render_type: RenderType::fBM,
+            render_type: RenderType::Image {
+                image: image::open("space-background.jpg").unwrap(),
+            },
         };
         let mut buf = config.dimensions.get_buffer();
         b.iter(|| black_box(renderer.render(&mut buf, &config)));

@@ -1,13 +1,15 @@
+use ::image::DynamicImage;
+
 use crate::structs::dimensions::Dimensions;
 
-use super::{fbm, skybox, uv};
+use super::{image, skybox, uv};
 
 pub struct Renderer {}
 
 pub enum RenderType {
     UV,
     Skybox { vertical_fov_degrees: f32 },
-    fBM,
+    Image { image: DynamicImage },
 }
 
 pub struct RenderConfig {
@@ -32,14 +34,20 @@ impl Renderer {
             for x in 0..dimensions.width {
                 let index = 4 * dimensions.to_index(x, y);
                 let out = &mut buf[index..(index + 4)];
-                match config.render_type {
+                match &config.render_type {
                     RenderType::UV => uv::uv_renderer::render(x, y, dimensions, out),
                     RenderType::Skybox {
                         vertical_fov_degrees,
-                    } => {
-                        skybox::skybox_renderer::render(x, y, dimensions, vertical_fov_degrees, out)
+                    } => skybox::skybox_renderer::render(
+                        x,
+                        y,
+                        dimensions,
+                        *vertical_fov_degrees,
+                        out,
+                    ),
+                    RenderType::Image { image } => {
+                        image::image_renderer::render(x, y, dimensions, image, out)
                     }
-                    RenderType::fBM => fbm::fbm_renderer::render(x, y, dimensions, out),
                 }
             }
         }
