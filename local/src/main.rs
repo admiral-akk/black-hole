@@ -18,7 +18,7 @@ fn main() {
 
     let config = RenderConfig {
         dimensions,
-        render_type: RenderType::BlackHole {
+        render_type: RenderType::BlackSphere {
             background: img,
             vertical_fov_degrees: 30.0,
             pos: Vec3::new(0.0, 0.0, 10.0),

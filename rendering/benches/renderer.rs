@@ -57,7 +57,7 @@ pub fn renderer_benchmark(c: &mut Criterion) {
         let renderer = get_renderer();
         let config = RenderConfig {
             dimensions: Dimensions::new(10, 10),
-            render_type: RenderType::BlackHole {
+            render_type: RenderType::BlackSphere {
                 vertical_fov_degrees: 20.0,
                 background: image::open("space-background.jpg").unwrap(),
                 pos: Vec3::new(0.0, 0.0, 10.0),
