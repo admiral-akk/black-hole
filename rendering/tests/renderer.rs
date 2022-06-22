@@ -2,11 +2,8 @@
 
 mod tests {
     use rendering::{
-        renderer::Renderer,
-        structs::{
-            config::Config,
-            dimensions::{Dimensions},
-        },
+        renderer::{RenderConfig, RenderType, Renderer},
+        structs::dimensions::Dimensions,
     };
 
     fn assert_eq_color(buf: &[u8], start_index: usize, expected_color: &[u8]) {
@@ -17,13 +14,16 @@ mod tests {
     }
 
     #[test]
-    fn tiny() {
-        let renderer = Renderer::new(Config::new());
-        let dimensions = Dimensions::new(10, 10);
-        let mut buf = dimensions.get_buffer();
-        renderer.render(&mut buf, &dimensions);
+    fn tiny_uv() {
+        let renderer = Renderer::new();
+        let config = RenderConfig {
+            dimensions: Dimensions::new(10, 10),
+            render_type: RenderType::UV,
+        };
+        let mut buf = config.dimensions.get_buffer();
+        renderer.render(&mut buf, &config);
 
-        let (width, height) = (dimensions.width, dimensions.height);
+        let (width, height) = (config.dimensions.width, config.dimensions.height);
 
         // top left corner
         assert_eq_color(&buf, 0, &[0, 255, 0, 255]);

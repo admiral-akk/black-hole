@@ -1,22 +1,22 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rendering::{
-    renderer::{Renderer},
-    structs::{
-        config::Config,
-        dimensions::{Dimensions},
-    },
+    renderer::{RenderConfig, RenderType, Renderer},
+    structs::dimensions::Dimensions,
 };
 
 fn get_renderer() -> Renderer {
-    Renderer::new(Config::new())
+    Renderer::new()
 }
 
 pub fn renderer_benchmark(c: &mut Criterion) {
     c.bench_function("renderer uv small", |b| {
-        let dimensions = Dimensions::new(10, 10);
         let renderer = get_renderer();
-        let mut buf = dimensions.get_buffer();
-        b.iter(|| black_box(renderer.render(&mut buf, &dimensions)));
+        let config = RenderConfig {
+            dimensions: Dimensions::new(10, 10),
+            render_type: RenderType::UV,
+        };
+        let mut buf = config.dimensions.get_buffer();
+        b.iter(|| black_box(renderer.render(&mut buf, &config)));
     });
 }
 

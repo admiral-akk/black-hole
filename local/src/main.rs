@@ -1,13 +1,22 @@
 use std::env;
 use std::path::Path;
 
-use rendering::{init, structs::dimensions::Dimensions};
+use rendering::{
+    init,
+    renderer::{RenderConfig, RenderType},
+    structs::dimensions::Dimensions,
+};
 fn main() {
     let mut file_name: String = "image.png".to_string();
     let mut dimensions = Dimensions::new(200, 100);
 
     set_up(&mut file_name, &mut dimensions);
-    render_image(file_name, dimensions);
+
+    let config = RenderConfig {
+        dimensions,
+        render_type: RenderType::UV,
+    };
+    render_image(file_name, config);
 }
 
 fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
@@ -21,15 +30,15 @@ fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
     }
 }
 
-fn render_image(file_name: String, dimensions: Dimensions) {
+fn render_image(file_name: String, config: RenderConfig) {
     let renderer = init();
-    let mut buffer: Vec<u8> = dimensions.get_buffer();
-    renderer.render(&mut buffer, &dimensions);
+    let mut buffer: Vec<u8> = config.dimensions.get_buffer();
+    renderer.render(&mut buffer, &config);
     image::save_buffer(
         &Path::new(&format!("output/{}", file_name)),
         &buffer,
-        dimensions.width as u32,
-        dimensions.height as u32,
+        config.dimensions.width as u32,
+        config.dimensions.height as u32,
         image::ColorType::Rgba8,
     )
     .unwrap();
