@@ -1,4 +1,4 @@
-use std::ops::{Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Vec3 {
@@ -23,7 +23,7 @@ impl Vec3 {
         l_xyz.0 * r_xyz.0 + l_xyz.1 * r_xyz.1 + l_xyz.2 * r_xyz.2
     }
 
-    fn len(&self) -> f32 {
+    pub fn len(&self) -> f32 {
         self.dot(self).sqrt()
     }
 
@@ -77,5 +77,16 @@ impl Div<f32> for &Vec3 {
         let xyz = self.xyz();
 
         Vec3::new(xyz.0 / rhs, xyz.1 / rhs, xyz.2 / rhs)
+    }
+}
+
+impl Add<&Vec3> for &Vec3 {
+    type Output = Vec3;
+
+    fn add(self, rhs: &Vec3) -> Vec3 {
+        let l_xyz = self.xyz();
+        let r_xyz = rhs.xyz();
+
+        Vec3::new(l_xyz.0 + r_xyz.0, l_xyz.1 + r_xyz.1, l_xyz.2 + r_xyz.2)
     }
 }

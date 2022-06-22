@@ -70,4 +70,11 @@ mod tests {
 
         assert_eq!(v1, v2);
     }
+
+    #[test]
+    fn vec3_len() {
+        let v = &Vec3::new(1.0, -1.0, 2.0);
+
+        assert_eq!(v.len(), 6.0_f32.sqrt());
+    }
 }
