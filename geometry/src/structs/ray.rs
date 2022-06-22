@@ -9,4 +9,8 @@ impl Ray {
     pub fn new(pos: Vec3, dir: UnitVec3) -> Self {
         Self { pos, dir }
     }
+
+    pub fn dir(&self) -> &Vec3 {
+        self.dir.vec3()
+    }
 }

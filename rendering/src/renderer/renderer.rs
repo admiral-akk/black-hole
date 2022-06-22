@@ -1,8 +1,9 @@
 use ::image::DynamicImage;
+use geometry::Vec3;
 
 use crate::structs::dimensions::Dimensions;
 
-use super::{image, ray_skybox, skybox, uv};
+use super::{black_hole, image, ray_skybox, skybox, uv};
 
 pub struct Renderer {}
 
@@ -17,6 +18,12 @@ pub enum RenderType {
     RaySkybox {
         vertical_fov_degrees: f32,
         image: DynamicImage,
+    },
+    BlackHole {
+        vertical_fov_degrees: f32,
+        background: DynamicImage,
+        pos: Vec3,
+        rad: f32,
     },
 }
 
@@ -59,6 +66,21 @@ impl Renderer {
                         dimensions,
                         image,
                         *vertical_fov_degrees,
+                        out,
+                    ),
+                    RenderType::BlackHole {
+                        vertical_fov_degrees,
+                        background,
+                        pos,
+                        rad,
+                    } => black_hole::black_hole_renderer::render(
+                        x,
+                        y,
+                        dimensions,
+                        background,
+                        *vertical_fov_degrees,
+                        pos,
+                        *rad,
                         out,
                     ),
                 }

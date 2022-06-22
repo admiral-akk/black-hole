@@ -1,6 +1,8 @@
 use std::env;
 use std::path::Path;
 
+use geometry::Vec3;
+
 use rendering::{
     init,
     renderer::renderer::{RenderConfig, RenderType},
@@ -16,9 +18,11 @@ fn main() {
 
     let config = RenderConfig {
         dimensions,
-        render_type: RenderType::RaySkybox {
-            image: img,
-            vertical_fov_degrees: 150.0,
+        render_type: RenderType::BlackHole {
+            background: img,
+            vertical_fov_degrees: 30.0,
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            rad: 9.0,
         },
     };
     render_image(file_name, config);

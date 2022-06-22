@@ -1,3 +1,4 @@
+mod black_hole;
 mod image;
 mod ray_skybox;
 pub mod renderer;

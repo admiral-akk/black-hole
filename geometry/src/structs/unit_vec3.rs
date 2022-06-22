@@ -6,7 +6,13 @@ pub struct UnitVec3 {
 
 impl UnitVec3 {
     pub fn new(vec: Vec3) -> Self {
-        Self { vec }
+        Self {
+            vec: vec.normalized(),
+        }
+    }
+
+    pub fn vec3(&self) -> &Vec3 {
+        &self.vec
     }
 
     pub fn xyz(&self) -> (f32, f32, f32) {
