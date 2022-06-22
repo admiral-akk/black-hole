@@ -20,7 +20,7 @@ fn main() {
         dimensions,
         render_type: RenderType::BlackSphere {
             background: img,
-            vertical_fov_degrees: 30.0,
+            vertical_fov_degrees: 80.0,
             pos: Vec3::new(0.0, 0.0, 10.0),
             rad: 9.0,
         },

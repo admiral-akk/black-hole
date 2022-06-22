@@ -1,7 +1,7 @@
 #[cfg(test)]
 
 mod tests {
-    use geometry::{Disc, Ray, Sphere, UnitVec3, Vec3};
+    use geometry::{Disc, Ray, UnitVec3, Vec3};
 
     #[test]
     fn disc_miss_inside() {
