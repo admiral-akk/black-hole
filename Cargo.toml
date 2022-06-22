@@ -1,8 +1,16 @@
-[package]
-name = "black-hole"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "rendering",
+    "local",
+]
+resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+[profile.dev]
+opt-level = 3
+debug = 1
+[profile.test]
+debug = 1
+opt-level = 3
+[profile.release]
+debug = 1
+opt-level = 3
