@@ -1,6 +1,6 @@
 use crate::structs::dimensions::Dimensions;
 
-use super::{skybox, uv};
+use super::{fbm, skybox, uv};
 
 pub struct Renderer {}
 
@@ -31,20 +31,15 @@ impl Renderer {
         for y in (0..dimensions.height).rev() {
             for x in 0..dimensions.width {
                 let index = 4 * dimensions.to_index(x, y);
+                let out = &mut buf[index..(index + 4)];
                 match config.render_type {
-                    RenderType::UV => {
-                        uv::uv_renderer::render(x, y, dimensions, &mut buf[index..(index + 4)])
-                    }
+                    RenderType::UV => uv::uv_renderer::render(x, y, dimensions, out),
                     RenderType::Skybox {
                         vertical_fov_degrees,
-                    } => skybox::skybox_renderer::render(
-                        x,
-                        y,
-                        dimensions,
-                        vertical_fov_degrees,
-                        &mut buf[index..(index + 4)],
-                    ),
-                    RenderType::fBM => self.fBM(buf, dimensions),
+                    } => {
+                        skybox::skybox_renderer::render(x, y, dimensions, vertical_fov_degrees, out)
+                    }
+                    RenderType::fBM => fbm::fbm_renderer::render(x, y, dimensions, out),
                 }
             }
         }

@@ -6,6 +6,7 @@ use rendering::{
     renderer::renderer::{RenderConfig, RenderType},
     structs::dimensions::Dimensions,
 };
+
 fn main() {
     let mut file_name: String = "image.png".to_string();
     let mut dimensions = Dimensions::new(200, 100);
@@ -14,9 +15,7 @@ fn main() {
 
     let config = RenderConfig {
         dimensions,
-        render_type: RenderType::Skybox {
-            vertical_fov_degrees: 20.0,
-        },
+        render_type: RenderType::fBM,
     };
     render_image(file_name, config);
 }
