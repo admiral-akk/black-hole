@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 rendering = { path = "../rendering" }
+image = "0.24.2"
