@@ -22,12 +22,6 @@ impl Renderer {
         Self {}
     }
 
-    fn fBM(&self, _buf: &mut [u8], dimensions: &Dimensions) {
-        for _y in (0..dimensions.height).rev() {
-            for _x in 0..dimensions.width {}
-        }
-    }
-
     pub fn render(&self, buf: &mut [u8], config: &RenderConfig) {
         let dimensions = &config.dimensions;
         for y in (0..dimensions.height).rev() {
