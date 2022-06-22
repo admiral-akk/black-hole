@@ -1,8 +1,7 @@
 use rendering::{
     init,
     structs::{
-        config::Config,
-        dimensions::{self, Dimensions},
+        dimensions::{Dimensions},
     },
 };
 

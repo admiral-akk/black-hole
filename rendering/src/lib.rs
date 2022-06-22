@@ -1,7 +1,7 @@
 use renderer::Renderer;
 use structs::{
-    config::{self, Config},
-    dimensions::{self, Dimensions},
+    config::{Config},
+    dimensions::{Dimensions},
 };
 
 pub mod renderer;
