@@ -1,11 +1,13 @@
 use super::dimensions::Dimensions;
 
 pub struct Config {
-    pub image_size: Dimensions,
+    pub expected_image_size: Dimensions,
 }
 
 impl Config {
-    pub fn new(image_size: Dimensions) -> Self {
-        Self { image_size }
+    pub fn new(expected_image_size: Dimensions) -> Self {
+        Self {
+            expected_image_size,
+        }
     }
 }
