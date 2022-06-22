@@ -5,7 +5,7 @@ mod tests {
         renderer::Renderer,
         structs::{
             config::Config,
-            dimensions::{self, Dimensions},
+            dimensions::{Dimensions},
         },
     };
 

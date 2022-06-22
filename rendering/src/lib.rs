@@ -1,5 +1,5 @@
 use renderer::Renderer;
-use structs::{config::Config, dimensions::Dimensions};
+use structs::{config::Config};
 
 pub mod renderer;
 pub mod structs;

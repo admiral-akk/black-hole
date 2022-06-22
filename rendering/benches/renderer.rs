@@ -1,9 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rendering::{
-    renderer::{self, Renderer},
+    renderer::{Renderer},
     structs::{
         config::Config,
-        dimensions::{self, Dimensions},
+        dimensions::{Dimensions},
     },
 };
 
