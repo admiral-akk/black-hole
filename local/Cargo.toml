@@ -1,6 +1,7 @@
 [package]
 name = "local"
 version = "0.1.0"
+authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
 edition = "2021"
 
 [dependencies]

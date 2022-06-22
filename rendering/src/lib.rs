@@ -4,7 +4,7 @@ use structs::{config::Config, dimensions::Dimensions};
 pub mod renderer;
 pub mod structs;
 
-pub fn init(dimensions: Dimensions) -> Renderer {
-    let config = Config::new(dimensions);
+pub fn init() -> Renderer {
+    let config = Config::new();
     Renderer::new(config)
 }

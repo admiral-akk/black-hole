@@ -22,8 +22,8 @@ fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
 }
 
 fn render_image(file_name: String, dimensions: Dimensions) {
-    let renderer = init(dimensions.clone());
-    let mut buffer: Vec<u8> = vec![0; 4 * dimensions.size()];
+    let renderer = init();
+    let mut buffer: Vec<u8> = dimensions.get_buffer();
     renderer.render(&mut buffer, &dimensions);
     image::save_buffer(
         &Path::new(&format!("output/{}", file_name)),
