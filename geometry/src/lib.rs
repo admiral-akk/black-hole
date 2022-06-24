@@ -1,6 +1,8 @@
 mod structs;
 
+pub type Vector3 = glam::Vec3;
+pub type Vec3 = Vector3;
+
 pub use structs::disc::Disc;
 pub use structs::ray::Ray;
 pub use structs::sphere::Sphere;
-pub use structs::vec3::Vec3;

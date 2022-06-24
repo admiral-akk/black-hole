@@ -21,8 +21,8 @@ pub fn render(
     let viewport = Vec3::new(view_x, view_y, 1.0);
     let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), viewport);
 
-    let r = (255.0 * ray.dir.xyz().0) as u8;
-    let g = (255.0 * ray.dir.xyz().1) as u8;
+    let r = (255.0 * ray.dir.x) as u8;
+    let g = (255.0 * ray.dir.x) as u8;
     out[0] = r;
     out[1] = g;
     out[2] = 0;

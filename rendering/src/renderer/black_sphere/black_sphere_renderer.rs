@@ -34,7 +34,7 @@ pub fn render(
         return;
     }
 
-    let (x, y, z) = ray.dir.xyz();
+    let (x, y, z) = (ray.dir.x, ray.dir.y, ray.dir.z);
     let x_angle = f32::atan2(x, z);
     let y_angle = f32::atan2(-y, (x * x + z * z).sqrt());
 

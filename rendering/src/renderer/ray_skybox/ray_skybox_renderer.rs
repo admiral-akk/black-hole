@@ -23,7 +23,7 @@ pub fn render(
     let viewport = Vec3::new(view_x, view_y, 1.0);
     let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), viewport);
 
-    let (x, y, z) = ray.dir.xyz();
+    let (x, y, z) = (ray.dir.x, ray.dir.y, ray.dir.z);
     let x_angle = f32::atan2(x, z);
     let y_angle = f32::atan2(-y, (x * x + z * z).sqrt());
 

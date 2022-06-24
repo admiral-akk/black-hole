@@ -1,20 +1,20 @@
-use crate::{Ray, Vec3};
+use crate::{Ray, Vector3};
 
 pub struct Sphere {
-    pos: Vec3,
+    pos: Vector3,
     rad: f32,
 }
 
 impl Sphere {
-    pub fn new(pos: Vec3, rad: f32) -> Self {
+    pub fn new(pos: Vector3, rad: f32) -> Self {
         Self { pos, rad }
     }
 
     pub fn is_hit(&self, ray: &Ray) -> bool {
-        let diff = &self.pos - &ray.pos;
+        let diff = self.pos - ray.pos;
         let dir = &ray.dir;
-        let off = diff.dot(&ray.dir);
-        let orthogonal = &diff - &(off * dir);
-        orthogonal.dot(&orthogonal) <= self.rad
+        let off = diff.dot(ray.dir);
+        let orthogonal = diff - (off * *dir);
+        orthogonal.dot(orthogonal) <= self.rad
     }
 }

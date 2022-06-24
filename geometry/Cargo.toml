@@ -8,4 +8,4 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cgmath = {version="0.18.0", features = ['swizzle']}
+glam = "0.21.1"
