@@ -9,6 +9,6 @@ mod tests {
         let unit_v = Vec3::new(1.0, 1.0, 1.0);
         let ray = Ray::new(v, unit_v);
 
-        assert_eq!(Vec3::new(1.0, 1.0, 1.0), ray.dir);
+        assert_eq!(Vec3::new(1.0, 1.0, 1.0).normalize(), ray.dir);
     }
 }

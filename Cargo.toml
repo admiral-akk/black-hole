@@ -1,9 +1,9 @@
 [workspace]
 members = [
+    "geometry",
+    "path_integration",
     "rendering",
     "local",
-    "geometry",
-    "path",
 ]
 resolver = "2"
 

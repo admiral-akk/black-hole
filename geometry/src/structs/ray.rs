@@ -7,6 +7,9 @@ pub struct Ray {
 
 impl Ray {
     pub fn new(pos: Vector3, dir: Vector3) -> Self {
-        Self { pos, dir }
+        Self {
+            pos,
+            dir: dir.normalize(),
+        }
     }
 }

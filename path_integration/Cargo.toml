@@ -1,0 +1,14 @@
+[package]
+name = "path-integration"
+version = "0.1.0"
+edition = "2021"
+authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+geometry = { path = "../geometry" }
+
+[dev-dependencies]
+plotters = {version= "0.3.1", features = ['bitmap_encoder']}
