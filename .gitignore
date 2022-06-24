@@ -1,6 +1,7 @@
 /target
-/output
+output
 .vscode
 *.jpg
 *.tif
 *.exr
+*.png
