@@ -75,7 +75,7 @@ mod tests {
                 debug.push((x, y));
             }
             let mut color = RGBColor((255.0 * r) as u8, (255.0 * (1.0 - r)) as u8, 0);
-            if steps.len() < 10000 {
+            if cast_ray_steps(&ray, field_scale, field_center).is_none() {
                 color = BLACK;
             }
 

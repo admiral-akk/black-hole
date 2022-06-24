@@ -38,14 +38,21 @@ fn runge_kutta(h: f32, t_n: f32, y_n: Vec3, k1: Vec3, k2: Vec3, k3: Vec3, k4: Ve
     )
 }
 
+pub fn hit(particle: &Particle, force_scale: f32, field_center: &Vec3) -> bool {
+    (particle.p - *field_center).length() < 0.15
+}
+
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
-pub fn cast_ray_steps(ray: &Ray, force_scale: f32, field_center: &Vec3) -> Vec3 {
+pub fn cast_ray_steps(ray: &Ray, force_scale: f32, field_center: &Vec3) -> Option<Vec3> {
     let mut particle = Particle::new(ray.pos, ray.dir);
-    for _ in 0..10 {
+    for _ in 0..10000 {
+        if hit(&particle, force_scale, field_center) {
+            return None;
+        }
         step_particle(&mut particle, force_scale, field_center);
     }
 
-    particle.v
+    Some(particle.v)
 }
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
@@ -54,7 +61,7 @@ pub fn cast_ray_steps_debug(ray: &Ray, force_scale: f32, field_center: &Vec3) ->
     let mut steps = Vec::new();
     for _ in 0..10000 {
         steps.push(particle.p);
-        if (particle.p - *field_center).length() < 0.15 {
+        if hit(&particle, force_scale, field_center) {
             return steps;
         }
         step_particle(&mut particle, force_scale, field_center);
