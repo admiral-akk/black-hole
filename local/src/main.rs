@@ -11,16 +11,16 @@ use rendering::{
 
 fn main() {
     let mut file_name: String = "image.png".to_string();
-    let mut dimensions = Dimensions::new(200, 100);
+    let mut dimensions = Dimensions::new(100, 100);
 
     set_up(&mut file_name, &mut dimensions);
-    let img = image::open("space-background.jpg").unwrap();
+    let img = image::open("starmap_2020_4k_gal.exr").unwrap();
 
     let config = RenderConfig {
         dimensions,
         render_type: RenderType::BlackSphere {
             background: img,
-            vertical_fov_degrees: 80.0,
+            vertical_fov_degrees: 180.0,
             pos: Vec3::new(0.0, 0.0, 10.0),
             rad: 9.0,
         },
@@ -30,7 +30,7 @@ fn main() {
 
 fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
     let args: Vec<String> = env::args().collect();
-    print!("{:?}", args);
+    println!("{:?}", args);
     if args.len() > 1 {
         *file_name = format!("{}.png", args[1]);
     }

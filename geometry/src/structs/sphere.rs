@@ -12,8 +12,8 @@ impl Sphere {
 
     pub fn is_hit(&self, ray: &Ray) -> bool {
         let diff = &self.pos - &ray.pos;
-        let dir = ray.dir.vec3();
-        let off = diff.dot(ray.dir.vec3());
+        let dir = &ray.dir;
+        let off = diff.dot(&ray.dir);
         let orthogonal = &diff - &(off * dir);
         orthogonal.dot(&orthogonal) <= self.rad
     }

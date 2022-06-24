@@ -1,5 +1,5 @@
 use crate::structs::dimensions::Dimensions;
-use geometry::{Ray, UnitVec3, Vec3};
+use geometry::{Ray, Vec3};
 use image::{GenericImageView, Pixel};
 
 pub fn render(
@@ -21,7 +21,7 @@ pub fn render(
 
     // get angle from z-forward with y as pivot
     let viewport = Vec3::new(view_x, view_y, 1.0);
-    let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), UnitVec3::new(viewport));
+    let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), viewport);
 
     let (x, y, z) = ray.dir.xyz();
     let x_angle = f32::atan2(x, z);

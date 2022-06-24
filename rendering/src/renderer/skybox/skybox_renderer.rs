@@ -1,4 +1,4 @@
-use geometry::{Ray, UnitVec3, Vec3};
+use geometry::{Ray, Vec3};
 
 use crate::structs::dimensions::Dimensions;
 
@@ -19,7 +19,7 @@ pub fn render(
     let view_y = y_size * ((y as f32) - half_height) / half_height;
 
     let viewport = Vec3::new(view_x, view_y, 1.0);
-    let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), UnitVec3::new(viewport));
+    let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), viewport);
 
     let r = (255.0 * ray.dir.xyz().0) as u8;
     let g = (255.0 * ray.dir.xyz().1) as u8;
