@@ -2,7 +2,7 @@
 
 mod tests {
     use geometry::{Ray, Vec3};
-    use path_integration::{cast_ray_steps, cast_ray_steps_debug};
+    use path_integration::{cast_ray_steps, cast_ray_steps_debug, Field};
     use plotters::prelude::*;
     use plotters::{
         prelude::{
@@ -44,15 +44,15 @@ mod tests {
     }
 
     fn plot_trajectories(
-        field_scale: f32,
-        field_center: &Vec3,
+        folder: &str,
+        field: &Field,
         lines: &Vec<Vec<Vec3>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let path = format!("output/test_{}_paths.png", field_scale);
-        let mut root = BitMapBackend::new(&path, (640, 480)).into_drawing_area();
+        let path = format!("output/{}/test_{}_paths.png", folder, field.magnitude);
+        let mut root = BitMapBackend::new(&path, (2000, 2000)).into_drawing_area();
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
-            .caption(format!("f={}", field_scale), ("Arial", 50).into_font())
+            .caption(format!("f={}", field.magnitude), ("Arial", 50).into_font())
             .margin(5 as u32)
             .x_label_area_size(30 as u32)
             .y_label_area_size(30 as u32)
@@ -63,10 +63,10 @@ mod tests {
         let start = Vec3::new(5.0, 0.0, 0.0);
 
         chart.draw_series(PointSeries::of_element(
-            vec![(field_center.x, field_center.y)],
+            vec![(field.center.x, field.center.y)],
             5,
             &BLACK,
-            &|c, s, st| {
+            &|c, s: u32, st| {
                 return EmptyElement::at(c)    // We want to construct a composed element on-the-fly
                 + Circle::new((0,0),s,st.filled()) // At this point, the new pixel coordinate is established
                 + Text::new(format!("{:?}", c), (10, 0), ("sans-serif", 10).into_font());
@@ -86,15 +86,14 @@ mod tests {
         Ok(())
     }
 
-    fn find_near_miss(field_scale: f32, field_center: &Vec3) -> (Vec3, Vec3) {
+    fn find_near_miss(field: &Field, max_width: f32) -> (Vec3, Vec3) {
         let start = Vec3::new(5.0, 0.0, 0.0);
         let mut left = Vec3::new(0.0, 10.0, 0.0);
-        let mut right = *field_center;
-        while (left - right).length() > 0.0001 {
+        let mut right = Vec3::new(5.0, 10.0, 0.0);
+        while (left - right).length() > max_width {
             let center = 0.5 * (left + right);
-            let ray = Ray::new(start, center.normalize());
-            let steps = cast_ray_steps_debug(&ray, field_scale, &field_center);
-            if steps.len() < 10000 {
+            let ray = Ray::new(start, (center - start).normalize());
+            if cast_ray_steps(&ray, field).is_none() {
                 // hit the black hole
                 right = center;
             } else {
@@ -108,24 +107,36 @@ mod tests {
     fn plot_all_trajectories() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
         for scale in 0..=10 {
-            let (field_scale, field_center) = ((scale as f32) / 10.0, &Vec3::new(5.0, 5.0, 0.0));
+            let field = Field::new(Vec3::new(5.0, 5.0, 0.0), (scale as f32) / 10.0);
             let mut lines: Vec<Vec<Vec3>> = Vec::new();
             for i in 0..100 {
                 let r = (i as f32) / 99.0;
                 let end = Vec3::new(10.0 * r, 10.0, 0.0);
                 let ray = Ray::new(start, end - start);
-                let path = cast_ray_steps_debug(&ray, field_scale, &field_center);
+                let path = cast_ray_steps_debug(&ray, &field);
                 lines.push(path);
             }
-            plot_trajectories((scale as f32) / 10.0, &Vec3::new(5.0, 5.0, 0.0), &lines)?;
+            plot_trajectories("all", &field, &lines)?;
         }
         Ok(())
     }
 
     #[test]
     fn plot_near_trajectory() -> Result<(), Box<dyn std::error::Error>> {
-        let field_center = Vec3::new(5.0, 5.0, 0.0);
-        let (left, right) = find_near_miss(0.1, &field_center);
+        let start = Vec3::new(5.0, 0.0, 0.0);
+        let field = Field::new(Vec3::new(5.0, 5.0, 0.0), 0.1);
+        let (left, right) = find_near_miss(&field, 0.0001);
+        let mut lines: Vec<Vec<Vec3>> = Vec::new();
+        for i in 0..100 {
+            let r = (i as f32) / 99.0;
+            let end = left - (1.0 - r) * Vec3::X * 0.1;
+
+            let ray = Ray::new(start, end - start);
+            let path = cast_ray_steps_debug(&ray, &field);
+            lines.push(path);
+        }
+        plot_trajectories("near", &field, &lines)?;
+
         Ok(())
     }
 }
