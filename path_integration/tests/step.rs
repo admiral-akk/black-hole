@@ -21,7 +21,7 @@ mod tests {
             BitMapBackend::new("output/test_straight_paths.png", (640, 480)).into_drawing_area();
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
-            .caption("y=x^2", ("Arial", 50).into_font())
+            .caption("f=0.0", ("Arial", 50).into_font())
             .margin(5 as u32)
             .x_label_area_size(30 as u32)
             .y_label_area_size(30 as u32)
