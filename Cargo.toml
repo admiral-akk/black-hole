@@ -3,6 +3,7 @@ members = [
     "rendering",
     "local",
     "geometry",
+    "path",
 ]
 resolver = "2"
 

@@ -9,6 +9,4 @@ impl Ray {
     pub fn new(pos: Vec3, dir: Vec3) -> Self {
         Self { pos, dir }
     }
-
-    pub fn march(&mut self, dt: f32) {}
 }

@@ -1,0 +1,14 @@
+[package]
+name = "path"
+version = "0.1.0"
+edition = "2021"
+authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependency]
+cgmath = {version="0.18.0", features =['swizzling']}
+
+[dev-dependency]
+plotters = "0.3.1"
