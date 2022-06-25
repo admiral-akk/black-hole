@@ -16,5 +16,5 @@ image = "0.24.2"
 criterion = "0.3"
 
 [[bench]]
-name = "renderer"
+name = "render"
 harness = false
