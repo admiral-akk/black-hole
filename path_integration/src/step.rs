@@ -40,5 +40,5 @@ fn step_size(particle: &mut Particle, field: &Field) -> f64 {
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
-    (particle.p - field.center).length() < 2.0 * field.m
+    (particle.p - field.center).length() < field.schwarzchild_radius()
 }
