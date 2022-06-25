@@ -3,8 +3,7 @@ mod tests {
     use std::path::Path;
 
     use geometry::DVec3;
-    use image::GenericImageView;
-    use rendering::structs::{camera::Camera, dimensions::Dimensions, stars::Stars};
+    use rendering::structs::{dimensions::Dimensions, stars::Stars};
 
     fn write_image(image_name: &str, buffer: &[u8], dimensions: &Dimensions) {
         image::save_buffer(

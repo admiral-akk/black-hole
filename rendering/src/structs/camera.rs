@@ -33,7 +33,10 @@ impl Camera {
         let view_y = y_size * ((y as f32) - half_height) / half_height;
 
         let viewport = Vec3::new(view_x, view_y, 1.0);
-        Ray::new(Vec3::new(0.0, 0.0, 0.0), viewport)
+        Ray::new(
+            Vec3::new(self.pos.x as f32, self.pos.y as f32, self.pos.z as f32),
+            viewport,
+        )
     }
 
     pub fn get_rays(&self) -> Vec<Ray> {
