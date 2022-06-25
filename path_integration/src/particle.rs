@@ -20,8 +20,4 @@ impl Particle {
     fn kinetic_energy(&self) -> f64 {
         0.5 * self.v.length().powi(2)
     }
-
-    pub fn energy(&self, field: &Field) -> f64 {
-        self.kinetic_energy() + field.potential(&self.p)
-    }
 }
