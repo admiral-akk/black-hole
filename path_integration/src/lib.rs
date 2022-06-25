@@ -9,7 +9,7 @@ use step::{hit, step_particle};
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
 pub fn cast_ray_steps(ray: &Ray, field: &Field, max_distance: f64) -> Option<DVec3> {
-    let mut particle = Particle::new(ray.pos, ray.dir);
+    let mut particle = Particle::new(ray, field);
     let mut distance = 0.0;
     while (particle.p - field.center).length() < 10.0 && distance < max_distance {
         if hit(&particle, field) {
@@ -28,7 +28,7 @@ pub fn cast_ray_steps(ray: &Ray, field: &Field, max_distance: f64) -> Option<DVe
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
 pub fn cast_ray_steps_debug(ray: &Ray, field: &Field, max_distance: f64) -> Vec<DVec3> {
-    let mut particle = Particle::new(ray.pos, ray.dir);
+    let mut particle = Particle::new(ray, field);
     let mut steps = Vec::new();
     let mut distance = 0.0;
     while (particle.p - field.center).length() < 10.0 && distance < max_distance {

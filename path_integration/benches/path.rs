@@ -10,24 +10,24 @@ fn cast_ray_steps_repeated(ray: &Ray, field: &Field) {
 }
 
 pub fn path_benchmark(c: &mut Criterion) {
-    c.bench_function("black hole f=0.0", |b| {
+    c.bench_function("black hole r=0.0", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::Z);
         let field = Field::new(5.0 * DVec3::Z, 0.0);
         b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
     });
-    c.bench_function("black hole f=1.0, miss", |b| {
+    c.bench_function("black hole r=1.0, miss", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::X);
         let field = Field::new(5.0 * DVec3::Z, 0.0);
         b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
     });
-    c.bench_function("black hole f=1.0, near", |b| {
+    c.bench_function("black hole r=1.0, near", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::Z + Vec3::X);
         let field = Field::new(5.0 * DVec3::Z, 0.0);
         b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
     });
-    c.bench_function("black hole f=1.0, hit", |b| {
+    c.bench_function("black hole r=1.0, hit", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::Z);
-        let field = Field::new(5.0 * DVec3::Z, 0.0);
+        let field = Field::new_rad(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
         b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
     });
 }

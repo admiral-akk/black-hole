@@ -1,4 +1,4 @@
-use geometry::{DVec3, Vec3};
+use geometry::{DVec3, Ray, Vec3};
 
 use crate::Field;
 
@@ -8,11 +8,13 @@ pub struct Particle {
 }
 
 impl Particle {
-    pub fn new(p: Vec3, v: Vec3) -> Self {
-        Self {
-            p: DVec3::new(p.x as f64, p.y as f64, p.z as f64),
-            v: DVec3::new(v.x as f64, v.y as f64, v.z as f64).normalize(),
-        }
+    // We use the ray/field here to calculate initial velocity, such that |v| = 1 at the Schwarzchild radius.
+    // This ends up allowing us to avoid any
+    pub fn new(ray: &Ray, field: &Field) -> Self {
+        let p = DVec3::new(ray.pos.x as f64, ray.pos.y as f64, ray.pos.z as f64);
+        let v = field.initial_speed(&p)
+            * DVec3::new(ray.dir.x as f64, ray.dir.y as f64, ray.dir.z as f64);
+        Self { p, v }
     }
 
     fn kinetic_energy(&self) -> f64 {

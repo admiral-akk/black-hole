@@ -25,19 +25,20 @@ pub fn step_particle(particle: &mut Particle, field: &Field) {
 // 0.1 is fast enough to compute an image
 fn step_size(particle: &mut Particle, field: &Field) -> f64 {
     let diff = field.center - particle.p;
+    let v = particle.v.length();
     let r = diff.length();
     let m_4 = 4.0 * field.m;
     if r > m_4 {
         if diff.dot(particle.v) > 0.0 {
-            return 0.1 * (r - m_4) + 0.0001;
+            return 0.1 * (r - m_4) + 0.001 / v;
         } else {
-            return 0.1 * r * r;
+            return 0.1 * r * r / v;
         }
     } else {
-        0.0001
+        return 0.001 / v;
     }
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
-    (particle.p - field.center).length() < 0.1
+    (particle.p - field.center).length() < 2.0 * field.m
 }

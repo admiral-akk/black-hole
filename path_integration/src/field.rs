@@ -23,7 +23,7 @@ impl Field {
         Self {
             center,
             magnitude,
-            m: 1.0,
+            m: 0.05,
         }
     }
 
@@ -37,9 +37,14 @@ impl Field {
         1.0 / (4.0 * (*particle_pos - self.center).length().powi(4))
     }
 
-    // Since we're relying on a mechanical (non-physical) interpretation of the pertubation of a black hole, we
-    // have to numerically calculate the radius.
-    pub fn calculate_radius(&self) -> f64 {
-        0.0
+    pub fn schwarzchild_radius(&self) -> f64 {
+        2.0 * self.m
+    }
+
+    pub fn initial_speed(&self, particle_start: &DVec3) -> f64 {
+        let diff = (self.center - *particle_start).length();
+
+        (0.5 * self.magnitude * (2.0 / self.schwarzchild_radius().powi(4) - 1.0 / diff.powi(4)))
+            .sqrt()
     }
 }

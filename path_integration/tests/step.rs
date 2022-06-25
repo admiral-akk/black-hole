@@ -184,7 +184,7 @@ mod tests {
             let r = (radius as f64) / 10.0;
             let field = Field::new_rad(DVec3::new(5.0, 5.0, 0.0), r, &start2);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
-            let num_lines = 100;
+            let num_lines = 1000;
             let mut is_hit: Vec<bool> = Vec::new();
             for i in 0..num_lines {
                 let r = (i as f32) / ((num_lines as f32) - 1.0);
