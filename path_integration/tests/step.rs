@@ -1,7 +1,7 @@
 #[cfg(test)]
 
 mod tests {
-    use geometry::{Ray, Vec3};
+    use geometry::{DVec3, Ray, Vec3};
     use path_integration::{cast_ray_steps, cast_ray_steps_debug, Field};
     use plotters::prelude::*;
     use plotters::{
@@ -12,7 +12,7 @@ mod tests {
         style::{Color, IntoFont, ShapeStyle, BLACK, GREEN, RED, WHITE},
     };
 
-    fn trim_path(x_min: f32, x_max: f32, y_min: f32, y_max: f32, path: &Vec<Vec3>) -> Vec<Vec3> {
+    fn trim_path(x_min: f64, x_max: f64, y_min: f64, y_max: f64, path: &Vec<DVec3>) -> Vec<DVec3> {
         let mut trim_path = Vec::new();
         for i in 0..path.len() {
             let (x, y) = (path[i].x, path[i].y);
@@ -22,19 +22,19 @@ mod tests {
                 let (slope_x, slope_y) = (final_x - prev_x, final_y - prev_y);
                 let mut t = 1.0;
                 if final_x < x_min {
-                    t = f32::min((x_min - prev_x) / slope_x, t);
+                    t = f64::min((x_min - prev_x) / slope_x, t);
                 }
                 if final_x > x_max {
-                    t = f32::min((x_max - prev_x) / slope_x, t);
+                    t = f64::min((x_max - prev_x) / slope_x, t);
                 }
                 if final_y < y_min {
-                    t = f32::min((y_min - prev_y) / slope_y, t);
+                    t = f64::min((y_min - prev_y) / slope_y, t);
                 }
                 if final_y > y_max {
-                    t = f32::min((y_max - prev_y) / slope_y, t);
+                    t = f64::min((y_max - prev_y) / slope_y, t);
                 }
                 trim_path.pop();
-                trim_path.push(Vec3::new(prev_x + t * slope_x, prev_y + t * slope_y, 0.0));
+                trim_path.push(DVec3::new(prev_x + t * slope_x, prev_y + t * slope_y, 0.0));
                 break;
             } else {
                 trim_path.push(path[i]);
@@ -46,7 +46,8 @@ mod tests {
     fn plot_trajectories(
         folder: &str,
         field: &Field,
-        lines: &Vec<Vec<Vec3>>,
+        lines: &Vec<Vec<DVec3>>,
+        is_hit: &Vec<bool>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let path = format!("output/{}/test_{}_paths.png", folder, field.magnitude);
         let mut root = BitMapBackend::new(&path, (2000, 2000)).into_drawing_area();
@@ -63,7 +64,7 @@ mod tests {
         let start = Vec3::new(5.0, 0.0, 0.0);
 
         chart.draw_series(PointSeries::of_element(
-            vec![(field.center.x, field.center.y)],
+            vec![(field.center.x as f32, field.center.y as f32)],
             5,
             &BLACK,
             &|c, s: u32, st| {
@@ -78,7 +79,13 @@ mod tests {
             let path = &lines[i];
             let trim = trim_path(0.0, 10.0, 0.0, 10.0, path);
             let mut color = RGBColor((255.0 * r) as u8, (255.0 * (1.0 - r)) as u8, 0);
-            chart.draw_series(LineSeries::new(trim.iter().map(|v| (v.x, v.y)), &color))?;
+            if is_hit[i] {
+                color = BLACK;
+            }
+            chart.draw_series(LineSeries::new(
+                trim.iter().map(|v| (v.x as f32, v.y as f32)),
+                &color,
+            ))?;
         }
         // And if we want SVG backend
         // let backend = SVGBackend::new("output.svg", (800, 600));
@@ -93,7 +100,7 @@ mod tests {
         while (left - right).length() > max_width {
             let center = 0.5 * (left + right);
             let ray = Ray::new(start, (center - start).normalize());
-            if cast_ray_steps(&ray, field).is_none() {
+            if cast_ray_steps(&ray, field, 100.0).is_none() {
                 // hit the black hole
                 right = center;
             } else {
@@ -107,16 +114,40 @@ mod tests {
     fn plot_all_trajectories() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
         for scale in 0..=10 {
-            let field = Field::new(Vec3::new(5.0, 5.0, 0.0), (scale as f32) / 10.0);
-            let mut lines: Vec<Vec<Vec3>> = Vec::new();
-            for i in 0..100 {
-                let r = (i as f32) / 99.0;
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), (scale as f64) / 10.0);
+            let mut lines: Vec<Vec<DVec3>> = Vec::new();
+            let num_lines = 100;
+            let mut is_hit: Vec<bool> = Vec::new();
+            for i in 0..num_lines {
+                let r = (i as f32) / ((num_lines as f32) - 1.0);
                 let end = Vec3::new(10.0 * r, 10.0, 0.0);
                 let ray = Ray::new(start, end - start);
-                let path = cast_ray_steps_debug(&ray, &field);
+                is_hit.push(cast_ray_steps(&ray, &field, 40.0).is_none());
+                let path = cast_ray_steps_debug(&ray, &field, 40.0);
                 lines.push(path);
             }
-            plot_trajectories("all", &field, &lines)?;
+            plot_trajectories("all", &field, &lines, &is_hit)?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn plot_all_large_trajectories() -> Result<(), Box<dyn std::error::Error>> {
+        let start = Vec3::new(5.0, 0.0, 0.0);
+        for scale in 2..=10 {
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), (scale as f64));
+            let mut lines: Vec<Vec<DVec3>> = Vec::new();
+            let num_lines = 100;
+            let mut is_hit: Vec<bool> = Vec::new();
+            for i in 0..num_lines {
+                let r = (i as f32) / ((num_lines as f32) - 1.0);
+                let end = Vec3::new(10.0 * r, 10.0, 0.0);
+                let ray = Ray::new(start, end - start);
+                is_hit.push(cast_ray_steps(&ray, &field, 40.0).is_none());
+                let path = cast_ray_steps_debug(&ray, &field, 40.0);
+                lines.push(path);
+            }
+            plot_trajectories("all", &field, &lines, &is_hit)?;
         }
         Ok(())
     }
@@ -124,18 +155,24 @@ mod tests {
     #[test]
     fn plot_near_trajectory() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
-        let field = Field::new(Vec3::new(5.0, 5.0, 0.0), 0.1);
-        let (left, right) = find_near_miss(&field, 0.0001);
-        let mut lines: Vec<Vec<Vec3>> = Vec::new();
-        for i in 0..100 {
-            let r = (i as f32) / 99.0;
-            let end = left - (1.0 - r) * Vec3::X * 0.1;
+        for scale in 1..=10 {
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), (scale as f64) / 10.0);
+            let (left, _) = find_near_miss(&field, 0.000001);
+            let mut lines: Vec<Vec<DVec3>> = Vec::new();
+            let num_lines = 30;
+            let mut is_hit: Vec<bool> = Vec::new();
 
-            let ray = Ray::new(start, end - start);
-            let path = cast_ray_steps_debug(&ray, &field);
-            lines.push(path);
+            for i in 0..num_lines {
+                let r = (i as f32) / ((num_lines as f32) - 1.0);
+                let end = left - 0.1 * (1.0 - r) * Vec3::X;
+
+                let ray = Ray::new(start, end - start);
+                is_hit.push(cast_ray_steps(&ray, &field, 50.0).is_none());
+                let path = cast_ray_steps_debug(&ray, &field, 50.0);
+                lines.push(path);
+            }
+            plot_trajectories("near", &field, &lines, &is_hit)?;
         }
-        plot_trajectories("near", &field, &lines)?;
 
         Ok(())
     }

@@ -1,4 +1,4 @@
-use geometry::{Ray, Vec3};
+use geometry::{DVec3, Ray, Vec3};
 use particle::Particle;
 
 mod field;
@@ -27,30 +27,8 @@ fn step_particle(particle: &mut Particle, field: &Field) {
     particle.v += (1.0 / 6.0) * (l_0 + 2.0 * l_1 + 2.0 * l_2 + l_3);
 }
 
-fn step_size(particle: &mut Particle, field: &Field) -> f32 {
-    return 0.001;
-    let diff = particle.p - field.center;
-    let r = diff.length();
-    let is_facing = particle.v.normalize().dot(diff) >= 0.0;
-
-    let hit_dist = 0.15;
-
-    if r > hit_dist {
-        if is_facing {
-            return 0.1 * r * r;
-        } else {
-            return 0.1 * (r - hit_dist) + 0.0001;
-        }
-    } else {
-        return 0.00001;
-    }
-}
-
-fn runge_kutta(h: f32, t_n: f32, y_n: Vec3, k1: Vec3, k2: Vec3, k3: Vec3, k4: Vec3) -> (f32, Vec3) {
-    (
-        t_n + h,
-        y_n + (1.0 / 6.0) * h * (k1 + 2.0 * k2 + 2.0 * k3 + k4),
-    )
+fn step_size(particle: &mut Particle, field: &Field) -> f64 {
+    return 0.0001;
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
@@ -58,27 +36,36 @@ pub fn hit(particle: &Particle, field: &Field) -> bool {
 }
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
-pub fn cast_ray_steps(ray: &Ray, field: &Field) -> Option<Vec3> {
+pub fn cast_ray_steps(ray: &Ray, field: &Field, max_distance: f64) -> Option<DVec3> {
     let mut particle = Particle::new(ray.pos, ray.dir);
-    while (particle.p - field.center).length() < 10.0 {
+    let mut distance = 0.0;
+    while (particle.p - field.center).length() < 10.0 && distance < max_distance {
         if hit(&particle, field) {
             return None;
         }
+        let prev = particle.p;
         step_particle(&mut particle, field);
+        distance += (particle.p - prev).length();
     }
+    if distance >= max_distance {
+        return None;
+    }
+
     Some(particle.v)
 }
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
-pub fn cast_ray_steps_debug(ray: &Ray, field: &Field) -> Vec<Vec3> {
+pub fn cast_ray_steps_debug(ray: &Ray, field: &Field, max_distance: f64) -> Vec<DVec3> {
     let mut particle = Particle::new(ray.pos, ray.dir);
     let mut steps = Vec::new();
-    while (particle.p - field.center).length() < 10.0 {
+    let mut distance = 0.0;
+    while (particle.p - field.center).length() < 10.0 && distance < max_distance {
         steps.push(particle.p);
         if hit(&particle, field) {
             return steps;
         }
         step_particle(&mut particle, field);
+        distance += (particle.p - steps[steps.len() - 1]).length();
     }
     steps.push(particle.p);
 
