@@ -33,13 +33,13 @@ mod tests {
             let stars = Stars::new(background);
 
             let black_hole_pos = 5.0 * DVec3::Z;
-            let black_hole_magnitude = 0.0;
+            let radius = 0.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, black_hole_magnitude);
+            let black_hole = BlackHole::new(black_hole_pos, radius);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
-                &format!("uv_field_{}_size_{}", black_hole_magnitude, dim),
+                &format!("uv_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
                 camera.get_dimensions(),
             );
@@ -60,13 +60,13 @@ mod tests {
             let stars = Stars::new(background);
 
             let black_hole_pos = 5.0 * DVec3::Z;
-            let black_hole_magnitude = 1.0;
+            let radius = 1.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, black_hole_magnitude);
+            let black_hole = BlackHole::new(black_hole_pos, radius);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
-                &format!("uv_field_{}_size_{}", black_hole_magnitude, dim),
+                &format!("uv_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
                 camera.get_dimensions(),
             );
@@ -88,13 +88,13 @@ mod tests {
             let stars = Stars::new(background);
 
             let black_hole_pos = 5.0 * DVec3::Z;
-            let black_hole_magnitude = 0.0;
+            let radius = 0.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, black_hole_magnitude);
+            let black_hole = BlackHole::new(black_hole_pos, radius);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
-                &format!("black_hole_field_{}_size_{}", black_hole_magnitude, dim),
+                &format!("black_hole_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
                 camera.get_dimensions(),
             );
@@ -116,13 +116,13 @@ mod tests {
             let stars = Stars::new(background);
 
             let black_hole_pos = 5.0 * DVec3::Z;
-            let black_hole_magnitude = 1.0;
+            let radius = 1.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, black_hole_magnitude);
+            let black_hole = BlackHole::new(black_hole_pos, radius);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
-                &format!("black_hole_field_{}_size_{}", black_hole_magnitude, dim),
+                &format!("black_hole_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
                 camera.get_dimensions(),
             );

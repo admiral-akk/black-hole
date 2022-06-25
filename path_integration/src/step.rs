@@ -1,5 +1,7 @@
 use crate::{particle::Particle, Field};
 
+const MIN_STEP: f64 = 0.001;
+
 pub fn step_particle(particle: &mut Particle, field: &Field) {
     let h = step_size(particle, field);
 
@@ -30,15 +32,16 @@ fn step_size(particle: &mut Particle, field: &Field) -> f64 {
     let m_4 = 4.0 * field.m;
     if r > m_4 {
         if diff.dot(particle.v) > 0.0 {
-            return 0.1 * (r - m_4) + 0.001 / v;
+            return (0.1 * (r - m_4) + MIN_STEP) / v;
         } else {
             return 0.1 * r * r / v;
         }
     } else {
-        return 0.001 / v;
+        return MIN_STEP / v;
     }
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
-    (particle.p - field.center).length() < field.schwarzchild_radius()
+    // We add some error so that the geodesics can get very close to the black hole.
+    (particle.p - field.center).length() < 0.5 * field.schwarzchild_radius()
 }

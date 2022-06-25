@@ -1,7 +1,5 @@
 use geometry::DVec3;
 
-use crate::particle;
-
 pub struct Field {
     pub center: DVec3,
     pub magnitude: f64,
@@ -9,21 +7,13 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn new_rad(center: DVec3, radius: f64, camera_pos: &DVec3) -> Self {
+    pub fn new(center: DVec3, radius: f64, camera_pos: &DVec3) -> Self {
         let r_0 = (center - *camera_pos).length();
         let magnitude = 2.0 / ((2.0 / radius.powi(4)) - (1.0 / r_0.powi(4)));
         Self {
             center,
             magnitude,
             m: 0.5 * radius,
-        }
-    }
-
-    pub fn new(center: DVec3, magnitude: f64) -> Self {
-        Self {
-            center,
-            magnitude,
-            m: 0.05,
         }
     }
 

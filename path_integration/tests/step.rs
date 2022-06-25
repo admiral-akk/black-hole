@@ -49,7 +49,10 @@ mod tests {
         let root = BitMapBackend::new(&file_path, (2000, 2000)).into_drawing_area();
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
-            .caption(format!("f={}", field.magnitude), ("Arial", 50).into_font())
+            .caption(
+                format!("schwarzchild radius={}", field.schwarzchild_radius()),
+                ("Arial", 50).into_font(),
+            )
             .margin(5 as u32)
             .x_label_area_size(30 as u32)
             .y_label_area_size(30 as u32)
@@ -110,7 +113,11 @@ mod tests {
     fn plot_all_trajectories() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
         for scale in 0..=10 {
-            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), (scale as f64) / 10.0);
+            let field = Field::new(
+                DVec3::new(5.0, 5.0, 0.0),
+                (scale as f64) / 10.0,
+                &DVec3::ZERO,
+            );
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 100;
             let mut is_hit: Vec<bool> = Vec::new();
@@ -132,7 +139,7 @@ mod tests {
     fn plot_all_large_trajectories() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
         for scale in 2..=10 {
-            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), scale as f64);
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), scale as f64, &DVec3::ZERO);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 100;
             let mut is_hit: Vec<bool> = Vec::new();
@@ -154,7 +161,11 @@ mod tests {
     fn plot_near_trajectory() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
         for scale in 1..=10 {
-            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), (scale as f64) / 10.0);
+            let field = Field::new(
+                DVec3::new(5.0, 5.0, 0.0),
+                (scale as f64) / 10.0,
+                &DVec3::ZERO,
+            );
             let (left, _) = find_near_miss(&field, 0.000001);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 30;
@@ -182,7 +193,7 @@ mod tests {
         let start2 = 5.0 * DVec3::X;
         for radius in 1..=10 {
             let r = (radius as f64) / 10.0;
-            let field = Field::new_rad(DVec3::new(5.0, 5.0, 0.0), r, &start2);
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), r, &start2);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 1000;
             let mut is_hit: Vec<bool> = Vec::new();
@@ -195,6 +206,32 @@ mod tests {
                 lines.push(path);
             }
             let path = format!("output/radius/test_rad_{}_paths.png", r);
+            plot_trajectories(&path, &field, &lines, &is_hit)?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn plot_fixed_radius_near_paths() -> Result<(), Box<dyn std::error::Error>> {
+        let start = Vec3::new(5.0, 0.0, 0.0);
+        let start2 = 5.0 * DVec3::X;
+        for radius in 1..=10 {
+            let r = (radius as f64) / 10.0;
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), r, &start2);
+            let (left, _) = find_near_miss(&field, 0.000001);
+            let mut lines: Vec<Vec<DVec3>> = Vec::new();
+            let num_lines = 1000;
+            let mut is_hit: Vec<bool> = Vec::new();
+
+            for i in 0..num_lines {
+                let r = (i as f32) / ((num_lines as f32) - 1.0);
+                let end = left - 0.1 * (1.0 - r) * Vec3::X;
+                let ray = Ray::new(start, end - start);
+                is_hit.push(cast_ray_steps(&ray, &field, 40.0).is_none());
+                let path = cast_ray_steps_debug(&ray, &field, 40.0);
+                lines.push(path);
+            }
+            let path = format!("output/near/test_rad_{}_paths.png", r);
             plot_trajectories(&path, &field, &lines, &is_hit)?;
         }
         Ok(())

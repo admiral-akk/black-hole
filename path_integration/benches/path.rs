@@ -3,32 +3,52 @@ use geometry::{DVec3, Ray, Vec3};
 use path_integration::{cast_ray_steps, Field};
 
 // A full 10x10 image
-fn cast_ray_steps_repeated(ray: &Ray, field: &Field) {
-    for i in 0..100 {
+fn cast_ray_steps_repeated(ray: &Ray, field: &Field, pixel_count: u32) {
+    for i in 0..pixel_count {
         black_box(cast_ray_steps(&ray, &field, 40.0));
     }
 }
 
 pub fn path_benchmark(c: &mut Criterion) {
-    c.bench_function("black hole r=0.0", |b| {
+    c.bench_function("black hole r=0.0, 10x10 px", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::Z);
-        let field = Field::new(5.0 * DVec3::Z, 0.0);
-        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
+        let field = Field::new(5.0 * DVec3::Z, 0.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 100)));
     });
-    c.bench_function("black hole r=1.0, miss", |b| {
+    c.bench_function("black hole r=1.0, miss, 10x10 px", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::X);
-        let field = Field::new(5.0 * DVec3::Z, 0.0);
-        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
+        let field = Field::new(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 100)));
     });
-    c.bench_function("black hole r=1.0, near", |b| {
+    c.bench_function("black hole r=1.0, near, 10x10 px", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::Z + Vec3::X);
-        let field = Field::new(5.0 * DVec3::Z, 0.0);
-        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
+        let field = Field::new(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 100)));
     });
-    c.bench_function("black hole r=1.0, hit", |b| {
+    c.bench_function("black hole r=1.0, hit, 10x10 px", |b| {
         let ray = Ray::new(Vec3::ZERO, Vec3::Z);
-        let field = Field::new_rad(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
-        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field)));
+        let field = Field::new(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 100)));
+    });
+    c.bench_function("black hole r=0.0, 100x100 px", |b| {
+        let ray = Ray::new(Vec3::ZERO, Vec3::Z);
+        let field = Field::new(5.0 * DVec3::Z, 0.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 10000)));
+    });
+    c.bench_function("black hole r=1.0, miss, 100x100 px", |b| {
+        let ray = Ray::new(Vec3::ZERO, Vec3::X);
+        let field = Field::new(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 10000)));
+    });
+    c.bench_function("black hole r=1.0, near, 100x100 px", |b| {
+        let ray = Ray::new(Vec3::ZERO, Vec3::Z + Vec3::X);
+        let field = Field::new(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 10000)));
+    });
+    c.bench_function("black hole r=1.0, hit, 100x100 px", |b| {
+        let ray = Ray::new(Vec3::ZERO, Vec3::Z);
+        let field = Field::new(5.0 * DVec3::Z, 1.0, &DVec3::ZERO);
+        b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 10000)));
     });
 }
 

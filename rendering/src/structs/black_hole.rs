@@ -9,7 +9,7 @@ pub struct BlackHole {
 
 impl BlackHole {
     pub fn new(pos: DVec3, radius: f64) -> Self {
-        let field = Field::new(pos, radius);
+        let field = Field::new(pos, radius, &DVec3::ZERO);
         Self { field }
     }
 
