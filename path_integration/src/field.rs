@@ -16,6 +16,8 @@ impl Field {
         self.magnitude * diff.normalize() / diff.length().powi(5)
     }
 
+    // Since we're relying on a mechanical (non-physical) interpretation of the pertubation of a black hole, we
+    // have to numerically calculate the radius.
     pub fn calculate_radius(&self) -> f64 {
         0.0
     }
