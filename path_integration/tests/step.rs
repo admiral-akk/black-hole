@@ -5,11 +5,8 @@ mod tests {
     use path_integration::{cast_ray_steps, cast_ray_steps_debug, Field};
     use plotters::prelude::*;
     use plotters::{
-        prelude::{
-            BitMapBackend, ChartBuilder, Circle, DrawingBackend, EmptyElement, IntoDrawingArea,
-            LineSeries, PathElement,
-        },
-        style::{Color, IntoFont, ShapeStyle, BLACK, GREEN, RED, WHITE},
+        prelude::{BitMapBackend, ChartBuilder, Circle, EmptyElement, IntoDrawingArea, LineSeries},
+        style::{IntoFont, BLACK, WHITE},
     };
 
     fn trim_path(x_min: f64, x_max: f64, y_min: f64, y_max: f64, path: &Vec<DVec3>) -> Vec<DVec3> {
@@ -50,7 +47,7 @@ mod tests {
         is_hit: &Vec<bool>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let path = format!("output/{}/test_{}_paths.png", folder, field.magnitude);
-        let mut root = BitMapBackend::new(&path, (2000, 2000)).into_drawing_area();
+        let root = BitMapBackend::new(&path, (2000, 2000)).into_drawing_area();
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
             .caption(format!("f={}", field.magnitude), ("Arial", 50).into_font())
@@ -61,7 +58,7 @@ mod tests {
 
         chart.configure_mesh().draw()?;
 
-        let start = Vec3::new(5.0, 0.0, 0.0);
+        let _start = Vec3::new(5.0, 0.0, 0.0);
 
         chart.draw_series(PointSeries::of_element(
             vec![(field.center.x as f32, field.center.y as f32)],
@@ -135,7 +132,7 @@ mod tests {
     fn plot_all_large_trajectories() -> Result<(), Box<dyn std::error::Error>> {
         let start = Vec3::new(5.0, 0.0, 0.0);
         for scale in 2..=10 {
-            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), (scale as f64));
+            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), scale as f64);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 100;
             let mut is_hit: Vec<bool> = Vec::new();

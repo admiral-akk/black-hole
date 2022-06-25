@@ -1,4 +1,4 @@
-use geometry::{DVec3, Ray, Vec3};
+use geometry::{DVec3, Ray};
 use particle::Particle;
 
 mod field;
@@ -27,8 +27,8 @@ fn step_particle(particle: &mut Particle, field: &Field) {
     particle.v += (1.0 / 6.0) * (l_0 + 2.0 * l_1 + 2.0 * l_2 + l_3);
 }
 
-fn step_size(particle: &mut Particle, field: &Field) -> f64 {
-    return 0.0001;
+fn step_size(_particle: &mut Particle, _field: &Field) -> f64 {
+    0.0001
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
