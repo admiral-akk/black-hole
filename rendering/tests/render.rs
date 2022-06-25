@@ -48,13 +48,13 @@ mod tests {
     }
 
     #[test]
-    fn no_black_hole() -> Result<(), Box<dyn std::error::Error>> {
+    fn black_hole_field_0() -> Result<(), Box<dyn std::error::Error>> {
         for size_pow in 1..=3 {
             let dim = 10_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;
-            let vertical_fov = 120.0;
+            let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
@@ -76,13 +76,13 @@ mod tests {
     }
 
     #[test]
-    fn no_small_hole() -> Result<(), Box<dyn std::error::Error>> {
+    fn black_hole_field_1() -> Result<(), Box<dyn std::error::Error>> {
         for size_pow in 1..=3 {
             let dim = 10_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;
-            let vertical_fov = 120.0;
+            let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
