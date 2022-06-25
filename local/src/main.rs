@@ -1,12 +1,13 @@
 use std::env;
 use std::path::Path;
 
-use geometry::Vec3;
+use geometry::{DVec3, Vec3};
 
 use rendering::{
     init,
+    render::render,
     renderer::renderer::{RenderConfig, RenderType},
-    structs::dimensions::Dimensions,
+    structs::{black_hole::BlackHole, camera::Camera, dimensions::Dimensions, stars::Stars},
 };
 
 fn main() {
@@ -14,18 +15,29 @@ fn main() {
     let mut dimensions = Dimensions::new(100, 100);
 
     set_up(&mut file_name, &mut dimensions);
-    let img = image::open("starmap_2020_4k_gal.exr").unwrap();
 
-    let config = RenderConfig {
-        dimensions,
-        render_type: RenderType::BlackSphere {
-            background: img,
-            vertical_fov_degrees: 180.0,
-            pos: Vec3::new(0.0, 0.0, 10.0),
-            rad: 9.0,
-        },
-    };
-    render_image(file_name, config);
+    let pos = DVec3::ZERO;
+    let dir = DVec3::Z;
+    let vertical_fov = 50.0;
+
+    let background = image::open("starmap_2020_4k_gal.exr").unwrap();
+
+    let black_hole_pos = 5.0 * DVec3::Z;
+    let radius = 1.0;
+
+    let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+    let black_hole = BlackHole::new(black_hole_pos, radius);
+    let stars = Stars::new(background);
+    render(&mut camera, &stars, &black_hole);
+
+    image::save_buffer(
+        &Path::new(&format!("output/{}", file_name)),
+        camera.get_colors(),
+        camera.get_dimensions().width as u32,
+        camera.get_dimensions().height as u32,
+        image::ColorType::Rgba8,
+    )
+    .unwrap();
 }
 
 fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
@@ -38,18 +50,4 @@ fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
         dimensions.width = str::parse(&args[2]).unwrap();
         dimensions.height = str::parse(&args[3]).unwrap();
     }
-}
-
-fn render_image(file_name: String, config: RenderConfig) {
-    let renderer = init();
-    let mut buffer: Vec<u8> = config.dimensions.get_buffer();
-    renderer.render(&mut buffer, &config);
-    image::save_buffer(
-        &Path::new(&format!("output/{}", file_name)),
-        &buffer,
-        config.dimensions.width as u32,
-        config.dimensions.height as u32,
-        image::ColorType::Rgba8,
-    )
-    .unwrap();
 }

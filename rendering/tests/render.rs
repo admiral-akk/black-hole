@@ -22,7 +22,7 @@ mod tests {
     #[test]
     fn uv_field_0() -> Result<(), Box<dyn std::error::Error>> {
         for size_pow in 1..=3 {
-            let dim = 10_usize.pow(size_pow);
+            let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;
@@ -48,8 +48,8 @@ mod tests {
     }
     #[test]
     fn uv_field_1() -> Result<(), Box<dyn std::error::Error>> {
-        for size_pow in 1..=3 {
-            let dim = 10_usize.pow(size_pow);
+        for size_pow in 1..=4 {
+            let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn black_hole_field_0() -> Result<(), Box<dyn std::error::Error>> {
         for size_pow in 1..=3 {
-            let dim = 10_usize.pow(size_pow);
+            let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;
@@ -104,8 +104,8 @@ mod tests {
 
     #[test]
     fn black_hole_field_1() -> Result<(), Box<dyn std::error::Error>> {
-        for size_pow in 1..=3 {
-            let dim = 10_usize.pow(size_pow);
+        for size_pow in 1..=4 {
+            let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;

@@ -1,6 +1,8 @@
 /target
+/perf
 .vscode
 *.jpg
 *.tif
 *.exr
 *.png
+perf.data*
