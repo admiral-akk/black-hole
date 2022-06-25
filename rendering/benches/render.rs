@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use geometry::{DVec3, Ray};
-use path_integration::{cast_ray_steps, Field};
+use geometry::{DVec3};
+
 use rendering::{
     render::render,
     structs::{black_hole::BlackHole, camera::Camera, dimensions::Dimensions, stars::Stars},

@@ -18,8 +18,8 @@ impl Dimensions {
     }
 
     pub fn to_xy(&self, index: usize) -> (usize, usize) {
-        let x = index % self.width;
-        let y = index / self.width;
+        let _x = index % self.width;
+        let _y = index / self.width;
         (index % self.width, self.height - 1 - index / self.width)
     }
 

@@ -1,4 +1,4 @@
-use geometry::{DVec3, Ray, Vec3};
+use geometry::{DVec3, Ray};
 
 use crate::Field;
 

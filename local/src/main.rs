@@ -1,12 +1,10 @@
 use std::env;
 use std::path::Path;
 
-use geometry::{DVec3, Vec3};
+use geometry::{DVec3};
 
 use rendering::{
-    init,
     render::render,
-    renderer::renderer::{RenderConfig, RenderType},
     structs::{black_hole::BlackHole, camera::Camera, dimensions::Dimensions, stars::Stars},
 };
 
