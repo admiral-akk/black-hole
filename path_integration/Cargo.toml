@@ -12,3 +12,8 @@ geometry = { path = "../geometry" }
 
 [dev-dependencies]
 plotters = {version= "0.3.1", features = ['bitmap_encoder']}
+criterion = "0.3"
+
+[[bench]]
+name = "path"
+harness = false

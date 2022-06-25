@@ -41,13 +41,12 @@ mod tests {
     }
 
     fn plot_trajectories(
-        folder: &str,
+        file_path: &str,
         field: &Field,
         lines: &Vec<Vec<DVec3>>,
         is_hit: &Vec<bool>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let path = format!("output/{}/test_{}_paths.png", folder, field.magnitude);
-        let root = BitMapBackend::new(&path, (2000, 2000)).into_drawing_area();
+        let root = BitMapBackend::new(&file_path, (2000, 2000)).into_drawing_area();
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
             .caption(format!("f={}", field.magnitude), ("Arial", 50).into_font())
@@ -123,7 +122,8 @@ mod tests {
                 let path = cast_ray_steps_debug(&ray, &field, 40.0);
                 lines.push(path);
             }
-            plot_trajectories("all", &field, &lines, &is_hit)?;
+            let path = format!("output/all/test_{}_paths.png", field.magnitude);
+            plot_trajectories(&path, &field, &lines, &is_hit)?;
         }
         Ok(())
     }
@@ -144,7 +144,8 @@ mod tests {
                 let path = cast_ray_steps_debug(&ray, &field, 40.0);
                 lines.push(path);
             }
-            plot_trajectories("all", &field, &lines, &is_hit)?;
+            let path = format!("output/all/test_{}_paths.png", field.magnitude);
+            plot_trajectories(&path, &field, &lines, &is_hit)?;
         }
         Ok(())
     }
@@ -168,9 +169,34 @@ mod tests {
                 let path = cast_ray_steps_debug(&ray, &field, 50.0);
                 lines.push(path);
             }
-            plot_trajectories("near", &field, &lines, &is_hit)?;
+            let path = format!("output/near/test_{}_paths.png", field.magnitude);
+            plot_trajectories(&path, &field, &lines, &is_hit)?;
         }
 
+        Ok(())
+    }
+
+    #[test]
+    fn plot_fixed_radius() -> Result<(), Box<dyn std::error::Error>> {
+        let start = Vec3::new(5.0, 0.0, 0.0);
+        let start2 = 5.0 * DVec3::X;
+        for radius in 1..=10 {
+            let r = (radius as f64) / 10.0;
+            let field = Field::new_rad(DVec3::new(5.0, 5.0, 0.0), r, &start2);
+            let mut lines: Vec<Vec<DVec3>> = Vec::new();
+            let num_lines = 100;
+            let mut is_hit: Vec<bool> = Vec::new();
+            for i in 0..num_lines {
+                let r = (i as f32) / ((num_lines as f32) - 1.0);
+                let end = Vec3::new(10.0 * r, 10.0, 0.0);
+                let ray = Ray::new(start, end - start);
+                is_hit.push(cast_ray_steps(&ray, &field, 40.0).is_none());
+                let path = cast_ray_steps_debug(&ray, &field, 40.0);
+                lines.push(path);
+            }
+            let path = format!("output/radius/test_rad_{}_paths.png", r);
+            plot_trajectories(&path, &field, &lines, &is_hit)?;
+        }
         Ok(())
     }
 }

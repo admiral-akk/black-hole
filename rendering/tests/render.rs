@@ -20,13 +20,13 @@ mod tests {
         .unwrap();
     }
     #[test]
-    fn uv() -> Result<(), Box<dyn std::error::Error>> {
+    fn uv_field_0() -> Result<(), Box<dyn std::error::Error>> {
         for size_pow in 1..=3 {
             let dim = 10_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
             let dir = DVec3::Z;
-            let vertical_fov = 120.0;
+            let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
@@ -39,7 +39,34 @@ mod tests {
             render(&mut camera, &stars, &black_hole);
 
             write_image(
-                &format!("uv_size_{}", dim),
+                &format!("uv_field_{}_size_{}", black_hole_magnitude, dim),
+                camera.get_colors(),
+                camera.get_dimensions(),
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn uv_field_1() -> Result<(), Box<dyn std::error::Error>> {
+        for size_pow in 1..=3 {
+            let dim = 10_usize.pow(size_pow);
+            let dimensions = Dimensions::new(dim, dim);
+            let pos = DVec3::ZERO;
+            let dir = DVec3::Z;
+            let vertical_fov = 50.0;
+            let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+
+            let background = image::open("uv.png").unwrap();
+            let stars = Stars::new(background);
+
+            let black_hole_pos = 5.0 * DVec3::Z;
+            let black_hole_magnitude = 1.0;
+
+            let black_hole = BlackHole::new(black_hole_pos, black_hole_magnitude);
+            render(&mut camera, &stars, &black_hole);
+
+            write_image(
+                &format!("uv_field_{}_size_{}", black_hole_magnitude, dim),
                 camera.get_colors(),
                 camera.get_dimensions(),
             );
