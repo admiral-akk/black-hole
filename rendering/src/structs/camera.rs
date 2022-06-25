@@ -49,10 +49,18 @@ impl Camera {
     }
 
     pub fn write_color(&mut self, index: usize, color: &[u8; 4]) {
-        let c: &mut [u8] = &mut self.out[index..(index + 4)];
+        let c: &mut [u8] = &mut self.out[(4 * index)..(4 * index + 4)];
         c[0] = color[0];
         c[1] = color[1];
         c[2] = color[2];
         c[3] = color[3];
+    }
+
+    pub fn get_colors(&self) -> &[u8] {
+        &self.out
+    }
+
+    pub fn get_dimensions(&self) -> &Dimensions {
+        &self.dimensions
     }
 }

@@ -28,7 +28,7 @@ fn step_particle(particle: &mut Particle, field: &Field) {
 }
 
 fn step_size(_particle: &mut Particle, _field: &Field) -> f64 {
-    0.0001
+    10.0
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {

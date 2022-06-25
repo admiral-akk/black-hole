@@ -13,6 +13,16 @@ impl Dimensions {
         self.width * (self.height - y - 1) + x
     }
 
+    pub fn size(&self) -> usize {
+        self.height * self.width
+    }
+
+    pub fn to_xy(&self, index: usize) -> (usize, usize) {
+        let x = index % self.width;
+        let y = index / self.width;
+        (index % self.width, self.height - 1 - index / self.width)
+    }
+
     pub fn get_buffer(&self) -> Vec<u8> {
         vec![0; 4 * self.width * self.height]
     }
