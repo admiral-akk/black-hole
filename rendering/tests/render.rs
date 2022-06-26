@@ -109,4 +109,54 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn black_hole_field_1_below() -> Result<(), Box<dyn std::error::Error>> {
+        for size_pow in 1..=4 {
+            let dim = 50 * 2_usize.pow(size_pow);
+            let dimensions = Dimensions::new(dim, dim);
+            let pos = -5.0 * DVec3::Y;
+            let vertical_fov = 50.0;
+
+            let observer = Observer::new(pos, DVec3::Z, vertical_fov);
+            let mut image_data = ImageData::new(dimensions.width, dimensions.height);
+            let background = image::open("starmap_2020_4k_gal.exr").unwrap();
+            let stars = Stars::new(background);
+
+            let radius = 1.0;
+
+            let black_hole =
+                BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("black_hole_field_{}_size_{}_below", radius, dim);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn black_hole_field_1_left() -> Result<(), Box<dyn std::error::Error>> {
+        for size_pow in 1..=4 {
+            let dim = 50 * 2_usize.pow(size_pow);
+            let dimensions = Dimensions::new(dim, dim);
+            let pos = -5.0 * DVec3::X;
+            let vertical_fov = 50.0;
+
+            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let mut image_data = ImageData::new(dimensions.width, dimensions.height);
+            let background = image::open("starmap_2020_4k_gal.exr").unwrap();
+            let stars = Stars::new(background);
+
+            let radius = 1.0;
+
+            let black_hole =
+                BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("black_hole_field_{}_size_{}_left", radius, dim);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
 }
