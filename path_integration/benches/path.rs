@@ -21,7 +21,6 @@ pub fn path_benchmark(c: &mut Criterion) {
         b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 100)));
     });
     c.bench_function("black hole r=1.0, near, 10x10 px", |b| {
-        let ray = Ray::new(-5.0 * DVec3::Z, DVec3::X + DVec3::Z);
         let ray = Ray::new(DVec3::ZERO, DVec3::Z + DVec3::X);
         let field = Field::new(1.0, &ray.pos);
         b.iter(|| black_box(cast_ray_steps_repeated(&ray, &field, 100)));
