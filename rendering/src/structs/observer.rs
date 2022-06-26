@@ -22,10 +22,18 @@ impl Observer {
         }
     }
 
-    pub fn to_ray(&self, view_x: f64, view_y: f64) -> Ray {
+    fn to_ray(&self, view_x: f64, view_y: f64) -> Ray {
         Ray::new(
             self.pos,
             (view_x - 0.5) * self.right + (view_y - 0.5) * self.up + self.forward,
         )
+    }
+
+    pub fn to_rays(&self, view_positions: &Vec<(f64, f64)>) -> Vec<Ray> {
+        let mut rays = Vec::new();
+        for (view_x, view_y) in view_positions {
+            rays.push(self.to_ray(*view_x, *view_y));
+        }
+        rays
     }
 }

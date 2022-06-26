@@ -28,7 +28,7 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, vertical_fov);
+            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
@@ -37,11 +37,11 @@ mod tests {
 
             let black_hole =
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
-            render(&mut camera, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &black_hole);
 
             write_image(
                 &format!("uv_field_{}_size_{}", radius, dim),
-                camera.get_colors(),
+                image_data.get_image(),
                 &dimensions2,
             );
         }
@@ -55,7 +55,7 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, vertical_fov);
+            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
@@ -64,11 +64,11 @@ mod tests {
 
             let black_hole =
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
-            render(&mut camera, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &black_hole);
 
             write_image(
                 &format!("uv_field_{}_size_{}", radius, dim),
-                camera.get_colors(),
+                image_data.get_image(),
                 &dimensions2,
             );
         }
@@ -83,7 +83,7 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, vertical_fov);
+            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
@@ -92,11 +92,11 @@ mod tests {
 
             let black_hole =
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
-            render(&mut camera, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &black_hole);
 
             write_image(
                 &format!("black_hole_field_{}_size_{}", radius, dim),
-                camera.get_colors(),
+                image_data.get_image(),
                 &dimensions2,
             );
         }
@@ -111,8 +111,7 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, vertical_fov);
-
+            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
 
@@ -120,11 +119,11 @@ mod tests {
 
             let black_hole =
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
-            render(&mut camera, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &black_hole);
 
             write_image(
                 &format!("black_hole_field_{}_size_{}", radius, dim),
-                camera.get_colors(),
+                image_data.get_image(),
                 &dimensions2,
             );
         }
