@@ -56,11 +56,9 @@ mod tests {
             .margin(5 as u32)
             .x_label_area_size(30 as u32)
             .y_label_area_size(30 as u32)
-            .build_cartesian_2d(0.0f64..10.0f64, 0.0f64..10.0f64)?;
+            .build_cartesian_2d(-5.0f64..5.0f64, -5.0f64..5.0f64)?;
 
         chart.configure_mesh().draw()?;
-
-        let _start = DVec3::new(5.0, 0.0, 0.0);
 
         chart.draw_series(PointSeries::of_element(
             vec![(field.center.x as f64, field.center.y as f64)],
@@ -76,7 +74,7 @@ mod tests {
         for i in 0..lines.len() {
             let r = (i as f64) / ((lines.len() as f64) - 1.0);
             let path = &lines[i];
-            let trim = trim_path(0.0, 10.0, 0.0, 10.0, path);
+            let trim = trim_path(-5.0, 5.0, -5.0, 5.0, path);
             let mut color = RGBColor((255.0 * r) as u8, (255.0 * (1.0 - r)) as u8, 0);
             if is_hit[i] {
                 color = BLACK;
@@ -92,13 +90,12 @@ mod tests {
         Ok(())
     }
 
-    fn find_near_miss(field: &Field, max_width: f64) -> (DVec3, DVec3) {
-        let start = DVec3::new(5.0, 0.0, 0.0);
-        let mut left = DVec3::new(0.0, 10.0, 0.0);
-        let mut right = DVec3::new(5.0, 10.0, 0.0);
+    fn find_near_miss(camera_pos: &DVec3, field: &Field, max_width: f64) -> (DVec3, DVec3) {
+        let mut left = DVec3::new(-5.0, 5.0, 0.0);
+        let mut right = DVec3::new(5.0, 5.0, 0.0);
         while (left - right).length() > max_width {
             let center = 0.5 * (left + right);
-            let ray = Ray::new(start, (center - start).normalize());
+            let ray = Ray::new(*camera_pos, (center - *camera_pos).normalize());
             if cast_ray_steps(&ray, field, 100.0).is_none() {
                 // hit the black hole
                 right = center;
@@ -111,17 +108,16 @@ mod tests {
 
     #[test]
     fn plot_fixed_radius() -> Result<(), Box<dyn std::error::Error>> {
-        let start = DVec3::new(5.0, 0.0, 0.0);
-        let start2 = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Y;
         for radius in 1..=10 {
             let r = (radius as f64) / 10.0;
-            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), r, &start2);
+            let field = Field::new(DVec3::ZERO, r, &start);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 1000;
             let mut is_hit: Vec<bool> = Vec::new();
             for i in 0..num_lines {
                 let r = (i as f64) / ((num_lines as f64) - 1.0);
-                let end = DVec3::new(10.0 * r, 10.0, 0.0);
+                let end = DVec3::new(10.0 * r - 5.0, 5.0, 0.0);
                 let ray = Ray::new(start, end - start);
                 is_hit.push(cast_ray_steps(&ray, &field, 100.0).is_none());
                 let path = cast_ray_steps_debug(&ray, &field, 40.0);
@@ -135,12 +131,11 @@ mod tests {
 
     #[test]
     fn plot_fixed_radius_near_paths() -> Result<(), Box<dyn std::error::Error>> {
-        let start = DVec3::new(5.0, 0.0, 0.0);
-        let start2 = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Y;
         for radius in 1..=10 {
             let r = (radius as f64) / 10.0;
-            let field = Field::new(DVec3::new(5.0, 5.0, 0.0), r, &start2);
-            let (left, _) = find_near_miss(&field, 0.000001);
+            let field = Field::new(DVec3::ZERO, r, &start);
+            let (left, _) = find_near_miss(&start, &field, 0.000001);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 1000;
             let mut is_hit: Vec<bool> = Vec::new();
