@@ -50,4 +50,8 @@ impl ImageData {
 
         &self.buf
     }
+
+    pub fn get_dimensions(&self) -> (usize, usize) {
+        (self.width, self.height)
+    }
 }

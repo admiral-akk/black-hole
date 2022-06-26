@@ -36,7 +36,7 @@ impl Camera {
         &self.image_data.get_image()
     }
 
-    pub fn get_dimensions(&self) -> &Dimensions {
-        &self.dimensions
+    pub fn get_dimensions(&self) -> (usize, usize) {
+        self.image_data.get_dimensions()
     }
 }

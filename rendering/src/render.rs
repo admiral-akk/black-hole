@@ -10,8 +10,10 @@ pub fn render(camera: &mut Camera, stars: &Stars, black_hole: &BlackHole) {
     // 3. asking the black hole what those rays resolve to
     // 4. recombining the values into a single rgba value.
 
-    for x in 0..camera.get_dimensions().width {
-        for y in 0..camera.get_dimensions().height {
+    let (width, height) = camera.get_dimensions();
+
+    for x in 0..width {
+        for y in 0..height {
             let rays = camera.get_rays(x, y);
             let ray_count = rays.len();
             let mut color = [0, 0, 0, 255];
