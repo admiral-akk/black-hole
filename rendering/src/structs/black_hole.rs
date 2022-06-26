@@ -4,7 +4,7 @@ use path_integration::Field;
 use path_integration::Ray;
 
 pub struct BlackHole {
-    field: Field,
+    pub field: Field,
 }
 
 impl BlackHole {

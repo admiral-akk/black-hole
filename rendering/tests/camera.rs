@@ -28,7 +28,6 @@ mod tests {
         let rays = camera.get_rays();
         for index in 0..rays.len() {
             let (x, y) = camera.get_dimensions().to_xy(index);
-            println!("({},{}): {:?}", x, y, rays[index]);
         }
     }
 

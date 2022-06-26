@@ -1,6 +1,5 @@
-
 use glam::DVec3;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ray {
     pub pos: DVec3,
     pub dir: DVec3,

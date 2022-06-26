@@ -5,8 +5,8 @@ use super::dimensions::Dimensions;
 
 pub struct Camera {
     dimensions: Dimensions,
-    pos: DVec3,
-    vertical_fov: f64,
+    pub pos: DVec3,
+    pub vertical_fov: f64,
     out: Vec<u8>,
 }
 
