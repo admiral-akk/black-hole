@@ -485,13 +485,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21163e139fa306126e6eedaf49ecdb4588f939600f0b1e770f4205ee4b7fa868"
 
 [[package]]
-name = "geometry"
-version = "0.1.0"
-dependencies = [
- "glam",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -647,7 +640,6 @@ checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 name = "local"
 version = "0.1.0"
 dependencies = [
- "geometry",
  "glam",
  "image 0.24.2",
  "rendering",
@@ -793,7 +785,6 @@ name = "path-integration"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "geometry",
  "glam",
  "plotters",
 ]
@@ -1010,7 +1001,6 @@ name = "rendering"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "geometry",
  "glam",
  "image 0.24.2",
  "path-integration",

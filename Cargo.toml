@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "geometry",
     "path_integration",
     "rendering",
     "local",

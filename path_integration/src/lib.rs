@@ -1,6 +1,8 @@
-use geometry::Ray;
 use glam::DVec3;
 use particle::Particle;
+
+mod ray;
+pub use ray::Ray;
 
 mod field;
 mod particle;

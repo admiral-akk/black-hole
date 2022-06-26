@@ -8,7 +8,6 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-geometry = { path = "../geometry" }
 path-integration = { path = "../path_integration" }
 image = "0.24.2"
 glam = "0.21.1"

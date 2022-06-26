@@ -1,8 +1,6 @@
-use geometry::Ray;
-
 use glam::DVec3;
 
-use crate::Field;
+use crate::{Field, Ray};
 
 pub struct Particle {
     pub p: DVec3,

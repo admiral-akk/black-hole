@@ -1,7 +1,7 @@
-use geometry::Ray;
 use glam::DVec3;
 use path_integration::cast_ray_steps;
 use path_integration::Field;
+use path_integration::Ray;
 
 pub struct BlackHole {
     field: Field,

@@ -8,7 +8,6 @@ authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-geometry = { path = "../geometry" }
 glam = "0.21.1"
 
 [dev-dependencies]

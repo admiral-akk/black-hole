@@ -1,8 +1,8 @@
 #[cfg(test)]
 
 mod tests {
-    use geometry::Ray;
     use glam::DVec3;
+    use path_integration::Ray;
 
     #[test]
     fn ray_dir_returns_vec3() {

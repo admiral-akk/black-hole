@@ -1,7 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use geometry::Ray;
 use glam::DVec3;
-use path_integration::{cast_ray_steps, Field};
+use path_integration::{cast_ray_steps, Field, Ray};
 
 // A full 10x10 image
 fn cast_ray_steps_repeated(ray: &Ray, field: &Field, pixel_count: u32) {

@@ -1,9 +1,8 @@
 #[cfg(test)]
 
 mod tests {
-    use geometry::Ray;
     use glam::DVec3;
-    use path_integration::{cast_ray_steps, cast_ray_steps_debug, Field};
+    use path_integration::{cast_ray_steps, cast_ray_steps_debug, Field, Ray};
     use plotters::prelude::*;
     use plotters::{
         prelude::{BitMapBackend, ChartBuilder, Circle, EmptyElement, IntoDrawingArea, LineSeries},

@@ -1,5 +1,5 @@
-use geometry::Ray;
 use glam::DVec3;
+use path_integration::Ray;
 
 use super::dimensions::Dimensions;
 
