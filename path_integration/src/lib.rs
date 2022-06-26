@@ -16,7 +16,7 @@ use step::{hit, step_particle};
 pub fn cast_ray_steps(ray: &Ray, field: &Field, max_distance: f64) -> Option<DVec3> {
     let mut particle = Particle::new(ray, field);
     let mut distance = 0.0;
-    while (particle.p - field.center).length() < 20.0 && distance < max_distance {
+    while particle.p.length() < 20.0 && distance < max_distance {
         if hit(&particle, field) {
             return None;
         }
@@ -36,7 +36,7 @@ pub fn cast_ray_steps_debug(ray: &Ray, field: &Field, max_distance: f64) -> Vec<
     let mut particle = Particle::new(ray, field);
     let mut steps = Vec::new();
     let mut distance = 0.0;
-    while (particle.p - field.center).length() < 10.0 && distance < max_distance {
+    while particle.p.length() < 10.0 && distance < max_distance {
         steps.push(particle.p);
         if hit(&particle, field) {
             return steps;

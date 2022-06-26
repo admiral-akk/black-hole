@@ -61,7 +61,7 @@ mod tests {
         chart.configure_mesh().draw()?;
 
         chart.draw_series(PointSeries::of_element(
-            vec![(field.center.x as f64, field.center.y as f64)],
+            vec![(0.0, 0.0)],
             5,
             &BLACK,
             &|c, s: u32, st| {
