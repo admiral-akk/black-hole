@@ -91,7 +91,7 @@ impl RayCache {
         Self { cache }
     }
 
-    pub fn final_dir(&self, ray: &Ray, field: &Field) -> Option<DVec3> {
+    pub fn final_dir(&self, ray: &Ray) -> Option<DVec3> {
         let x = to_canonical_form(&ray);
         if x > self.cache[self.cache.len() - 1].x {
             return None;
@@ -183,7 +183,7 @@ mod tests {
             let x = (x as f64) / (iterations as f64);
             let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
-            let approx_dir = ray_cache.final_dir(&ray, &field);
+            let approx_dir = ray_cache.final_dir(&ray);
             if approx_dir.is_none() != actual_dir.is_none() {
                 if approx_dir.is_none() {
                     false_negative.push(ray);
@@ -223,7 +223,7 @@ mod tests {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
-            let approx_dir = ray_cache.final_dir(&ray, &field);
+            let approx_dir = ray_cache.final_dir(&ray);
             if approx_dir.is_none() != actual_dir.is_none() {
                 if approx_dir.is_none() {
                     false_negative.push(ray);
@@ -268,7 +268,7 @@ mod tests {
             let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
-                let approximate_dir = ray_cache.final_dir(&ray, &field).unwrap();
+                let approximate_dir = ray_cache.final_dir(&ray).unwrap();
                 let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
                 let error = (approximate_dir - actual_dir).length();
                 if error > max_error {
@@ -305,7 +305,7 @@ mod tests {
             let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
-                let approximate_dir = ray_cache.final_dir(&ray, &field).unwrap();
+                let approximate_dir = ray_cache.final_dir(&ray).unwrap();
                 let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
                 let error = (approximate_dir - actual_dir).length();
                 if error > max_error {
