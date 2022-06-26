@@ -648,6 +648,7 @@ name = "local"
 version = "0.1.0"
 dependencies = [
  "geometry",
+ "glam",
  "image 0.24.2",
  "rendering",
 ]
@@ -793,6 +794,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "geometry",
+ "glam",
  "plotters",
 ]
 
@@ -1009,6 +1011,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "geometry",
+ "glam",
  "image 0.24.2",
  "path-integration",
 ]

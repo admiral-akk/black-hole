@@ -1,4 +1,5 @@
-use geometry::{DVec3, Ray, Vec3};
+use geometry::Ray;
+use glam::DVec3;
 
 use super::dimensions::Dimensions;
 
@@ -6,12 +7,12 @@ pub struct Camera {
     dimensions: Dimensions,
     pos: DVec3,
     dir: DVec3,
-    vertical_fov: f32,
+    vertical_fov: f64,
     out: Vec<u8>,
 }
 
 impl Camera {
-    pub fn new(dimensions: Dimensions, pos: DVec3, dir: DVec3, vertical_fov: f32) -> Self {
+    pub fn new(dimensions: Dimensions, pos: DVec3, dir: DVec3, vertical_fov: f64) -> Self {
         let out = dimensions.get_buffer();
         Self {
             dimensions,
@@ -23,20 +24,17 @@ impl Camera {
     }
 
     fn get_ray(&self, x: usize, y: usize) -> Ray {
-        let y_size = f32::tan(self.vertical_fov * std::f32::consts::PI / 360.0);
+        let y_size = f64::tan(self.vertical_fov * std::f64::consts::PI / 360.0);
         let x_size = y_size * self.dimensions.aspect_ratio();
         let (half_width, half_height) = (
-            (self.dimensions.width / 2) as f32,
-            (self.dimensions.height / 2) as f32,
+            (self.dimensions.width / 2) as f64,
+            (self.dimensions.height / 2) as f64,
         );
-        let view_x = x_size * ((x as f32) - half_width) / half_width;
-        let view_y = y_size * ((y as f32) - half_height) / half_height;
+        let view_x = x_size * ((x as f64) - half_width) / half_width;
+        let view_y = y_size * ((y as f64) - half_height) / half_height;
 
-        let viewport = Vec3::new(view_x, view_y, 1.0);
-        Ray::new(
-            Vec3::new(self.pos.x as f32, self.pos.y as f32, self.pos.z as f32),
-            viewport,
-        )
+        let viewport = DVec3::new(view_x, view_y, 1.0);
+        Ray::new(DVec3::new(self.pos.x, self.pos.y, self.pos.z), viewport)
     }
 
     pub fn get_rays(&self) -> Vec<Ray> {

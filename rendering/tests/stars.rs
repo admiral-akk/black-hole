@@ -2,7 +2,7 @@
 mod tests {
     use std::path::Path;
 
-    use geometry::DVec3;
+    use glam::DVec3;
     use rendering::structs::{dimensions::Dimensions, stars::Stars};
 
     fn write_image(image_name: &str, buffer: &[u8], dimensions: &Dimensions) {

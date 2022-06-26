@@ -1,5 +1,5 @@
-use geometry::DVec3;
 use geometry::Ray;
+use glam::DVec3;
 use path_integration::cast_ray_steps;
 use path_integration::Field;
 

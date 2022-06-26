@@ -1,4 +1,6 @@
-use geometry::{DVec3, Ray};
+use geometry::Ray;
+
+use glam::DVec3;
 
 use crate::Field;
 

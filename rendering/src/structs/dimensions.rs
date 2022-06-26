@@ -27,7 +27,7 @@ impl Dimensions {
         vec![0; 4 * self.width * self.height]
     }
 
-    pub fn aspect_ratio(&self) -> f32 {
-        (self.width as f32) / (self.height as f32)
+    pub fn aspect_ratio(&self) -> f64 {
+        (self.width as f64) / (self.height as f64)
     }
 }

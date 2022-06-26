@@ -1,4 +1,4 @@
-use geometry::DVec3;
+use glam::DVec3;
 use image::{DynamicImage, GenericImageView};
 
 pub struct Stars {

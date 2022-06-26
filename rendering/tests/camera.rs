@@ -2,7 +2,7 @@
 mod tests {
     use std::path::Path;
 
-    use geometry::DVec3;
+    use glam::DVec3;
     use image::GenericImageView;
     use rendering::structs::{camera::Camera, dimensions::Dimensions};
 

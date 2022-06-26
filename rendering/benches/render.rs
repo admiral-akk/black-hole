@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use geometry::DVec3;
+use glam::DVec3;
 
 use rendering::{
     render::render,

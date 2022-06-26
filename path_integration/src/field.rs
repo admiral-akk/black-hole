@@ -1,4 +1,5 @@
-use geometry::DVec3;
+
+use glam::DVec3;
 
 pub struct Field {
     pub center: DVec3,

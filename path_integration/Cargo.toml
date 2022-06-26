@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 geometry = { path = "../geometry" }
+glam = "0.21.1"
 
 [dev-dependencies]
 plotters = {version= "0.3.1", features = ['bitmap_encoder']}

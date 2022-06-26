@@ -1,7 +1,7 @@
 use std::env;
 use std::path::Path;
 
-use geometry::DVec3;
+use glam::DVec3;
 
 use image::io::Reader;
 use rendering::{

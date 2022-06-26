@@ -1,13 +1,13 @@
-use crate::Vector3;
 
+use glam::DVec3;
 #[derive(Debug)]
 pub struct Ray {
-    pub pos: Vector3,
-    pub dir: Vector3,
+    pub pos: DVec3,
+    pub dir: DVec3,
 }
 
 impl Ray {
-    pub fn new(pos: Vector3, dir: Vector3) -> Self {
+    pub fn new(pos: DVec3, dir: DVec3) -> Self {
         Self {
             pos,
             dir: dir.normalize(),
