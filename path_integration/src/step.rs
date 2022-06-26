@@ -1,6 +1,6 @@
 use crate::{particle::Particle, Field};
 
-const MIN_STEP: f64 = 0.05;
+const MIN_STEP: f64 = 0.01;
 
 pub fn step_particle(particle: &mut Particle, field: &Field) {
     let h = step_size(particle, field);

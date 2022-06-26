@@ -63,6 +63,11 @@ fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64, left_dir: &DVec3)
     left.x
 }
 
+// want to skew sample ([0,1]) to 1 values, as they're closer to the boundary.
+fn rescale(r: f64) -> f64 {
+    r.powf(1.0 / 3.0)
+}
+
 impl RayCache {
     pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3, fov_radians: f64) -> Self {
         let mut cache = Vec::new();
@@ -71,12 +76,13 @@ impl RayCache {
         // Too small results in missing some outer rays.
         let left_dir = -4.0 * f64::tan(fov_radians / 2.0) * DVec3::X + DVec3::Z;
 
-        // left_x gets close but misses.
-        let left_x = find_bound(camera_pos, field, 0.0000001, &left_dir);
-        let right_dir = left_x * DVec3::X + DVec3::Z;
+        // right_x gets close but misses.
+        let right_x = find_bound(camera_pos, field, 0.0000001, &left_dir);
+        let right_dir = right_x * DVec3::X + DVec3::Z;
 
         for i in 0..size {
             let r = (i as f64) / ((size - 1) as f64);
+            let r = rescale(r);
             let dir = (1.0 - r) * left_dir + r * right_dir;
             let ray = Ray::new(camera_pos.clone(), dir);
             let result = cast_ray_steps(&ray, &field, 100.0);
@@ -175,7 +181,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(1000, &field, &start, std::f64::consts::FRAC_2_PI);
+        let ray_cache = RayCache::compute_new(10000, &field, &start, std::f64::consts::FRAC_2_PI);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -216,7 +222,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(1000, &field, &start, std::f64::consts::FRAC_2_PI);
+        let ray_cache = RayCache::compute_new(10000, &field, &start, std::f64::consts::FRAC_2_PI);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -256,7 +262,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let cache_size = 100000;
+        let cache_size = 10000;
         let ray_cache =
             RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
 
@@ -293,7 +299,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let cache_size = 100000;
+        let cache_size = 10000;
         let ray_cache =
             RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
 
