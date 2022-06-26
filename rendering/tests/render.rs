@@ -7,7 +7,10 @@ mod tests {
     use path_integration::BlackHole;
     use rendering::{
         render::render,
-        structs::{camera::Camera, dimensions::Dimensions, stars::Stars},
+        structs::{
+            camera::Camera, dimensions::Dimensions, image_data::ImageData, observer::Observer,
+            stars::Stars,
+        },
     };
 
     fn write_image(image_name: &str, buffer: &[u8], dimensions: &Dimensions) {
@@ -28,7 +31,8 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
+            let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+            let mut image_data = ImageData::new(dimensions.width, dimensions.height);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
@@ -55,7 +59,8 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
+            let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+            let mut image_data = ImageData::new(dimensions.width, dimensions.height);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
@@ -83,7 +88,8 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
+            let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+            let mut image_data = ImageData::new(dimensions.width, dimensions.height);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
@@ -111,7 +117,9 @@ mod tests {
             let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
+
+            let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+            let mut image_data = ImageData::new(dimensions.width, dimensions.height);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
 

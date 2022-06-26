@@ -7,7 +7,10 @@ use image::io::Reader;
 use path_integration::BlackHole;
 use rendering::{
     render::render,
-    structs::{camera::Camera, dimensions::Dimensions, observer::Observer, stars::Stars},
+    structs::{
+        camera::Camera, dimensions::Dimensions, image_data::ImageData, observer::Observer,
+        stars::Stars,
+    },
 };
 fn main() {
     let mut file_name: String = "image.png".to_string();
@@ -25,7 +28,8 @@ fn main() {
         .into_rgba32f();
     let radius = 1.5;
 
-    let (observer, mut image_data) = Camera::new(dimensions, pos, vertical_fov);
+    let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+    let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let black_hole = BlackHole::new(radius, &pos, std::f64::consts::PI * vertical_fov / 180.0);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     let (width, height) = image_data.get_dimensions();
