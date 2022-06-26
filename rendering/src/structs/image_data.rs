@@ -1,5 +1,4 @@
 use glam::IVec4;
-
 pub struct ImageData {
     width: usize,
     height: usize,

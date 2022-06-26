@@ -1,7 +1,7 @@
 use glam::DVec3;
 use path_integration::Ray;
 
-use super::dimensions::Dimensions;
+use super::{dimensions::Dimensions, image_data::ImageData, observer::Observer};
 
 pub struct Camera {
     dimensions: Dimensions,
@@ -9,17 +9,23 @@ pub struct Camera {
     pub vertical_fov: f64,
     aa_level: u32,
     out: Vec<u8>,
+    observer: Observer,
+    image_data: ImageData,
 }
 
 impl Camera {
     pub fn new(dimensions: Dimensions, pos: DVec3, vertical_fov: f64) -> Self {
         let out = dimensions.get_buffer();
+        let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+        let image_data = ImageData::new(dimensions.width, dimensions.height);
         Self {
             dimensions,
             pos,
             vertical_fov,
             aa_level: 3,
             out,
+            observer,
+            image_data,
         }
     }
 
@@ -38,6 +44,12 @@ impl Camera {
     }
 
     pub fn get_rays(&self, x: usize, y: usize) -> Vec<Ray> {
+        let view_positions = self.image_data.get_samples(x, y);
+        let mut rays = Vec::new();
+        for (view_x, view_y) in view_positions {
+            rays.push(self.observer.to_ray(view_x, view_y));
+        }
+        return rays;
         let y_size = f64::tan(self.vertical_fov * std::f64::consts::PI / 360.0);
         let x_size = y_size * self.dimensions.aspect_ratio();
 
