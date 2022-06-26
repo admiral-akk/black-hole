@@ -33,7 +33,7 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new_zero(radius, &camera.pos);
+            let black_hole = BlackHole::new(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -58,7 +58,7 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new_zero(radius, &camera.pos);
+            let black_hole = BlackHole::new(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -84,7 +84,7 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new_zero(radius, &camera.pos);
+            let black_hole = BlackHole::new(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -110,7 +110,7 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new_zero(radius, &camera.pos);
+            let black_hole = BlackHole::new(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(

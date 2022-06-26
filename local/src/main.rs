@@ -25,7 +25,7 @@ fn main() {
     let radius = 1.5;
 
     let mut camera = Camera::new(dimensions, pos, vertical_fov);
-    let black_hole = BlackHole::new_zero(radius, &camera.pos);
+    let black_hole = BlackHole::new(radius, &camera.pos);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     render(&mut camera, &stars, &black_hole);
 
