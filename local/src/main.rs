@@ -25,7 +25,7 @@ fn main() {
         .into_rgba32f();
     let radius = 1.5;
 
-    let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
+    let observer = Observer::new(pos, DVec3::Y, vertical_fov);
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let black_hole = BlackHole::new(radius, &pos, std::f64::consts::PI * vertical_fov / 180.0);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
