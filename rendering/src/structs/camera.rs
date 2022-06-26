@@ -4,7 +4,6 @@ use path_integration::Ray;
 use super::{dimensions::Dimensions, image_data::ImageData, observer::Observer};
 
 pub struct Camera {
-    dimensions: Dimensions,
     observer: Observer,
     image_data: ImageData,
 }
@@ -14,7 +13,6 @@ impl Camera {
         let observer = Observer::new(pos, DVec3::Z, DVec3::Y, vertical_fov);
         let image_data = ImageData::new(dimensions.width, dimensions.height);
         Self {
-            dimensions,
             observer,
             image_data,
         }
