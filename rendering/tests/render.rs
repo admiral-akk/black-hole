@@ -4,9 +4,10 @@ mod tests {
     use std::path::Path;
 
     use glam::DVec3;
+    use path_integration::BlackHole;
     use rendering::{
         render::render,
-        structs::{black_hole::BlackHole, camera::Camera, dimensions::Dimensions, stars::Stars},
+        structs::{camera::Camera, dimensions::Dimensions, stars::Stars},
     };
 
     fn write_image(image_name: &str, buffer: &[u8], dimensions: &Dimensions) {
@@ -33,7 +34,11 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(radius, &camera.pos);
+            let black_hole = BlackHole::new(
+                radius,
+                &camera.pos,
+                vertical_fov * std::f64::consts::PI / 180.0,
+            );
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -58,7 +63,11 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(radius, &camera.pos);
+            let black_hole = BlackHole::new(
+                radius,
+                &camera.pos,
+                vertical_fov * std::f64::consts::PI / 180.0,
+            );
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -84,7 +93,11 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(radius, &camera.pos);
+            let black_hole = BlackHole::new(
+                radius,
+                &camera.pos,
+                vertical_fov * std::f64::consts::PI / 180.0,
+            );
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -110,7 +123,11 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(radius, &camera.pos);
+            let black_hole = BlackHole::new(
+                radius,
+                &camera.pos,
+                vertical_fov * std::f64::consts::PI / 180.0,
+            );
             render(&mut camera, &stars, &black_hole);
 
             write_image(

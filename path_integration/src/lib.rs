@@ -4,7 +4,8 @@ use particle::Particle;
 mod ray;
 mod structs;
 pub use ray::Ray;
-pub use structs::ray_cache::RayCache;
+
+pub use structs::black_hole::BlackHole;
 
 mod field;
 mod particle;

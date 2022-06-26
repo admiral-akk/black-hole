@@ -4,9 +4,10 @@ use std::path::Path;
 use glam::DVec3;
 
 use image::io::Reader;
+use path_integration::BlackHole;
 use rendering::{
     render::render,
-    structs::{black_hole::BlackHole, camera::Camera, dimensions::Dimensions, stars::Stars},
+    structs::{camera::Camera, dimensions::Dimensions, stars::Stars},
 };
 fn main() {
     let mut file_name: String = "image.png".to_string();
@@ -25,7 +26,11 @@ fn main() {
     let radius = 1.5;
 
     let mut camera = Camera::new(dimensions, pos, vertical_fov);
-    let black_hole = BlackHole::new(radius, &camera.pos);
+    let black_hole = BlackHole::new(
+        radius,
+        &camera.pos,
+        std::f64::consts::PI * vertical_fov / 180.0,
+    );
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     render(&mut camera, &stars, &black_hole);
 

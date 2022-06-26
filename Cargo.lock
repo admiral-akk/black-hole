@@ -642,6 +642,7 @@ version = "0.1.0"
 dependencies = [
  "glam",
  "image 0.24.2",
+ "path-integration",
  "rendering",
 ]
 
