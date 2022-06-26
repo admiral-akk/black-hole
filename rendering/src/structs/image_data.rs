@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use glam::IVec4;
 pub struct ImageData {
     width: usize,
@@ -38,7 +40,7 @@ impl ImageData {
         self.image[index].w += 1;
     }
 
-    pub fn get_image(&mut self) -> &[u8] {
+    fn get_image(&mut self) -> &[u8] {
         for i in 0..self.image.len() {
             let c = &self.image[i];
             let buffer_index = 4 * i;
@@ -53,5 +55,17 @@ impl ImageData {
 
     pub fn get_dimensions(&self) -> (usize, usize) {
         (self.width, self.height)
+    }
+
+    pub fn write_image(&mut self, file_name: &str) {
+        let (width, height) = (self.width as u32, self.height as u32);
+        image::save_buffer(
+            &Path::new(&format!("output/{}.png", file_name)),
+            self.get_image(),
+            width,
+            height,
+            image::ColorType::Rgba8,
+        )
+        .unwrap();
     }
 }

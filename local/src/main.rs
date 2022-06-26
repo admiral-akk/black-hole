@@ -10,7 +10,7 @@ use rendering::{
     structs::{dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars},
 };
 fn main() {
-    let mut file_name: String = "image.png".to_string();
+    let mut file_name: String = "image".to_string();
     let mut dimensions = Dimensions::new(100, 100);
 
     set_up(&mut file_name, &mut dimensions);
@@ -29,24 +29,15 @@ fn main() {
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let black_hole = BlackHole::new(radius, &pos, std::f64::consts::PI * vertical_fov / 180.0);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
-    let (width, height) = image_data.get_dimensions();
     render(&mut image_data, &observer, &stars, &black_hole);
-
-    image::save_buffer(
-        &Path::new(&format!("output/{}", file_name)),
-        image_data.get_image(),
-        width as u32,
-        height as u32,
-        image::ColorType::Rgba8,
-    )
-    .unwrap();
+    image_data.write_image(&file_name);
 }
 
 fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
     let args: Vec<String> = env::args().collect();
     println!("{:?}", args);
     if args.len() > 1 {
-        *file_name = format!("{}.png", args[1]);
+        *file_name = format!("{}", args[1]);
     }
     if args.len() == 4 {
         dimensions.width = str::parse(&args[2]).unwrap();

@@ -42,11 +42,8 @@ mod tests {
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut image_data, &observer, &stars, &black_hole);
 
-            write_image(
-                &format!("uv_field_{}_size_{}", radius, dim),
-                image_data.get_image(),
-                &dimensions2,
-            );
+            let file_name = format!("uv_field_{}_size_{}", radius, dim);
+            image_data.write_image(&file_name);
         }
         Ok(())
     }
@@ -70,11 +67,8 @@ mod tests {
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut image_data, &observer, &stars, &black_hole);
 
-            write_image(
-                &format!("uv_field_{}_size_{}", radius, dim),
-                image_data.get_image(),
-                &dimensions2,
-            );
+            let file_name = format!("uv_field_{}_size_{}", radius, dim);
+            image_data.write_image(&file_name);
         }
         Ok(())
     }
@@ -99,11 +93,8 @@ mod tests {
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut image_data, &observer, &stars, &black_hole);
 
-            write_image(
-                &format!("black_hole_field_{}_size_{}", radius, dim),
-                image_data.get_image(),
-                &dimensions2,
-            );
+            let file_name = format!("black_hole_field_{}_size_{}", radius, dim);
+            image_data.write_image(&file_name);
         }
         Ok(())
     }
@@ -128,11 +119,8 @@ mod tests {
                 BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut image_data, &observer, &stars, &black_hole);
 
-            write_image(
-                &format!("black_hole_field_{}_size_{}", radius, dim),
-                image_data.get_image(),
-                &dimensions2,
-            );
+            let file_name = format!("black_hole_field_{}_size_{}", radius, dim);
+            image_data.write_image(&file_name);
         }
         Ok(())
     }
