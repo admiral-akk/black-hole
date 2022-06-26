@@ -111,7 +111,7 @@ mod tests {
         let start = -5.0 * DVec3::Y;
         for radius in 1..=10 {
             let r = (radius as f64) / 10.0;
-            let field = Field::zero_new(r, &start);
+            let field = Field::new(r, &start);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 1000;
             let mut is_hit: Vec<bool> = Vec::new();
@@ -134,7 +134,7 @@ mod tests {
         let start = -5.0 * DVec3::Y;
         for radius in 1..=10 {
             let r = (radius as f64) / 10.0;
-            let field = Field::zero_new(r, &start);
+            let field = Field::new(r, &start);
             let (left, _) = find_near_miss(&start, &field, 0.000001);
             let mut lines: Vec<Vec<DVec3>> = Vec::new();
             let num_lines = 1000;

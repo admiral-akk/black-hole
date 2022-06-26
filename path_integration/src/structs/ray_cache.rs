@@ -120,7 +120,7 @@ mod tests {
     fn canonical_form_idempotent() {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::zero_new(r, &start);
+        let field = Field::new(r, &start);
         let iterations = 100;
         let epsilon = 0.0000001;
 
@@ -174,7 +174,7 @@ mod tests {
     fn ray_cache_absorbed_in_x_plane() {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::zero_new(r, &start);
+        let field = Field::new(r, &start);
         let ray_cache = RayCache::compute_new(1000, &field, &start, std::f64::consts::FRAC_2_PI);
 
         let mut false_positive = Vec::new();
@@ -215,7 +215,7 @@ mod tests {
     fn ray_cache_absorbed_in_y_plane() {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::zero_new(r, &start);
+        let field = Field::new(r, &start);
         let ray_cache = RayCache::compute_new(1000, &field, &start, std::f64::consts::FRAC_2_PI);
 
         let mut false_positive = Vec::new();
@@ -255,7 +255,7 @@ mod tests {
     fn final_dir_in_x_plane() {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::zero_new(r, &start);
+        let field = Field::new(r, &start);
         let cache_size = 100000;
         let ray_cache =
             RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
@@ -292,7 +292,7 @@ mod tests {
     fn final_dir_in_y_plane() {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::zero_new(r, &start);
+        let field = Field::new(r, &start);
         let cache_size = 100000;
         let ray_cache =
             RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);

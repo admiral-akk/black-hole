@@ -6,7 +6,7 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn zero_new(radius: f64, camera_pos: &DVec3) -> Self {
+    pub fn new(radius: f64, camera_pos: &DVec3) -> Self {
         let r_0 = camera_pos.length();
         let magnitude = 2.0 / ((2.0 / radius.powi(4)) - (1.0 / r_0.powi(4)));
         Self {
