@@ -1,4 +1,3 @@
-
 use glam::DVec3;
 
 pub struct Field {
@@ -8,6 +7,10 @@ pub struct Field {
 }
 
 impl Field {
+    pub fn zero_new(radius: f64, camera_pos: &DVec3) -> Self {
+        Field::new(DVec3::ZERO, radius, camera_pos)
+    }
+
     pub fn new(center: DVec3, radius: f64, camera_pos: &DVec3) -> Self {
         let r_0 = (center - *camera_pos).length();
         let magnitude = 2.0 / ((2.0 / radius.powi(4)) - (1.0 / r_0.powi(4)));
