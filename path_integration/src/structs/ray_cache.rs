@@ -118,9 +118,9 @@ mod tests {
 
     #[test]
     fn canonical_form_idempotent() {
-        let start = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(start + 5.0 * DVec3::Z, r, &start);
+        let field = Field::zero_new(r, &start);
         let iterations = 100;
         let epsilon = 0.0000001;
 
@@ -172,9 +172,9 @@ mod tests {
 
     #[test]
     fn ray_cache_absorbed_in_x_plane() {
-        let start = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(start + 5.0 * DVec3::Z, r, &start);
+        let field = Field::zero_new(r, &start);
         let ray_cache = RayCache::compute_new(1000, &field, &start, std::f64::consts::FRAC_2_PI);
 
         let mut false_positive = Vec::new();
@@ -183,7 +183,7 @@ mod tests {
         let iterations = 100000;
         for x in (-iterations)..=iterations {
             let x = (x as f64) / (iterations as f64);
-            let ray = Ray::new(5.0 * DVec3::X, DVec3::new(x, 0.0, 1.0));
+            let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             let approx_dir = ray_cache.final_dir(&ray, &field);
             if approx_dir.is_none() != actual_dir.is_none() {
@@ -213,9 +213,9 @@ mod tests {
 
     #[test]
     fn ray_cache_absorbed_in_y_plane() {
-        let start = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(start + 5.0 * DVec3::Z, r, &start);
+        let field = Field::zero_new(r, &start);
         let ray_cache = RayCache::compute_new(1000, &field, &start, std::f64::consts::FRAC_2_PI);
 
         let mut false_positive = Vec::new();
@@ -223,7 +223,7 @@ mod tests {
         let iterations = 100000;
         for y in 0..=(iterations + 1) {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
-            let ray = Ray::new(5.0 * DVec3::X, DVec3::new(0.0, y, 1.0));
+            let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             let approx_dir = ray_cache.final_dir(&ray, &field);
             if approx_dir.is_none() != actual_dir.is_none() {
@@ -253,9 +253,9 @@ mod tests {
 
     #[test]
     fn final_dir_in_x_plane() {
-        let start = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(start + 5.0 * DVec3::Z, r, &start);
+        let field = Field::zero_new(r, &start);
         let cache_size = 100000;
         let ray_cache =
             RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
@@ -267,7 +267,7 @@ mod tests {
         let mut actual = DVec3::new(0.0, 0.0, -10.0);
         for x in 0..=(iterations + 1) {
             let x = (x as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
-            let ray = Ray::new(5.0 * DVec3::X, DVec3::new(x, 0.0, 1.0));
+            let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.final_dir(&ray, &field).unwrap();
@@ -290,9 +290,9 @@ mod tests {
 
     #[test]
     fn final_dir_in_y_plane() {
-        let start = 5.0 * DVec3::X;
+        let start = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(start + 5.0 * DVec3::Z, r, &start);
+        let field = Field::zero_new(r, &start);
         let cache_size = 100000;
         let ray_cache =
             RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
@@ -304,7 +304,7 @@ mod tests {
         let mut actual = DVec3::new(0.0, 0.0, -10.0);
         for y in 0..=(iterations + 1) {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
-            let ray = Ray::new(5.0 * DVec3::X, DVec3::new(0.0, y, 1.0));
+            let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.final_dir(&ray, &field).unwrap();
