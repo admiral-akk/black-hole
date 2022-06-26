@@ -12,10 +12,12 @@ struct RayCachedAnswer {
     pub final_dir: DVec3,
 }
 
+// let's rotate the ray start to (0.0,0.0,-Z), then calculate
 fn to_canonical_form(ray: &Ray) -> f64 {
     -(ray.dir.x.powi(2) + ray.dir.y.powi(2)).sqrt()
 }
 
+// let's rotate the ray start to (0.0,0.0,-Z), then calculate
 fn from_canonical_form(dir: &DVec3, original_ray: &Ray) -> DVec3 {
     let angle = -f64::atan2(original_ray.dir.y, -original_ray.dir.x);
     let (cos_angle, sin_angle) = (f64::cos(angle), f64::sin(angle));
