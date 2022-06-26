@@ -12,11 +12,11 @@ struct RayCachedAnswer {
     pub final_dir: DVec3,
 }
 
-fn to_canonical_form(ray: &Ray, field: &Field) -> f64 {
+fn to_canonical_form(ray: &Ray) -> f64 {
     -(ray.dir.x.powi(2) + ray.dir.y.powi(2)).sqrt()
 }
 
-fn from_canonical_form(dir: &DVec3, original_ray: &Ray, field: &Field) -> DVec3 {
+fn from_canonical_form(dir: &DVec3, original_ray: &Ray) -> DVec3 {
     let angle = -f64::atan2(original_ray.dir.y, -original_ray.dir.x);
     let (cos_angle, sin_angle) = (f64::cos(angle), f64::sin(angle));
 
@@ -92,7 +92,7 @@ impl RayCache {
     }
 
     pub fn final_dir(&self, ray: &Ray, field: &Field) -> Option<DVec3> {
-        let x = to_canonical_form(&ray, &field);
+        let x = to_canonical_form(&ray);
         if x > self.cache[self.cache.len() - 1].x {
             return None;
         }
@@ -104,7 +104,7 @@ impl RayCache {
 
         let lerp = DVec3::lerp(left.final_dir, right.final_dir, (x - left.x) / diff);
 
-        Some(from_canonical_form(&lerp, ray, field))
+        Some(from_canonical_form(&lerp, ray))
     }
 }
 
@@ -119,8 +119,6 @@ mod tests {
     #[test]
     fn canonical_form_idempotent() {
         let start = -5.0 * DVec3::Z;
-        let r = 1.0;
-        let field = Field::new(r, &start);
         let iterations = 100;
         let epsilon = 0.0000001;
 
@@ -136,9 +134,9 @@ mod tests {
                         (z as f64) / (iterations as f64),
                     );
                     let ray = Ray::new(start, DVec3::new(x, y, z));
-                    let x = to_canonical_form(&ray, &field);
+                    let x = to_canonical_form(&ray);
                     let final_dir = DVec3::new(x, 0.0, ray.dir.z);
-                    let original_dir = from_canonical_form(&final_dir, &ray, &field);
+                    let original_dir = from_canonical_form(&final_dir, &ray);
                     assert_eq!((original_dir - ray.dir).length() < epsilon, true);
                 }
             }
