@@ -6,18 +6,16 @@ use super::dimensions::Dimensions;
 pub struct Camera {
     dimensions: Dimensions,
     pos: DVec3,
-    dir: DVec3,
     vertical_fov: f64,
     out: Vec<u8>,
 }
 
 impl Camera {
-    pub fn new(dimensions: Dimensions, pos: DVec3, dir: DVec3, vertical_fov: f64) -> Self {
+    pub fn new(dimensions: Dimensions, pos: DVec3, vertical_fov: f64) -> Self {
         let out = dimensions.get_buffer();
         Self {
             dimensions,
             pos,
-            dir,
             vertical_fov,
             out,
         }
