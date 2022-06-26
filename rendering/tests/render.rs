@@ -25,9 +25,8 @@ mod tests {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
-            let dir = DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+            let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
@@ -52,9 +51,8 @@ mod tests {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
-            let dir = DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+            let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
@@ -80,9 +78,8 @@ mod tests {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
-            let dir = DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+            let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
@@ -108,9 +105,8 @@ mod tests {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
             let pos = DVec3::ZERO;
-            let dir = DVec3::Z;
             let vertical_fov = 50.0;
-            let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+            let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);

@@ -15,7 +15,6 @@ fn main() {
     set_up(&mut file_name, &mut dimensions);
 
     let pos = DVec3::ZERO;
-    let dir = DVec3::Z;
     let vertical_fov = 60.0;
 
     let background = Reader::open("milkyway_2020_4k_gal.exr")
@@ -26,7 +25,7 @@ fn main() {
     let black_hole_pos = 5.0 * DVec3::Z;
     let radius = 1.5;
 
-    let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+    let mut camera = Camera::new(dimensions, pos, vertical_fov);
     let black_hole = BlackHole::new(black_hole_pos, radius);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     render(&mut camera, &stars, &black_hole);

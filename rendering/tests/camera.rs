@@ -22,9 +22,8 @@ mod tests {
         let (width, height) = (10, 10);
         let dimensions = Dimensions::new(width, height);
         let pos = DVec3::new(0.0, 0.0, 0.0);
-        let dir = DVec3::new(0.0, 0.0, 1.0);
         let vertical_fov = 20.0;
-        let camera = Camera::new(dimensions, pos, dir, vertical_fov);
+        let camera = Camera::new(dimensions, pos, vertical_fov);
 
         let rays = camera.get_rays();
         for index in 0..rays.len() {
@@ -38,9 +37,8 @@ mod tests {
         let (width, height) = (1024, 1024);
         let dimensions = Dimensions::new(width, height);
         let pos = DVec3::new(0.0, 0.0, 0.0);
-        let dir = DVec3::new(0.0, 0.0, 1.0);
         let vertical_fov = 20.0;
-        let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
+        let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
         let uv = image::open("uv.png").unwrap();
 
