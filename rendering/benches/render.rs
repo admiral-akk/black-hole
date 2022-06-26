@@ -19,11 +19,7 @@ pub fn render_benchmark(c: &mut Criterion) {
         let radius = 1.0;
 
         let mut camera = Camera::new(dimensions, pos, vertical_fov);
-        let black_hole = BlackHole::new(
-            radius,
-            &camera.pos,
-            vertical_fov * std::f64::consts::PI / 180.0,
-        );
+        let black_hole = BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
         let stars = Stars::new(background);
         b.iter(|| black_box(render(&mut camera, &stars, &black_hole)));
     });

@@ -26,19 +26,16 @@ fn main() {
     let radius = 1.5;
 
     let mut camera = Camera::new(dimensions, pos, vertical_fov);
-    let black_hole = BlackHole::new(
-        radius,
-        &camera.pos,
-        std::f64::consts::PI * vertical_fov / 180.0,
-    );
+    let black_hole = BlackHole::new(radius, &pos, std::f64::consts::PI * vertical_fov / 180.0);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
+    let dimensions = camera.get_dimensions().clone();
     render(&mut camera, &stars, &black_hole);
 
     image::save_buffer(
         &Path::new(&format!("output/{}", file_name)),
         camera.get_colors(),
-        camera.get_dimensions().width as u32,
-        camera.get_dimensions().height as u32,
+        dimensions.width as u32,
+        dimensions.height as u32,
         image::ColorType::Rgba8,
     )
     .unwrap();

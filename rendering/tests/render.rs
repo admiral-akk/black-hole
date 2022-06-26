@@ -34,17 +34,15 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                &camera.pos,
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole =
+                BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut camera, &stars, &black_hole);
 
+            let dimensions = camera.get_dimensions().clone();
             write_image(
                 &format!("uv_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
-                camera.get_dimensions(),
+                &dimensions,
             );
         }
         Ok(())
@@ -63,17 +61,15 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                &camera.pos,
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole =
+                BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut camera, &stars, &black_hole);
 
+            let dimensions = camera.get_dimensions().clone();
             write_image(
                 &format!("uv_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
-                camera.get_dimensions(),
+                &dimensions,
             );
         }
         Ok(())
@@ -93,17 +89,15 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                &camera.pos,
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole =
+                BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut camera, &stars, &black_hole);
 
+            let dimensions = camera.get_dimensions().clone();
             write_image(
                 &format!("black_hole_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
-                camera.get_dimensions(),
+                &dimensions,
             );
         }
         Ok(())
@@ -123,17 +117,15 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                &camera.pos,
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole =
+                BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
             render(&mut camera, &stars, &black_hole);
 
+            let dimensions = camera.get_dimensions().clone();
             write_image(
                 &format!("black_hole_field_{}_size_{}", radius, dim),
                 camera.get_colors(),
-                camera.get_dimensions(),
+                &dimensions,
             );
         }
         Ok(())
