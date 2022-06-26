@@ -4,8 +4,6 @@ use crate::{cast_ray_steps, Field, Ray};
 
 pub struct RayCache {
     cache: Vec<RayCachedAnswer>,
-    left_x: f64,
-    right_x: f64,
 }
 
 #[derive(Debug)]
@@ -46,7 +44,7 @@ fn binary_search(cache: &[RayCachedAnswer], x: f64) -> usize {
     low
 }
 
-fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64, left_dir: &DVec3) -> (f64, f64) {
+fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64, left_dir: &DVec3) -> f64 {
     let mut left = left_dir.clone();
     let mut right = DVec3::Z;
     while right.x - left.x > epsilon {
@@ -60,7 +58,7 @@ fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64, left_dir: &DVec3)
             left = center;
         }
     }
-    (left.x, right.x)
+    left.x
 }
 
 impl RayCache {
@@ -72,8 +70,7 @@ impl RayCache {
         let left_dir = -4.0 * f64::tan(fov_radians / 2.0) * DVec3::X + DVec3::Z;
 
         // left_x gets close but misses.
-        // right_x definitly hits the black hole
-        let (left_x, right_x) = find_bound(camera_pos, field, 0.0000001, &left_dir);
+        let left_x = find_bound(camera_pos, field, 0.0000001, &left_dir);
         let right_dir = left_x * DVec3::X + DVec3::Z;
 
         for i in 0..size {
@@ -91,11 +88,7 @@ impl RayCache {
             }
         }
 
-        Self {
-            cache,
-            left_x,
-            right_x,
-        }
+        Self { cache }
     }
 
     pub fn final_dir(&self, ray: &Ray, field: &Field) -> Option<DVec3> {
