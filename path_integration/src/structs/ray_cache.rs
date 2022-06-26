@@ -203,7 +203,6 @@ mod tests {
         }
 
         let fp_10 = &false_positive[0..(usize::min(10, false_positive.len()))];
-        println!("false pos: {:?}", false_positive);
         assert_eq!(
             false_positive.len(),
             0,
@@ -211,7 +210,6 @@ mod tests {
             fp_10
         );
         let fn_10 = &false_negative[0..(usize::min(10, false_negative.len()))];
-        println!("false neg: {:?}", false_negative);
         assert_eq!(
             false_negative.len(),
             0,
@@ -245,7 +243,6 @@ mod tests {
         }
 
         let fp_10 = &false_positive[0..(usize::min(10, false_positive.len()))];
-        println!("false pos: {:?}", false_positive);
         assert_eq!(
             false_positive.len(),
             0,
@@ -253,7 +250,6 @@ mod tests {
             fp_10
         );
         let fn_10 = &false_negative[0..(usize::min(10, false_negative.len()))];
-        println!("false neg: {:?}", false_negative);
         assert_eq!(
             false_negative.len(),
             0,
