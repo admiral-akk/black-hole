@@ -1,7 +1,6 @@
 #[cfg(test)]
 
 mod tests {
-    use std::path::Path;
 
     use glam::DVec3;
     use path_integration::BlackHole;
@@ -12,22 +11,11 @@ mod tests {
         },
     };
 
-    fn write_image(image_name: &str, buffer: &[u8], dimensions: &Dimensions) {
-        image::save_buffer(
-            &Path::new(&format!("output/{}.png", image_name)),
-            buffer,
-            dimensions.width as u32,
-            dimensions.height as u32,
-            image::ColorType::Rgba8,
-        )
-        .unwrap();
-    }
     #[test]
     fn uv_field_0() -> Result<(), Box<dyn std::error::Error>> {
         for size_pow in 1..=3 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let observer = Observer::new(pos, DVec3::Y, vertical_fov);
@@ -52,7 +40,6 @@ mod tests {
         for size_pow in 1..=4 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let observer = Observer::new(pos, DVec3::Y, vertical_fov);
@@ -78,7 +65,6 @@ mod tests {
         for size_pow in 1..=3 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let observer = Observer::new(pos, DVec3::Y, vertical_fov);
@@ -104,7 +90,6 @@ mod tests {
         for size_pow in 1..=4 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let dimensions2 = dimensions.clone();
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
 
