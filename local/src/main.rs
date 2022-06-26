@@ -1,13 +1,13 @@
 use std::env;
 use std::path::Path;
 
-use geometry::{DVec3};
+use geometry::DVec3;
 
+use image::io::Reader;
 use rendering::{
     render::render,
     structs::{black_hole::BlackHole, camera::Camera, dimensions::Dimensions, stars::Stars},
 };
-
 fn main() {
     let mut file_name: String = "image.png".to_string();
     let mut dimensions = Dimensions::new(100, 100);
@@ -16,16 +16,19 @@ fn main() {
 
     let pos = DVec3::ZERO;
     let dir = DVec3::Z;
-    let vertical_fov = 50.0;
+    let vertical_fov = 60.0;
 
-    let background = image::open("starmap_2020_4k_gal.exr").unwrap();
-
+    let background = Reader::open("milkyway_2020_4k_gal.exr")
+        .unwrap()
+        .decode()
+        .unwrap()
+        .into_rgba32f();
     let black_hole_pos = 5.0 * DVec3::Z;
-    let radius = 1.0;
+    let radius = 1.5;
 
     let mut camera = Camera::new(dimensions, pos, dir, vertical_fov);
     let black_hole = BlackHole::new(black_hole_pos, radius);
-    let stars = Stars::new(background);
+    let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     render(&mut camera, &stars, &black_hole);
 
     image::save_buffer(

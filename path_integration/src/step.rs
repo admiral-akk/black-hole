@@ -1,12 +1,9 @@
 use crate::{particle::Particle, Field};
 
-const MIN_STEP: f64 = 0.01;
+const MIN_STEP: f64 = 0.05;
 
 pub fn step_particle(particle: &mut Particle, field: &Field) {
     let h = step_size(particle, field);
-
-    // dx/dt
-    // dv/dt
 
     let k_0 = h * particle.v;
     let l_0 = h * field.force(&particle.p);
@@ -24,7 +21,6 @@ pub fn step_particle(particle: &mut Particle, field: &Field) {
     particle.v += (1.0 / 6.0) * (l_0 + 2.0 * l_1 + 2.0 * l_2 + l_3);
 }
 
-// 0.1 is fast enough to compute an image
 fn step_size(particle: &mut Particle, field: &Field) -> f64 {
     let diff = field.center - particle.p;
     let v = particle.v.length();
@@ -42,6 +38,6 @@ fn step_size(particle: &mut Particle, field: &Field) -> f64 {
 }
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
-    // We add some error so that the geodesics can get very close to the black hole.
-    (particle.p - field.center).length() < 0.5 * field.schwarzchild_radius()
+    // We add some error so that the geodesics that are on the edge of the schwarzchild radius don't get pulled in accidentally.
+    (particle.p - field.center).length() < 0.75 * field.schwarzchild_radius()
 }
