@@ -10,10 +10,10 @@ pub struct Observer {
 
 impl Observer {
     pub fn new(pos: DVec3, forward: DVec3, up: DVec3, vertical_fov_degrees: f64) -> Self {
-        let dir = forward.normalize();
+        let forward = forward.normalize();
         let view_mag = 2.0 * f64::tan(std::f64::consts::PI * vertical_fov_degrees / 360.0);
-        let up = view_mag * (up - up.dot(dir.normalize()) * up.normalize());
-        let right = view_mag * dir.cross(up).normalize();
+        let up = view_mag * (up - up.dot(forward.normalize()) * up.normalize());
+        let right = view_mag * forward.cross(up).normalize();
         Self {
             pos,
             forward,

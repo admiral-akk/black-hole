@@ -8,8 +8,7 @@ mod tests {
     use rendering::{
         render::render,
         structs::{
-            camera::Camera, dimensions::Dimensions, image_data::ImageData, observer::Observer,
-            stars::Stars,
+            dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars,
         },
     };
 

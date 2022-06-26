@@ -4,10 +4,7 @@ use glam::DVec3;
 use path_integration::BlackHole;
 use rendering::{
     render::render,
-    structs::{
-        camera::Camera, dimensions::Dimensions, image_data::ImageData, observer::Observer,
-        stars::Stars,
-    },
+    structs::{dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars},
 };
 
 pub fn render_benchmark(c: &mut Criterion) {

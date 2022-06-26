@@ -7,10 +7,7 @@ use image::io::Reader;
 use path_integration::BlackHole;
 use rendering::{
     render::render,
-    structs::{
-        camera::Camera, dimensions::Dimensions, image_data::ImageData, observer::Observer,
-        stars::Stars,
-    },
+    structs::{dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars},
 };
 fn main() {
     let mut file_name: String = "image.png".to_string();
