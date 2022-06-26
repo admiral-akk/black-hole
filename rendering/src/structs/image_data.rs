@@ -1,12 +1,13 @@
+use glam::IVec4;
 use std::path::Path;
 
-use glam::IVec4;
 pub struct ImageData {
     width: usize,
-    height: usize,
+    half_sample_delta: f64,
     image: Vec<IVec4>,
     buf: Vec<u8>,
 }
+const SAMPLES_PER_DIMENSION: u32 = 3;
 
 impl ImageData {
     pub fn new(width: usize, height: usize) -> Self {
@@ -14,7 +15,7 @@ impl ImageData {
         let buf = vec![255; 4 * width * height];
         Self {
             width,
-            height,
+            half_sample_delta: 0.5 / ((SAMPLES_PER_DIMENSION as f64) * (width as f64)),
             image,
             buf,
         }
@@ -23,13 +24,21 @@ impl ImageData {
     pub fn get_samples(&self, x: usize, y: usize) -> Vec<(f64, f64)> {
         let mut samples = Vec::new();
 
-        samples.push((x as f64 / self.width as f64, y as f64 / self.height as f64));
-
+        let (base_x, base_y) = (x as f64 / self.width as f64, y as f64 / self.width as f64);
+        for i_x in 0..SAMPLES_PER_DIMENSION {
+            for i_y in 0..SAMPLES_PER_DIMENSION {
+                let (view_x, view_y) = (
+                    base_x + self.half_sample_delta * ((2 * i_x + 1) as f64),
+                    base_y + self.half_sample_delta * ((2 * i_y + 1) as f64),
+                );
+                samples.push((view_x, view_y));
+            }
+        }
         samples
     }
 
     fn to_index(&self, x: usize, y: usize) -> usize {
-        self.width * (self.height - y - 1) + x
+        self.width * (self.width - y - 1) + x
     }
 
     pub fn add_sample(&mut self, x: usize, y: usize, c: &[u8; 4]) {
@@ -54,11 +63,11 @@ impl ImageData {
     }
 
     pub fn get_dimensions(&self) -> (usize, usize) {
-        (self.width, self.height)
+        (self.width, self.width)
     }
 
     pub fn write_image(&mut self, file_name: &str) {
-        let (width, height) = (self.width as u32, self.height as u32);
+        let (width, height) = (self.width as u32, self.width as u32);
         image::save_buffer(
             &Path::new(&format!("output/{}.png", file_name)),
             self.get_image(),
