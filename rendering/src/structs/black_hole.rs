@@ -8,6 +8,11 @@ pub struct BlackHole {
 }
 
 impl BlackHole {
+    pub fn new_zero(radius: f64, camera_pos: &DVec3) -> Self {
+        let field = Field::zero_new(radius, &camera_pos);
+        Self { field }
+    }
+
     pub fn new(pos: DVec3, radius: f64) -> Self {
         let field = Field::new(pos, radius, &DVec3::ZERO);
         Self { field }

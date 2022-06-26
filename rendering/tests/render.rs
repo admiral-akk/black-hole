@@ -24,17 +24,16 @@ mod tests {
         for size_pow in 1..=3 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let pos = DVec3::ZERO;
+            let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
 
-            let black_hole_pos = 5.0 * DVec3::Z;
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, radius);
+            let black_hole = BlackHole::new_zero(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -50,17 +49,16 @@ mod tests {
         for size_pow in 1..=4 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let pos = DVec3::ZERO;
+            let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("uv.png").unwrap();
             let stars = Stars::new(background);
 
-            let black_hole_pos = 5.0 * DVec3::Z;
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, radius);
+            let black_hole = BlackHole::new_zero(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -77,17 +75,16 @@ mod tests {
         for size_pow in 1..=3 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let pos = DVec3::ZERO;
+            let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
 
-            let black_hole_pos = 5.0 * DVec3::Z;
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, radius);
+            let black_hole = BlackHole::new_zero(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
@@ -104,17 +101,16 @@ mod tests {
         for size_pow in 1..=4 {
             let dim = 50 * 2_usize.pow(size_pow);
             let dimensions = Dimensions::new(dim, dim);
-            let pos = DVec3::ZERO;
+            let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
             let mut camera = Camera::new(dimensions, pos, vertical_fov);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
 
-            let black_hole_pos = 5.0 * DVec3::Z;
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(black_hole_pos, radius);
+            let black_hole = BlackHole::new_zero(radius, &camera.pos);
             render(&mut camera, &stars, &black_hole);
 
             write_image(
