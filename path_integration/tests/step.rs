@@ -123,7 +123,7 @@ mod tests {
                 let r = (i as f64) / ((num_lines as f64) - 1.0);
                 let end = DVec3::new(10.0 * r, 10.0, 0.0);
                 let ray = Ray::new(start, end - start);
-                is_hit.push(cast_ray_steps(&ray, &field, 40.0).is_none());
+                is_hit.push(cast_ray_steps(&ray, &field, 100.0).is_none());
                 let path = cast_ray_steps_debug(&ray, &field, 40.0);
                 lines.push(path);
             }
@@ -149,7 +149,7 @@ mod tests {
                 let r = (i as f64) / ((num_lines as f64) - 1.0);
                 let end = left - 0.1 * (1.0 - r) * DVec3::X;
                 let ray = Ray::new(start, end - start);
-                is_hit.push(cast_ray_steps(&ray, &field, 40.0).is_none());
+                is_hit.push(cast_ray_steps(&ray, &field, 100.0).is_none());
                 let path = cast_ray_steps_debug(&ray, &field, 40.0);
                 lines.push(path);
             }
