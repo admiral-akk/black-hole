@@ -42,7 +42,7 @@ impl Observer {
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::{FRAC_PI_2, FRAC_PI_4, PI};
+    use std::f64::consts::{FRAC_PI_4, PI};
 
     use glam::DVec3;
     use path_integration::BlackHole;

@@ -1,5 +1,4 @@
 use glam::DVec3;
-use quaternion::Quaternion;
 
 use crate::{cast_ray_steps, Field, Ray};
 
@@ -53,7 +52,7 @@ fn rescale(r: f64) -> f64 {
 }
 
 impl RayCache {
-    pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3, fov_radians: f64) -> Self {
+    pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3) -> Self {
         let mut cache = Vec::new();
 
         // We're always projecting from (0.0, 0.0, -Z)
@@ -138,7 +137,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(10000, &field, &start, std::f64::consts::FRAC_2_PI);
+        let ray_cache = RayCache::compute_new(10000, &field, &start);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -179,7 +178,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(10000, &field, &start, std::f64::consts::FRAC_2_PI);
+        let ray_cache = RayCache::compute_new(10000, &field, &start);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -220,8 +219,7 @@ mod tests {
         let r = 1.0;
         let field = Field::new(r, &start);
         let cache_size = 10000;
-        let ray_cache =
-            RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
+        let ray_cache = RayCache::compute_new(cache_size, &field, &start);
 
         let mut max_error = 0.0;
         let iterations = 100000;
@@ -260,8 +258,7 @@ mod tests {
         let r = 1.0;
         let field = Field::new(r, &start);
         let cache_size = 10000;
-        let ray_cache =
-            RayCache::compute_new(cache_size, &field, &start, std::f64::consts::FRAC_2_PI);
+        let ray_cache = RayCache::compute_new(cache_size, &field, &start);
 
         let iterations = 100000;
         let mut max_error = 0.0;
