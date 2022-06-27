@@ -7,7 +7,7 @@ pub struct ImageData {
     image: Vec<IVec4>,
     buf: Vec<u8>,
 }
-const SAMPLES_PER_DIMENSION: u32 = 3;
+const SAMPLES_PER_DIMENSION: u32 = 1;
 
 impl ImageData {
     pub fn new(width: usize, height: usize) -> Self {
