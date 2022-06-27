@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn rotation_view_XZ_observer() -> Result<(), Box<dyn std::error::Error>> {
+    fn rotation_view_xz_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
         for rot in 0..rotation_count {
             let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn rotation_view_YZ_observer() -> Result<(), Box<dyn std::error::Error>> {
+    fn rotation_view_yz_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
         for rot in 0..rotation_count {
             let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
@@ -230,6 +230,23 @@ mod tests {
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("observer/observer_rotate_view_YZ_angle_{}", angle_degrees);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn set_distance_observer() -> Result<(), Box<dyn std::error::Error>> {
+        let steps = 20;
+        for step in 3..=steps {
+            let dist = (step as f64) / 2.0;
+            let pos = -dist * DVec3::Z;
+            let vertical_fov = 120.0;
+            let (mut image_data, observer, stars, black_hole) =
+                init(pos, -pos, DVec3::Y, vertical_fov);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("observer/observer_distance_{:.1}", dist);
             image_data.write_image(&file_name);
         }
         Ok(())
