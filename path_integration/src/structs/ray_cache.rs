@@ -232,7 +232,9 @@ mod tests {
         let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
         let mut approx = DVec3::new(0.0, 0.0, -10.0);
         let mut actual = DVec3::new(0.0, 0.0, -10.0);
+        let mut index = 0;
         for x in 0..=(iterations + 1) {
+            let t = x;
             let x = (x as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
@@ -241,6 +243,7 @@ mod tests {
                 let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
                 let error = (approximate_dir - actual_dir).length();
                 if error > max_error {
+                    index = t;
                     max_error = error;
                     worst_case = ray.dir;
                     approx = approximate_dir;
@@ -250,8 +253,8 @@ mod tests {
         }
 
         println!(
-            "Cache size: {}\nIteration size: {}\nMax Error: {}\nInitial Dir: {:?}\nApprox: {:?}Actual: {:?}\n",
-            cache_size, iterations, max_error, worst_case, approx, actual
+            "Cache size: {}\nIteration size: {}\nMax Error: {}\nInitial Dir: {:?}\nApprox: {:?}Actual: {:?}\nIndex: {}",
+            cache_size, iterations, max_error, worst_case, approx, actual, index
         );
     }
 
@@ -269,7 +272,9 @@ mod tests {
         let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
         let mut approx = DVec3::new(0.0, 0.0, -10.0);
         let mut actual = DVec3::new(0.0, 0.0, -10.0);
+        let mut index = 0;
         for y in 0..=(iterations + 1) {
+            let t = y;
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
@@ -278,6 +283,7 @@ mod tests {
                 let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
                 let error = (approximate_dir - actual_dir).length();
                 if error > max_error {
+                    index = t;
                     max_error = error;
                     worst_case = ray.dir;
                     approx = approximate_dir;
@@ -287,8 +293,8 @@ mod tests {
         }
 
         println!(
-            "Cache size: {}\nIteration size: {}\nMax Error: {}\nInitial Dir: {:?}\nApprox: {:?}Actual: {:?}\n",
-            cache_size, iterations, max_error, worst_case, approx, actual
+            "Cache size: {}\nIteration size: {}\nMax Error: {}\nInitial Dir: {:?}\nApprox: {:?}Actual: {:?}\nIndex: {}",
+            cache_size, iterations, max_error, worst_case, approx, actual, index
         );
     }
 }
