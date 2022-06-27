@@ -38,3 +38,108 @@ impl Observer {
         rays
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::f64::consts::PI;
+
+    use glam::DVec3;
+    use path_integration::BlackHole;
+
+    use crate::{
+        render::render,
+        structs::{image_data::ImageData, stars::Stars},
+    };
+
+    use super::Observer;
+
+    fn init(
+        pos: DVec3,
+        facing: DVec3,
+        up: DVec3,
+        vertical_fov: f64,
+    ) -> (ImageData, Observer, Stars, BlackHole) {
+        let dim = 800;
+        let observer = Observer::new(pos, facing, up, vertical_fov);
+        let image_data = ImageData::new(dim, dim);
+
+        let background = image::open("uv.png").unwrap();
+        let stars = Stars::new(background);
+
+        let radius = 1.0;
+
+        let black_hole = BlackHole::new(
+            radius,
+            pos.length(),
+            vertical_fov * std::f64::consts::PI / 180.0,
+        );
+        (image_data, observer, stars, black_hole)
+    }
+
+    #[test]
+    fn base_observer() -> Result<(), Box<dyn std::error::Error>> {
+        let pos = -5.0 * DVec3::Z;
+        let vertical_fov = 90.0;
+        let (mut image_data, observer, stars, black_hole) = init(pos, -pos, DVec3::Y, vertical_fov);
+        render(&mut image_data, &observer, &stars, &black_hole);
+
+        let file_name = format!("observer/base_observer");
+        image_data.write_image(&file_name);
+        Ok(())
+    }
+
+    #[test]
+    fn horizontal_rotation_observer() -> Result<(), Box<dyn std::error::Error>> {
+        let rotation_count = 8;
+        for rot in 0..rotation_count {
+            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
+            let angle_rad = angle_degrees * PI / 180.0;
+            let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X);
+            let vertical_fov = 90.0;
+            let (mut image_data, observer, stars, black_hole) =
+                init(pos, -pos, DVec3::Y, vertical_fov);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("observer/observer_horizontal_angle_{}", angle_degrees);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn vertical_rotation_observer_x() -> Result<(), Box<dyn std::error::Error>> {
+        let rotation_count = 8;
+        for rot in 0..rotation_count {
+            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
+            let angle_rad = angle_degrees * PI / 180.0;
+            let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::X);
+            let up = DVec3::Z;
+            let vertical_fov = 90.0;
+            let (mut image_data, observer, stars, black_hole) =
+                init(pos, -pos, DVec3::Y, vertical_fov);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("observer/observer_vertical_X_angle_{}", angle_degrees);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn vertical_rotation_observer_z() -> Result<(), Box<dyn std::error::Error>> {
+        let rotation_count = 8;
+        for rot in 0..rotation_count {
+            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
+            let angle_rad = angle_degrees * PI / 180.0;
+            let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::Z);
+            let up = DVec3::X;
+            let vertical_fov = 90.0;
+            let (mut image_data, observer, stars, black_hole) = init(pos, -pos, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("observer/observer_vertical_Z_angle_{}", angle_degrees);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
+}
