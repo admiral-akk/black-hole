@@ -42,7 +42,7 @@ impl Observer {
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_PI_2, FRAC_PI_4, PI};
 
     use glam::DVec3;
     use path_integration::BlackHole;
@@ -247,6 +247,28 @@ mod tests {
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("observer/observer_distance_{:.1}", dist);
+            image_data.write_image(&file_name);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn orbit_close_to_horizon() -> Result<(), Box<dyn std::error::Error>> {
+        let rotation_count = 8;
+        for rot in 0..rotation_count {
+            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
+            let angle_rad = angle_degrees * PI / 180.0;
+            let pos = -1.5 * (f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X);
+            let target_pos = -1.2
+                * (f64::cos(angle_rad + FRAC_PI_4) * DVec3::Z
+                    + f64::sin(angle_rad + FRAC_PI_4) * DVec3::X);
+            let dir = (target_pos - pos).normalize();
+            let up = (DVec3::X - DVec3::X.dot(dir.normalize()) * dir.normalize()).normalize();
+            let vertical_fov = 120.0;
+            let (mut image_data, observer, stars, black_hole) = init(pos, dir, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &black_hole);
+
+            let file_name = format!("observer/observer_orbit_XZ_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
         }
         Ok(())
