@@ -9,9 +9,10 @@ pub struct BlackHole {
 }
 
 impl BlackHole {
-    pub fn new(radius: f64, camera_pos: &DVec3, fov_radians: f64) -> Self {
-        let field = Field::new(radius, camera_pos);
-        let cache = RayCache::compute_new(10000, &field, camera_pos, fov_radians);
+    pub fn new(radius: f64, camera_distance: f64, fov_radians: f64) -> Self {
+        let camera_pos = -camera_distance * DVec3::Z;
+        let field = Field::new(radius, &camera_pos);
+        let cache = RayCache::compute_new(10000, &field, &camera_pos, fov_radians);
         Self { cache }
     }
 

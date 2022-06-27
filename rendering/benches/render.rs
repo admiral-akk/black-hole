@@ -20,7 +20,11 @@ pub fn render_benchmark(c: &mut Criterion) {
 
         let observer = Observer::new(pos, DVec3::Y, vertical_fov);
         let mut image_data = ImageData::new(dimensions.width, dimensions.height);
-        let black_hole = BlackHole::new(radius, &pos, vertical_fov * std::f64::consts::PI / 180.0);
+        let black_hole = BlackHole::new(
+            radius,
+            pos.length(),
+            vertical_fov * std::f64::consts::PI / 180.0,
+        );
         let stars = Stars::new(background);
         b.iter(|| black_box(render(&mut image_data, &observer, &stars, &black_hole)));
     });

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::DVec3;
-use path_integration::{cast_ray_steps, Field, Ray, RayCache};
+use path_integration::{Field, RayCache};
 
 fn generate_ray_cache(
     size: usize,

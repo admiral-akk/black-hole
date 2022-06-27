@@ -53,9 +53,9 @@ impl ImageData {
         for i in 0..self.image.len() {
             let c = &self.image[i];
             let buffer_index = 4 * i;
-            self.buf[buffer_index] = (c.x / c.w) as u8;
-            self.buf[buffer_index + 1] = (c.y / c.w) as u8;
-            self.buf[buffer_index + 2] = (c.z / c.w) as u8;
+            self.buf[buffer_index] = (((c.x as f32 / c.w as f32) / 255.0).sqrt() * 255.0) as u8;
+            self.buf[buffer_index + 1] = (((c.y as f32 / c.w as f32) / 255.0).sqrt() * 255.0) as u8;
+            self.buf[buffer_index + 2] = (((c.z as f32 / c.w as f32) / 255.0).sqrt() * 255.0) as u8;
             self.image[i] = IVec4::ZERO;
         }
 

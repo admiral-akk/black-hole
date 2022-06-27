@@ -26,7 +26,11 @@ fn main() {
 
     let observer = Observer::new(pos, DVec3::Y, vertical_fov);
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
-    let black_hole = BlackHole::new(radius, &pos, std::f64::consts::PI * vertical_fov / 180.0);
+    let black_hole = BlackHole::new(
+        radius,
+        pos.length(),
+        std::f64::consts::PI * vertical_fov / 180.0,
+    );
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     render(&mut image_data, &observer, &stars, &black_hole);
     image_data.write_image(&file_name);
