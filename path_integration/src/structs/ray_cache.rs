@@ -52,10 +52,6 @@ fn rescale(r: f64) -> f64 {
     r.powf(1.0 / 3.0)
 }
 
-fn sort_val(v: &DVec3) -> f64 {
-    v.z
-}
-
 impl RayCache {
     pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3, fov_radians: f64) -> Self {
         let mut cache = Vec::new();
