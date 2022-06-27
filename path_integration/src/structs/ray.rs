@@ -50,11 +50,7 @@ impl Ray {
     }
 
     pub fn new(pos: DVec3, dir: DVec3) -> Self {
-        Self {
-            pos,
-            dir: dir.normalize(),
-            up: DVec3::Y,
-        }
+        Ray::new_with_up(pos, dir, DVec3::Y)
     }
 
     pub fn canonical_dir(&self) -> DVec3 {
