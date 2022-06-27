@@ -194,4 +194,26 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn forward_vector_invariant_to_up_rotation() {
+        let eps = 0.000001;
+        let test_cases = [
+            Ray::new_with_up(-DVec3::Z, DVec3::Z, DVec3::Y),
+            Ray::new_with_up(-DVec3::Z, DVec3::Z, DVec3::X),
+            Ray::new_with_up(-DVec3::Z, DVec3::Z, -DVec3::Y),
+            Ray::new_with_up(-DVec3::Z, DVec3::Z, -DVec3::X),
+        ];
+        for ray in test_cases {
+            let dir = ray.canonical_dir();
+            assert_eq!(
+                (ray.dir - dir).length() < eps,
+                true,
+                "\nExpected: {:?}\nActual: {:?}\nRay: {:?}",
+                ray.dir,
+                dir,
+                ray
+            );
+        }
+    }
 }
