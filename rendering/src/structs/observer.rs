@@ -13,6 +13,7 @@ pub struct Observer {
     canon_up: DVec3,
     canon_right: DVec3,
     view_width: f64,
+    from_canon: Quaternion<f64>,
 }
 
 fn canonical_rotation(ray: &Ray) -> Quaternion<f64> {
@@ -66,6 +67,7 @@ impl Observer {
             canon_up,
             canon_right,
             view_width: view_mag,
+            from_canon,
         }
     }
 
@@ -73,7 +75,7 @@ impl Observer {
         let ray = self.to_ray(view_x, view_y);
         let canonical = ray.canonical_dir();
         let alt_canon = self.alt_canon_dir(view_x, view_y).normalize();
-        let epsilon = 0.000001;
+        let epsilon = 0.0001;
         if (canonical - alt_canon).length() > epsilon {
             println!("canon differs!");
             println!("true canon: {:?}", canonical);
@@ -82,6 +84,16 @@ impl Observer {
         }
         let fetch = black_hole.fetch_final_dir(alt_canon.z);
         if fetch.is_some() {
+            let f_dor = ray.from_canonical_dir(&fetch.unwrap()).normalize();
+            let test = self
+                .to_final_dir_transform(view_x, view_y, &fetch.unwrap())
+                .normalize();
+            if (f_dor - test).length() > epsilon {
+                println!("final differs!");
+                println!("true final: {:?}", f_dor);
+                println!("obvs final: {:?}", test);
+                panic!();
+            }
             return Some(ray.from_canonical_dir(&fetch.unwrap()));
         }
         return fetch;
@@ -95,6 +107,16 @@ impl Observer {
         let angle = f64::atan2(canon.y, -canon.x);
         let final_rot = quaternion::euler_angles(0.0, 0.0, angle);
         DVec3::from_array(quaternion::rotate_vector(final_rot, canon.to_array()))
+    }
+
+    fn to_final_dir_transform(&self, view_x: f64, view_y: f64, dir: &DVec3) -> DVec3 {
+        let canon = self.view_width
+            * ((view_x - 0.5) * self.canon_right + (view_y - 0.5) * self.canon_up)
+            + self.canon_forward;
+        let angle = f64::atan2(canon.y, -canon.x);
+        let final_rot = quaternion::euler_angles(0.0, 0.0, -angle);
+        let inv = quaternion::rotate_vector(final_rot, dir.to_array());
+        DVec3::from_array(quaternion::rotate_vector(self.from_canon, inv))
     }
 
     fn to_ray(&self, view_x: f64, view_y: f64) -> Ray {
