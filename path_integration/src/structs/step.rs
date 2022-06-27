@@ -1,4 +1,4 @@
-use crate::{particle::Particle, Field};
+use super::{field::Field, particle::Particle};
 
 const MIN_STEP: f64 = 0.01;
 

@@ -1,8 +1,6 @@
 use glam::DVec3;
 
-use crate::{Field, Ray};
-
-use super::ray_cache::RayCache;
+use crate::{structs::ray_cache::RayCache, Field, Ray};
 
 pub struct BlackHole {
     cache: RayCache,

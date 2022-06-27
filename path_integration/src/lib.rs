@@ -1,17 +1,15 @@
 use glam::DVec3;
-use particle::Particle;
+use structs::particle::Particle;
 
-mod ray;
 mod structs;
-pub use ray::Ray;
+pub use structs::ray::Ray;
 
-pub use structs::black_hole::BlackHole;
+mod black_hole;
+pub use black_hole::BlackHole;
 
-mod field;
-mod particle;
-mod step;
-pub use field::Field;
-use step::{hit, step_particle};
+pub use structs::field::Field;
+use structs::step::{hit, step_particle};
+
 pub use structs::ray_cache::RayCache;
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
