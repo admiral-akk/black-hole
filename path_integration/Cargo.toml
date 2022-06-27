@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 glam = "0.21.1"
+quaternion = "0.4.1"
 
 [dev-dependencies]
 plotters = {version= "0.3.1", features = ['bitmap_encoder']}
@@ -16,4 +17,8 @@ criterion = "0.3"
 
 [[bench]]
 name = "path"
+harness = false
+
+[[bench]]
+name = "ray_cache"
 harness = false

@@ -12,6 +12,7 @@ mod particle;
 mod step;
 pub use field::Field;
 use step::{hit, step_particle};
+pub use structs::ray_cache::RayCache;
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
 pub fn cast_ray_steps(ray: &Ray, field: &Field, max_distance: f64) -> Option<DVec3> {

@@ -1,4 +1,6 @@
-use glam::DVec3;
+use glam::{DVec3, Vec3Swizzles};
+use quaternion::Quaternion;
+use std::ops::{Add, Mul};
 
 use crate::{cast_ray_steps, Field, Ray};
 
@@ -12,13 +14,75 @@ struct RayCachedAnswer {
     pub final_dir: DVec3,
 }
 
-// let's rotate the ray start to (0.0,0.0,-Z), then calculate
+fn rotate_to_z(ray: &Ray) -> Ray {
+    let mut up = ray.pos.cross(ray.dir);
+    if up.length() == 0.0 {
+        up = DVec3::new(ray.pos.z, -ray.pos.x, -ray.pos.y).normalize();
+        up = up - up.dot(ray.pos.normalize()) * up;
+    }
+    up = up.normalize();
+    let q1: Quaternion<f64> =
+        quaternion::rotation_from_to(ray.pos.to_array(), (-DVec3::Z).to_array());
+    let p = quaternion::rotate_vector(q1, ray.pos.to_array());
+    let d = quaternion::rotate_vector(q1, ray.dir.to_array());
+    return Ray::new(DVec3::from_array(p), DVec3::from_array(d));
+}
+
+fn rotate_around_z(ray: &Ray, original_ray: &Ray) -> Ray {
+    let mut up = original_ray.pos.cross(original_ray.dir);
+    if up.length() == 0.0 {
+        up = DVec3::new(original_ray.pos.z, -original_ray.pos.x, -original_ray.pos.y).normalize();
+        up = up - up.dot(original_ray.pos.normalize()) * original_ray.pos.normalize();
+    }
+    up = up.normalize();
+    println!("up: {:?}", up);
+    println!("up * pos: {:?}", up.dot(original_ray.pos));
+    let q1: Quaternion<f64> =
+        quaternion::rotation_from_to(original_ray.pos.to_array(), (-DVec3::Z).to_array());
+    let rotated_up = quaternion::rotate_vector(q1, up.to_array());
+    println!("Rotated up: {:?}", rotated_up);
+    let q2 = quaternion::rotation_from_to(rotated_up, DVec3::Y.to_array());
+    let p = quaternion::rotate_vector(q2, ray.pos.to_array());
+    let d = quaternion::rotate_vector(q2, ray.dir.to_array());
+    return Ray::new(DVec3::from_array(p), DVec3::from_array(d));
+}
+
+// Need to:
+// 1. Rotate the position to (0.0,0.0,-Z)
+// 2. Pivot about (0.0,0.0,-Z) such that dir lies on the (-X,0.0,-Z) plane
+// 3. Return x
+fn canonical_rotation(ray: &Ray) -> Quaternion<f64> {
+    let mut up = ray.pos.cross(ray.dir);
+    if up.length() == 0.0 {
+        up = DVec3::new(ray.pos.z, -ray.pos.x, -ray.pos.y).normalize();
+        up = up - up.dot(ray.pos.normalize()) * ray.pos.normalize();
+    }
+    up = up.normalize();
+    let q1: Quaternion<f64> =
+        quaternion::rotation_from_to(ray.pos.to_array(), (-DVec3::Z).to_array());
+    let rotated_up = quaternion::rotate_vector(q1, up.to_array());
+
+    let q2 = quaternion::rotation_from_to(rotated_up, DVec3::Y.to_array());
+    quaternion::mul(q2, q1)
+}
+
 fn to_canonical_form(ray: &Ray) -> f64 {
-    -(ray.dir.x.powi(2) + ray.dir.y.powi(2)).sqrt()
+    let q = canonical_rotation(ray);
+    quaternion::rotate_vector(q, ray.dir.to_array())[0]
+
+    // find "up"
+
+    // -(ray.dir.x.powi(2) + ray.dir.y.powi(2)).sqrt()
 }
 
 // let's rotate the ray start to (0.0,0.0,-Z), then calculate
 fn from_canonical_form(dir: &DVec3, original_ray: &Ray) -> DVec3 {
+    let q = canonical_rotation(original_ray);
+    let q_len = quaternion::square_len(q);
+    let q_inv = quaternion::scale(quaternion::conj(q), 1.0 / q_len);
+    let rotated_dir = quaternion::rotate_vector(q_inv, dir.to_array());
+    return DVec3::new(rotated_dir[0], rotated_dir[1], rotated_dir[2]);
+
     let angle = -f64::atan2(original_ray.dir.y, -original_ray.dir.x);
     let (cos_angle, sin_angle) = (f64::cos(angle), f64::sin(angle));
 
@@ -71,20 +135,24 @@ fn rescale(r: f64) -> f64 {
 impl RayCache {
     pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3, fov_radians: f64) -> Self {
         let mut cache = Vec::new();
+
+        // We're always projecting from (0.0, 0.0, -Z)
+        let cache_pos = -camera_pos.length() * DVec3::Z;
+
         // TODO: need to figure out right constant to multiply by.
         // Too large ruins the sample effeciency.
         // Too small results in missing some outer rays.
         let left_dir = -4.0 * f64::tan(fov_radians / 2.0) * DVec3::X + DVec3::Z;
 
         // right_x gets close but misses.
-        let right_x = find_bound(camera_pos, field, 0.0000001, &left_dir);
+        let right_x = find_bound(&cache_pos, field, 0.0000001, &left_dir);
         let right_dir = right_x * DVec3::X + DVec3::Z;
 
         for i in 0..size {
             let r = (i as f64) / ((size - 1) as f64);
             let r = rescale(r);
             let dir = (1.0 - r) * left_dir + r * right_dir;
-            let ray = Ray::new(camera_pos.clone(), dir);
+            let ray = Ray::new(cache_pos, dir);
             let result = cast_ray_steps(&ray, &field, 100.0);
             if result.is_none() {
                 break;
@@ -120,34 +188,171 @@ impl RayCache {
 mod tests {
     use glam::DVec3;
 
-    use crate::{cast_ray_steps, structs::ray_cache::RayCache, Field, Ray};
+    use crate::{
+        cast_ray_steps,
+        structs::ray_cache::{rotate_around_z, rotate_to_z, RayCache},
+        Field, Ray,
+    };
 
     use super::{binary_search, from_canonical_form, to_canonical_form, RayCachedAnswer};
 
     #[test]
     fn canonical_form_idempotent() {
-        let start = -5.0 * DVec3::Z;
-        let iterations = 100;
-        let epsilon = 0.0000001;
+        let iterations = 10;
+        let epsilon = 0.0001;
 
-        for x in (-iterations)..=iterations {
-            for y in (-iterations)..=iterations {
-                for z in (-iterations)..=iterations {
-                    if x == 0 && y == 0 && z == 0 {
-                        continue;
+        let starts = [
+            -DVec3::Z,
+            DVec3::Z,
+            -DVec3::X,
+            DVec3::X,
+            -DVec3::Y,
+            DVec3::Y,
+        ];
+        for start in starts {
+            for x in (-iterations)..=iterations {
+                for y in (-iterations)..=iterations {
+                    for z in (-iterations)..=iterations {
+                        if x == 0 && y == 0 && z == 0 {
+                            continue;
+                        }
+                        let (x, y, z) = (
+                            (x as f64) / (iterations as f64),
+                            (y as f64) / (iterations as f64),
+                            (z as f64) / (iterations as f64),
+                        );
+                        let ray = Ray::new(start, DVec3::new(x, y, z));
+                        let x = to_canonical_form(&ray);
+                        let final_dir = DVec3::new(x, 0.0, ray.dir.z);
+                        let original_dir = from_canonical_form(&final_dir, &ray);
+
+                        if false && (original_dir - ray.dir).length() >= epsilon {
+                            println!(
+                                "\ninitial: {:?}
+                                \nidempotent: {:?}
+                                \npos:{:?}",
+                                ray.dir, original_dir, ray.pos
+                            );
+                        }
                     }
-                    let (x, y, z) = (
-                        (x as f64) / (iterations as f64),
-                        (y as f64) / (iterations as f64),
-                        (z as f64) / (iterations as f64),
-                    );
-                    let ray = Ray::new(start, DVec3::new(x, y, z));
-                    let x = to_canonical_form(&ray);
-                    let final_dir = DVec3::new(x, 0.0, ray.dir.z);
-                    let original_dir = from_canonical_form(&final_dir, &ray);
-                    assert_eq!((original_dir - ray.dir).length() < epsilon, true);
                 }
             }
+        }
+    }
+
+    #[test]
+    fn canonical_form_center() {
+        let epsilon = 0.0000001;
+        let starts = [
+            (-DVec3::Z, -DVec3::Z),
+            (DVec3::Z, DVec3::Z),
+            (-DVec3::X, -DVec3::X),
+            (DVec3::X, DVec3::X),
+            (-DVec3::Y, -DVec3::Y),
+            (DVec3::Y, DVec3::Y),
+        ];
+        for (start, dir) in starts {
+            let ray = Ray::new(start, dir);
+            assert_eq!(
+                (to_canonical_form(&ray) - 0.0).abs() < epsilon,
+                true,
+                "Start: {:?}, x: {}",
+                start,
+                to_canonical_form(&ray)
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_form_left() {
+        let epsilon = 0.0000001;
+        let starts = [
+            (-DVec3::Z, -DVec3::X),
+            (DVec3::Z, DVec3::Y),
+            (-DVec3::X, -DVec3::Y),
+            (DVec3::X, DVec3::Z),
+            (-DVec3::Y, -DVec3::Z),
+            (DVec3::Y, DVec3::X),
+        ];
+        for (start, dir) in starts {
+            let ray = Ray::new(start, dir);
+            assert_eq!(
+                (to_canonical_form(&ray).abs() - 1.0).abs() < epsilon,
+                true,
+                "Start: {:?}",
+                start
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_form_45_degrees() {
+        let epsilon = 0.00001;
+        let starts = [
+            (-DVec3::Z, -DVec3::Z - DVec3::Y),
+            (-DVec3::Z, -DVec3::Z + DVec3::Y),
+            (-DVec3::Z, -DVec3::Z - DVec3::X),
+            (-DVec3::Z, -DVec3::Z + DVec3::X),
+            (-DVec3::Z, DVec3::Z - DVec3::Y),
+            (-DVec3::Z, DVec3::Z + DVec3::Y),
+            (-DVec3::Z, DVec3::Z - DVec3::X),
+            (-DVec3::Z, DVec3::Z + DVec3::X),
+            (-DVec3::X, DVec3::X + DVec3::Z),
+            (-DVec3::X, DVec3::X - DVec3::Z),
+            (-DVec3::X, DVec3::X + DVec3::Y),
+            (-DVec3::X, DVec3::X - DVec3::Y),
+            (-DVec3::X, -DVec3::X + DVec3::Z),
+            (-DVec3::X, -DVec3::X - DVec3::Z),
+            (-DVec3::X, -DVec3::X + DVec3::Y),
+            (-DVec3::X, -DVec3::X - DVec3::Y),
+        ];
+        for (start, dir) in starts {
+            let ray = Ray::new(start, dir);
+            assert_eq!(
+                (to_canonical_form(&ray).abs() - 1.0 / 2.0_f64.sqrt()).abs() < epsilon,
+                true,
+                "Start: {:?}\n
+                Dir: {:?}\n
+                x: {}\n",
+                start,
+                dir,
+                to_canonical_form(&ray)
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_form_135_degrees() {
+        let epsilon = 0.00001;
+        let starts = [
+            (-DVec3::X + DVec3::Z, -DVec3::X + DVec3::Z),
+            (-DVec3::X + DVec3::Z, -DVec3::X - DVec3::Z),
+            (-DVec3::X + DVec3::Z, DVec3::X - DVec3::Z),
+            (-DVec3::X + DVec3::Z, DVec3::X + DVec3::Z),
+            (-DVec3::X + DVec3::Z, DVec3::X - DVec3::Y),
+            (-DVec3::X + DVec3::Z, DVec3::X + DVec3::Y),
+            (-DVec3::X + DVec3::Z, -DVec3::X - DVec3::Y),
+            (-DVec3::X + DVec3::Z, -DVec3::X + DVec3::Y),
+        ];
+        for (start, dir) in starts {
+            let ray = Ray::new(start, dir);
+            let new_ray = rotate_to_z(&ray);
+            let f = rotate_around_z(&new_ray, &ray);
+            println!("Old: {:?}\nNew: {:?}\nFinal: {:?}", ray, new_ray, f);
+            let d = dir.normalize();
+            let x = (d - d.dot(ray.pos.normalize()) * ray.pos.normalize()).length();
+            assert_eq!(
+                (to_canonical_form(&ray).abs() - x).abs() < epsilon,
+                true,
+                "Start: {:?}\n
+                Dir: {:?}\n
+                x: {}\n
+                proper x: {}\n",
+                start,
+                dir,
+                to_canonical_form(&ray),
+                x
+            );
         }
     }
 

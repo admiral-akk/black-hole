@@ -5,4 +5,7 @@
 *.tif
 *.exr
 *.png
+*.mp4
+*.webm
+*.apng
 perf.data*
