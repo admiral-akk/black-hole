@@ -17,4 +17,8 @@ impl BlackHole {
     pub fn final_dir(&self, ray: &Ray) -> Option<DVec3> {
         self.cache.final_dir(ray)
     }
+
+    pub fn fetch_final_dir(&self, z: f64) -> Option<DVec3> {
+        self.cache.fetch_final_dir(z)
+    }
 }

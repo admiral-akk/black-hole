@@ -1,7 +1,7 @@
 use std::f64::consts::PI;
 
 use glam::DVec3;
-use path_integration::Ray;
+use path_integration::{BlackHole, Ray};
 
 pub struct Observer {
     pos: DVec3,
@@ -12,7 +12,6 @@ pub struct Observer {
 
 impl Observer {
     pub fn new(pos: DVec3, forward: DVec3, up: DVec3, vertical_fov_degrees: f64) -> Self {
-        // always face towards the black hole
         let forward = forward.normalize();
         let view_mag = 2.0 * f64::tan(PI * vertical_fov_degrees / 360.0);
         let up = view_mag * (up - forward.dot(up) * up.normalize()).normalize();
@@ -25,18 +24,20 @@ impl Observer {
         }
     }
 
+    pub fn to_final_dir(&self, view_x: f64, view_y: f64, black_hole: &BlackHole) -> Option<DVec3> {
+        let ray = self.to_ray(view_x, view_y);
+        let canonical = ray.canonical_dir();
+        let fetch = black_hole.fetch_final_dir(canonical.z);
+        if fetch.is_some() {
+            return Some(ray.from_canonical_dir(&fetch.unwrap()));
+        }
+        return fetch;
+    }
+
     fn to_ray(&self, view_x: f64, view_y: f64) -> Ray {
         let dir =
             ((view_x - 0.5) * self.right + (view_y - 0.5) * self.up + self.forward).normalize();
         Ray::new_with_up(self.pos, dir, self.up.normalize())
-    }
-
-    pub fn to_rays(&self, view_positions: &Vec<(f64, f64)>) -> Vec<Ray> {
-        let mut rays = Vec::new();
-        for (view_x, view_y) in view_positions {
-            rays.push(self.to_ray(*view_x, *view_y));
-        }
-        rays
     }
 }
 

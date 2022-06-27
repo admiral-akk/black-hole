@@ -97,6 +97,21 @@ impl RayCache {
 
         Some(ray.from_canonical_dir(&lerp))
     }
+
+    pub fn fetch_final_dir(&self, z: f64) -> Option<DVec3> {
+        if z > self.cache[self.cache.len() - 1].z {
+            return None;
+        }
+
+        let closest_index = binary_search(&self.cache, z);
+        let left = &self.cache[closest_index];
+        let right = &self.cache[closest_index + 1];
+        let diff = right.z - left.z;
+
+        let lerp = DVec3::lerp(left.final_dir, right.final_dir, (z - left.z) / diff);
+
+        Some(lerp)
+    }
 }
 
 #[cfg(test)]

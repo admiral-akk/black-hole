@@ -20,9 +20,8 @@ pub fn render(
     for x in 0..width {
         for y in 0..height {
             let samples = image_data.get_samples(x, y);
-            let rays = observer.to_rays(&samples);
-            for ray in rays {
-                let final_dir = black_hole.final_dir(&ray);
+            for (view_x, view_y) in samples {
+                let final_dir = observer.to_final_dir(view_x, view_y, black_hole);
                 let mut c = [0, 0, 0, 255];
                 if final_dir.is_some() {
                     c = stars.get_rgba(&(final_dir.unwrap()));
