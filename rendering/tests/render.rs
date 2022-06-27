@@ -184,7 +184,7 @@ mod tests {
         let radius = 1.5;
 
         let black_hole = BlackHole::new(radius, 5.0, vertical_fov * std::f64::consts::PI / 180.0);
-        for i in 0..1080 {
+        for i in 0..1 {
             let dim = 50 * 2_usize.pow(4);
             let dimensions = Dimensions::new(dim, dim);
             let angle = i as f64;
@@ -197,10 +197,7 @@ mod tests {
             let stars = Stars::new(background);
             render(&mut image_data, &observer, &stars, &black_hole);
 
-            let file_name = format!(
-                "gif3/black_hole_field_{}_size_{}_angle_{}",
-                radius, dim, angle
-            );
+            let file_name = format!("black_hole_field_{}_size_{}_angle_{}", radius, dim, angle);
             image_data.write_image(&file_name);
         }
 

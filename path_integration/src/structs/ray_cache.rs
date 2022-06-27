@@ -1,6 +1,5 @@
-use glam::{DVec3, Vec3Swizzles};
+use glam::DVec3;
 use quaternion::Quaternion;
-use std::ops::{Add, Mul};
 
 use crate::{cast_ray_steps, Field, Ray};
 
@@ -12,39 +11,6 @@ pub struct RayCache {
 struct RayCachedAnswer {
     pub x: f64,
     pub final_dir: DVec3,
-}
-
-fn rotate_to_z(ray: &Ray) -> Ray {
-    let mut up = ray.pos.cross(ray.dir);
-    if up.length() == 0.0 {
-        up = DVec3::new(ray.pos.z, -ray.pos.x, -ray.pos.y).normalize();
-        up = up - up.dot(ray.pos.normalize()) * up;
-    }
-    up = up.normalize();
-    let q1: Quaternion<f64> =
-        quaternion::rotation_from_to(ray.pos.to_array(), (-DVec3::Z).to_array());
-    let p = quaternion::rotate_vector(q1, ray.pos.to_array());
-    let d = quaternion::rotate_vector(q1, ray.dir.to_array());
-    return Ray::new(DVec3::from_array(p), DVec3::from_array(d));
-}
-
-fn rotate_around_z(ray: &Ray, original_ray: &Ray) -> Ray {
-    let mut up = original_ray.pos.cross(original_ray.dir);
-    if up.length() == 0.0 {
-        up = DVec3::new(original_ray.pos.z, -original_ray.pos.x, -original_ray.pos.y).normalize();
-        up = up - up.dot(original_ray.pos.normalize()) * original_ray.pos.normalize();
-    }
-    up = up.normalize();
-    println!("up: {:?}", up);
-    println!("up * pos: {:?}", up.dot(original_ray.pos));
-    let q1: Quaternion<f64> =
-        quaternion::rotation_from_to(original_ray.pos.to_array(), (-DVec3::Z).to_array());
-    let rotated_up = quaternion::rotate_vector(q1, up.to_array());
-    println!("Rotated up: {:?}", rotated_up);
-    let q2 = quaternion::rotation_from_to(rotated_up, DVec3::Y.to_array());
-    let p = quaternion::rotate_vector(q2, ray.pos.to_array());
-    let d = quaternion::rotate_vector(q2, ray.dir.to_array());
-    return Ray::new(DVec3::from_array(p), DVec3::from_array(d));
 }
 
 // Need to:
@@ -69,10 +35,6 @@ fn canonical_rotation(ray: &Ray) -> Quaternion<f64> {
 fn to_canonical_form(ray: &Ray) -> f64 {
     let q = canonical_rotation(ray);
     quaternion::rotate_vector(q, ray.dir.to_array())[0]
-
-    // find "up"
-
-    // -(ray.dir.x.powi(2) + ray.dir.y.powi(2)).sqrt()
 }
 
 // let's rotate the ray start to (0.0,0.0,-Z), then calculate
@@ -81,16 +43,7 @@ fn from_canonical_form(dir: &DVec3, original_ray: &Ray) -> DVec3 {
     let q_len = quaternion::square_len(q);
     let q_inv = quaternion::scale(quaternion::conj(q), 1.0 / q_len);
     let rotated_dir = quaternion::rotate_vector(q_inv, dir.to_array());
-    return DVec3::new(rotated_dir[0], rotated_dir[1], rotated_dir[2]);
-
-    let angle = -f64::atan2(original_ray.dir.y, -original_ray.dir.x);
-    let (cos_angle, sin_angle) = (f64::cos(angle), f64::sin(angle));
-
-    DVec3::new(
-        dir.x * cos_angle - dir.y * sin_angle,
-        dir.x * sin_angle + dir.y * cos_angle,
-        dir.z,
-    )
+    return DVec3::from_array(rotated_dir);
 }
 
 // Finds the element with largest val.x such that val.x <= x
@@ -188,11 +141,7 @@ impl RayCache {
 mod tests {
     use glam::DVec3;
 
-    use crate::{
-        cast_ray_steps,
-        structs::ray_cache::{rotate_around_z, rotate_to_z, RayCache},
-        Field, Ray,
-    };
+    use crate::{cast_ray_steps, structs::ray_cache::RayCache, Field, Ray};
 
     use super::{binary_search, from_canonical_form, to_canonical_form, RayCachedAnswer};
 
@@ -336,9 +285,6 @@ mod tests {
         ];
         for (start, dir) in starts {
             let ray = Ray::new(start, dir);
-            let new_ray = rotate_to_z(&ray);
-            let f = rotate_around_z(&new_ray, &ray);
-            println!("Old: {:?}\nNew: {:?}\nFinal: {:?}", ray, new_ray, f);
             let d = dir.normalize();
             let x = (d - d.dot(ray.pos.normalize()) * ray.pos.normalize()).length();
             assert_eq!(
