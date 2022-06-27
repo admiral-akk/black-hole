@@ -69,11 +69,7 @@ mod tests {
 
         let radius = 1.0;
 
-        let black_hole = BlackHole::new(
-            radius,
-            pos.length(),
-            vertical_fov * std::f64::consts::PI / 180.0,
-        );
+        let black_hole = BlackHole::new(radius, pos.length());
         (image_data, observer, stars, black_hole)
     }
 

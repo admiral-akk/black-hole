@@ -26,11 +26,7 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                pos.length(),
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole = BlackHole::new(radius, pos.length());
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("uv_field_{}_size_{}", radius, dim);
@@ -53,11 +49,7 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                pos.length(),
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole = BlackHole::new(radius, pos.length());
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("uv_field_{}_size_{}", radius, dim);
@@ -81,11 +73,7 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                pos.length(),
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole = BlackHole::new(radius, pos.length());
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("black_hole_field_{}_size_{}", radius, dim);
@@ -109,11 +97,7 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                pos.length(),
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole = BlackHole::new(radius, pos.length());
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("black_hole_field_{}_size_{}", radius, dim);
@@ -137,11 +121,7 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                pos.length(),
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole = BlackHole::new(radius, pos.length());
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("black_hole_field_{}_size_{}_below", radius, dim);
@@ -165,11 +145,7 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(
-                radius,
-                pos.length(),
-                vertical_fov * std::f64::consts::PI / 180.0,
-            );
+            let black_hole = BlackHole::new(radius, pos.length());
             render(&mut image_data, &observer, &stars, &black_hole);
 
             let file_name = format!("black_hole_field_{}_size_{}_left", radius, dim);
@@ -183,7 +159,7 @@ mod tests {
         let vertical_fov = 75.0;
         let radius = 1.5;
 
-        let black_hole = BlackHole::new(radius, 5.0, vertical_fov * std::f64::consts::PI / 180.0);
+        let black_hole = BlackHole::new(radius, 5.0);
         for i in 0..1 {
             let dim = 50 * 2_usize.pow(4);
             let dimensions = Dimensions::new(dim, dim);
