@@ -9,18 +9,18 @@ pub struct RayCache {
 
 #[derive(Debug)]
 struct RayCachedAnswer {
-    pub x: f64,
+    pub z: f64,
     pub final_dir: DVec3,
 }
 
-// Finds the element with largest val.x such that val.x <= x
-// Assumes that cache[0].x <= x
-fn binary_search(cache: &[RayCachedAnswer], x: f64) -> usize {
+// Finds the element with largest val.x such that val.z <= z
+// Assumes that cache[0].z <= z
+fn binary_search(cache: &[RayCachedAnswer], z: f64) -> usize {
     let mut low = 0;
     let mut high = cache.len();
     while high > low + 1 {
         let mid = (high + low) / 2;
-        if cache[mid].x <= x {
+        if cache[mid].z <= z {
             low = mid;
         } else {
             high = mid;
@@ -30,26 +30,30 @@ fn binary_search(cache: &[RayCachedAnswer], x: f64) -> usize {
     low
 }
 
-fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64, left_dir: &DVec3) -> f64 {
-    let mut left = left_dir.clone();
-    let mut right = DVec3::Z;
-    while right.x - left.x > epsilon {
-        let center = 0.5 * (left + right);
-        let ray = Ray::new(*camera_pos, center);
+fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64) -> f64 {
+    let (mut miss_z, mut hit_z) = (-1.0, 1.0);
+    while hit_z - miss_z > epsilon {
+        let z = 0.5 * (hit_z + miss_z);
+        let test = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
+        let ray = Ray::new(*camera_pos, test);
         let final_dir = cast_ray_steps(&ray, field, 100.0);
         if final_dir.is_none() {
             // hit the black hole
-            right = center;
+            hit_z = test.z;
         } else {
-            left = center;
+            miss_z = test.z;
         }
     }
-    left.x
+    miss_z
 }
 
 // want to skew sample ([0,1]) to 1 values, as they're closer to the boundary.
 fn rescale(r: f64) -> f64 {
     r.powf(1.0 / 3.0)
+}
+
+fn sort_val(v: &DVec3) -> f64 {
+    v.z
 }
 
 impl RayCache {
@@ -59,26 +63,22 @@ impl RayCache {
         // We're always projecting from (0.0, 0.0, -Z)
         let cache_pos = -camera_pos.length() * DVec3::Z;
 
-        // TODO: need to figure out right constant to multiply by.
-        // Too large ruins the sample effeciency.
-        // Too small results in missing some outer rays.
-        let left_dir = -4.0 * f64::tan(fov_radians / 2.0) * DVec3::X + DVec3::Z;
-
-        // right_x gets close but misses.
-        let right_x = find_bound(&cache_pos, field, 0.0000001, &left_dir);
-        let right_dir = right_x * DVec3::X + DVec3::Z;
+        let min_z = -1.0;
+        let max_z = find_bound(&cache_pos, field, 0.0000001);
 
         for i in 0..size {
             let r = (i as f64) / ((size - 1) as f64);
             let r = rescale(r);
-            let dir = (1.0 - r) * left_dir + r * right_dir;
+            let z = min_z + (max_z - min_z) * r;
+            let dir = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
             let ray = Ray::new(cache_pos, dir);
             let result = cast_ray_steps(&ray, &field, 100.0);
             if result.is_none() {
+                println!("Caching missed unexpectedly!");
                 break;
             } else {
                 cache.push(RayCachedAnswer {
-                    x: ray.dir.x,
+                    z: ray.dir.z,
                     final_dir: result.unwrap(),
                 })
             }
@@ -88,17 +88,17 @@ impl RayCache {
     }
 
     pub fn final_dir(&self, ray: &Ray) -> Option<DVec3> {
-        let x = ray.canonical_dir().x;
-        if x > self.cache[self.cache.len() - 1].x {
+        let z = ray.canonical_dir().z;
+        if z > self.cache[self.cache.len() - 1].z {
             return None;
         }
 
-        let closest_index = binary_search(&self.cache, x);
+        let closest_index = binary_search(&self.cache, z);
         let left = &self.cache[closest_index];
         let right = &self.cache[closest_index + 1];
-        let diff = right.x - left.x;
+        let diff = right.z - left.z;
 
-        let lerp = DVec3::lerp(left.final_dir, right.final_dir, (x - left.x) / diff);
+        let lerp = DVec3::lerp(left.final_dir, right.final_dir, (z - left.z) / diff);
 
         Some(ray.from_canonical_dir(&lerp))
     }
@@ -116,15 +116,15 @@ mod tests {
     fn binary_search_all() {
         let cache = [
             RayCachedAnswer {
-                x: -10.0,
+                z: -10.0,
                 final_dir: DVec3::ZERO,
             },
             RayCachedAnswer {
-                x: -2.0,
+                z: -2.0,
                 final_dir: DVec3::ZERO,
             },
             RayCachedAnswer {
-                x: 0.0,
+                z: 0.0,
                 final_dir: DVec3::ZERO,
             },
         ];

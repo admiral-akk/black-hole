@@ -176,6 +176,10 @@ mod tests {
                 DVec3::Z + (-DVec3::Y - DVec3::X).normalize(),
                 DVec3::Y,
             ),
+            Ray::new_with_up(-DVec3::Z, -DVec3::Z + DVec3::X, DVec3::Y),
+            Ray::new_with_up(-DVec3::Z, -DVec3::Z - DVec3::X, DVec3::Y),
+            Ray::new_with_up(-DVec3::Z, -DVec3::Z + DVec3::Y, DVec3::Y),
+            Ray::new_with_up(-DVec3::Z, -DVec3::Z - DVec3::Y, DVec3::Y),
         ];
         for ray in test_cases {
             let dir = ray.canonical_dir();
