@@ -94,7 +94,7 @@ impl Observer {
                 println!("obvs final: {:?}", test);
                 panic!();
             }
-            return Some(ray.from_canonical_dir(&fetch.unwrap()));
+            return Some(test);
         }
         return fetch;
     }
