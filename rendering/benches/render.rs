@@ -18,7 +18,7 @@ pub fn render_benchmark(c: &mut Criterion) {
 
         let radius = 1.0;
 
-        let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+        let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
         let mut image_data = ImageData::new(dimensions.width, dimensions.height);
         let black_hole = BlackHole::new(
             radius,

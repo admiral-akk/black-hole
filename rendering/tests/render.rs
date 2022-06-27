@@ -18,7 +18,7 @@ mod tests {
             let dimensions = Dimensions::new(dim, dim);
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
 
             let background = image::open("uv.png").unwrap();
@@ -45,7 +45,7 @@ mod tests {
             let dimensions = Dimensions::new(dim, dim);
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
 
             let background = image::open("uv.png").unwrap();
@@ -73,7 +73,7 @@ mod tests {
             let dimensions = Dimensions::new(dim, dim);
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
-            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
 
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
@@ -102,7 +102,7 @@ mod tests {
             let pos = -5.0 * DVec3::Z;
             let vertical_fov = 50.0;
 
-            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
@@ -130,7 +130,7 @@ mod tests {
             let pos = -5.0 * DVec3::Y;
             let vertical_fov = 50.0;
 
-            let observer = Observer::new(pos, DVec3::Z, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Z, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
@@ -158,7 +158,7 @@ mod tests {
             let pos = -5.0 * DVec3::X;
             let vertical_fov = 50.0;
 
-            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
@@ -191,7 +191,7 @@ mod tests {
             let rad_angle = std::f64::consts::PI * angle / (3.0 * 180.0);
             let pos = 5.0 * (DVec3::X * f64::cos(rad_angle) + DVec3::Z * f64::sin(rad_angle));
 
-            let observer = Observer::new(pos, DVec3::Y, vertical_fov);
+            let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);

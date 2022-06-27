@@ -9,11 +9,11 @@ pub struct Observer {
 }
 
 impl Observer {
-    pub fn new(pos: DVec3, up: DVec3, vertical_fov_degrees: f64) -> Self {
+    pub fn new(pos: DVec3, forward: DVec3, up: DVec3, vertical_fov_degrees: f64) -> Self {
         // always face towards the black hole
-        let forward = -1.0 * pos.normalize();
+        let forward = forward.normalize();
         let view_mag = 2.0 * f64::tan(std::f64::consts::PI * vertical_fov_degrees / 360.0);
-        let up = view_mag * (up - up.dot(forward.normalize()) * up.normalize());
+        let up = view_mag * (up - up.dot(forward.normalize()) * forward.normalize());
         let right = view_mag * forward.cross(up).normalize();
         Self {
             pos,
