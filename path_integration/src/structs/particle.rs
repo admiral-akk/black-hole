@@ -16,8 +16,4 @@ impl Particle {
             * DVec3::new(ray.dir.x as f64, ray.dir.y as f64, ray.dir.z as f64);
         Self { p, v }
     }
-
-    fn kinetic_energy(&self) -> f64 {
-        0.5 * self.v.length().powi(2)
-    }
 }
