@@ -1,13 +1,16 @@
 use glam::IVec4;
 use std::path::Path;
 
+use super::data::Data;
+
 pub struct ImageData {
     width: usize,
     half_sample_delta: f64,
     image: Vec<IVec4>,
     buf: Vec<u8>,
 }
-const SAMPLES_PER_DIMENSION: u32 = 1;
+const SAMPLES_PER_DIMENSION: usize = 1;
+const SAMPLES_PER_PIXEL: usize = SAMPLES_PER_DIMENSION * SAMPLES_PER_DIMENSION;
 
 impl ImageData {
     pub fn new(width: usize, height: usize) -> Self {
@@ -18,6 +21,36 @@ impl ImageData {
             half_sample_delta: 0.5 / ((SAMPLES_PER_DIMENSION as f64) * (width as f64)),
             image,
             buf,
+        }
+    }
+
+    pub fn set_samples(&self, data: &mut Vec<Data>) {
+        for x in 0..self.width {
+            for y in 0..self.width {
+                let (base_x, base_y) = (x as f64 / self.width as f64, y as f64 / self.width as f64);
+                for i_x in 0..SAMPLES_PER_DIMENSION {
+                    for i_y in 0..SAMPLES_PER_DIMENSION {
+                        let (view_x, view_y) = (
+                            base_x + self.half_sample_delta * ((2 * i_x + 1) as f64),
+                            base_y + self.half_sample_delta * ((2 * i_y + 1) as f64),
+                        );
+                        data[(self.width * y + x) * SAMPLES_PER_PIXEL
+                            + i_x * SAMPLES_PER_DIMENSION
+                            + i_y] = Data::Sample(x, y, view_x, view_y);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn load_colors(&mut self, data: &Vec<Data>) {
+        for sample in data.iter() {
+            match sample {
+                Data::RGBA(x, y, c) => {
+                    self.add_sample(*x, *y, c);
+                }
+                _ => {}
+            }
         }
     }
 
@@ -64,6 +97,10 @@ impl ImageData {
 
     pub fn get_dimensions(&self) -> (usize, usize) {
         (self.width, self.width)
+    }
+
+    pub fn get_sample_count(&self) -> usize {
+        self.width * self.width * (SAMPLES_PER_DIMENSION * SAMPLES_PER_DIMENSION) as usize
     }
 
     pub fn write_image(&mut self, file_name: &str) {

@@ -1,7 +1,10 @@
 use path_integration::BlackHole;
 use structs::stars::Stars;
 
-use crate::structs::{self, image_data::ImageData, observer::Observer};
+use crate::structs::{
+    self, data::Data, image_data::ImageData, observer::Observer,
+    polar_coordinates::PolarCoordinates,
+};
 
 pub fn render(
     image_data: &mut ImageData,
@@ -15,19 +18,24 @@ pub fn render(
     // 3. asking the black hole what those rays resolve to
     // 4. recombining the values into a single rgba value.
 
-    let (width, height) = image_data.get_dimensions();
+    // get an array to store the data
+    let mut data = vec![Data::None; image_data.get_sample_count()];
 
-    for x in 0..width {
-        for y in 0..height {
-            let samples = image_data.get_samples(x, y);
-            for (view_x, view_y) in samples {
-                let final_dir = observer.to_final_dir(view_x, view_y, black_hole);
-                let mut c = [0, 0, 0, 255];
-                if final_dir.is_some() {
-                    c = stars.get_rgba(&(final_dir.unwrap()));
-                }
-                image_data.add_sample(x, y, &c);
-            }
-        }
-    }
+    // get the x/y -> view_port
+    image_data.set_samples(&mut data);
+
+    // get the view_port -> start_dir
+    observer.to_start_dir(&mut data);
+
+    // get the start_dir -> final_dir
+    observer.all_to_final_dir(&black_hole, &mut data);
+
+    // get the final_dir -> polar coordinates
+    PolarCoordinates::to_polar(&mut data);
+
+    // get the polar_coordinates -> colors
+    stars.to_rgba(&mut data);
+
+    // apply the colors to image
+    image_data.load_colors(&data);
 }

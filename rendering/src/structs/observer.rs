@@ -3,6 +3,8 @@ use std::f64::consts::PI;
 use glam::f64::DQuat;
 use glam::DVec3;
 use path_integration::BlackHole;
+
+use super::data::Data;
 pub struct Observer {
     canon_forward: DVec3,
     canon_up: DVec3,
@@ -44,6 +46,38 @@ impl Observer {
             canon_right,
             view_width: view_mag,
             from_canon,
+        }
+    }
+
+    pub fn to_start_dir(&self, data: &mut Vec<Data>) {
+        for sample in data.iter_mut() {
+            match sample {
+                Data::Sample(x, y, view_x, view_y) => {
+                    *sample = Data::CanonDir(*x, *y, self.canon(*view_x, *view_y));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn all_to_final_dir(&self, black_hole: &BlackHole, data: &mut Vec<Data>) {
+        for sample in data.iter_mut() {
+            match sample {
+                Data::CanonDir(x, y, start_dir) => {
+                    let fetch = black_hole.fetch_final_dir(start_dir.z);
+                    if fetch.is_some() {
+                        let test = self
+                            .to_final_dir_transform(&start_dir, &fetch.unwrap())
+                            .normalize();
+                        *sample = Data::FinalDir(*x, *y, test);
+                    } else {
+                        *sample = Data::NoFinalDir(*x, *y);
+                    }
+                }
+                _ => {
+                    panic!("Should be canon dir format here!")
+                }
+            }
         }
     }
 
