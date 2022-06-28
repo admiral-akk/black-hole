@@ -8,6 +8,7 @@ pub struct ImageData {
     half_sample_delta: f32,
     image: Vec<Vec3>,
     buf: Vec<u8>,
+    data: Vec<Data>,
 }
 const SAMPLES_PER_DIMENSION: usize = 2;
 const SAMPLES_PER_PIXEL: usize = SAMPLES_PER_DIMENSION * SAMPLES_PER_DIMENSION;
@@ -18,17 +19,22 @@ fn color_correction(v: f32) -> f32 {
 }
 impl ImageData {
     pub fn new(width: usize, height: usize) -> Self {
-        let image = vec![Vec3::ZERO; width * height];
-        let buf = vec![255; 4 * width * height];
+        let sample_count = width * width * SAMPLES_PER_PIXEL;
         Self {
             width,
             half_sample_delta: 0.5 / ((SAMPLES_PER_DIMENSION as f32) * (width as f32)),
-            image,
-            buf,
+            image: vec![Vec3::ZERO; width * height],
+            buf: vec![255; 4 * width * height],
+            data: vec![Data::None; sample_count],
         }
     }
 
-    pub fn set_samples(&self, data: &mut Vec<Data>) {
+    pub fn get_data_buffer(&mut self) -> &mut Vec<Data> {
+        self.set_samples();
+        &mut self.data
+    }
+
+    pub fn set_samples(&mut self) {
         for x in 0..self.width {
             for y in 0..self.width {
                 let index = self.to_index(x, y);
@@ -39,7 +45,7 @@ impl ImageData {
                             base_x + self.half_sample_delta * ((2 * i_x + 1) as f32),
                             base_y + self.half_sample_delta * ((2 * i_y + 1) as f32),
                         );
-                        data[(self.width * y + x) * SAMPLES_PER_PIXEL
+                        self.data[(self.width * y + x) * SAMPLES_PER_PIXEL
                             + i_x * SAMPLES_PER_DIMENSION
                             + i_y] = Data::Sample(index, view_x, view_y);
                     }
@@ -48,11 +54,13 @@ impl ImageData {
         }
     }
 
-    pub fn load_colors(&mut self, data: &Vec<Data>) {
-        for sample in data.iter() {
+    pub fn load_colors(&mut self) {
+        for sample in self.data.iter() {
             match sample {
                 Data::RGBA(index, c) => {
-                    self.add_sample(*index, c);
+                    self.image[*index].x += c[0] as f32;
+                    self.image[*index].y += c[1] as f32;
+                    self.image[*index].z += c[2] as f32;
                 }
                 _ => {}
             }
@@ -60,12 +68,6 @@ impl ImageData {
     }
     fn to_index(&self, x: usize, y: usize) -> usize {
         self.width * (self.width - y - 1) + x
-    }
-
-    pub fn add_sample(&mut self, index: usize, c: &[u8; 4]) {
-        self.image[index].x += c[0] as f32;
-        self.image[index].y += c[1] as f32;
-        self.image[index].z += c[2] as f32;
     }
 
     fn get_image(&mut self) -> &[u8] {

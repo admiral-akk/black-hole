@@ -18,11 +18,8 @@ pub fn render(
     // 3. asking the black hole what those rays resolve to
     // 4. recombining the values into a single rgba value.
 
-    // get an array to store the data
-    let mut data = vec![Data::None; image_data.get_sample_count()];
-
     // get the index -> view_port
-    image_data.set_samples(&mut data);
+    let mut data = image_data.get_data_buffer();
 
     // get the view_port -> start_dir
     observer.to_start_dir(&mut data);
@@ -37,5 +34,5 @@ pub fn render(
     stars.to_rgba(&mut data);
 
     // apply the colors to image
-    image_data.load_colors(&data);
+    image_data.load_colors();
 }

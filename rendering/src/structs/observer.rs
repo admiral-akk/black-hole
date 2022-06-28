@@ -75,13 +75,9 @@ impl Observer {
                         empty_index += 1;
                     }
                 }
-                _ => {
-                    panic!("Should be canon dir format here!")
-                }
+                _ => {}
             }
         }
-
-        data.drain(empty_index..data.len());
     }
 
     // note that this isn't rotated into the XZ plane.
