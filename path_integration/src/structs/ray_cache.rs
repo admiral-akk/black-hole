@@ -4,29 +4,13 @@ use crate::{cast_ray_steps, Field, Ray};
 
 pub struct RayCache {
     cache: Vec<RayCachedAnswer>,
+    max_z: f32,
 }
 
 #[derive(Debug)]
 struct RayCachedAnswer {
     pub z: f32,
     pub final_dir: Vec3,
-}
-
-// Finds the element with largest val.z such that val.z < z
-// Assumes that cache[0].z <= z
-fn binary_search(cache: &[RayCachedAnswer], z: f32) -> usize {
-    let mut low = 0;
-    let mut high = cache.len();
-    while high > low + 1 {
-        let mid = (high + low) / 2;
-        if cache[mid].z <= z {
-            low = mid;
-        } else {
-            high = mid;
-        }
-    }
-
-    low
 }
 
 fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64) -> f64 {
@@ -46,9 +30,16 @@ fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64) -> f64 {
     miss_z
 }
 
-// want to skew sample ([0,1]) to 1 values, as they're closer to the boundary.
-fn rescale(r: f64) -> f64 {
-    r.powf(1.0 / 5.0)
+const MIN_Z: f32 = -1.0;
+const MIN_Z_F64: f64 = MIN_Z as f64;
+
+fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
+    let r = (index as f64) / ((size - 1) as f64);
+    let r = r.sqrt();
+    MIN_Z_F64 + (max_z - MIN_Z_F64) * r
+}
+fn z_to_index(z: f32, size: usize, max_z: f32) -> usize {
+    ((size - 1) as f32 * ((z - MIN_Z) / (max_z - MIN_Z)).powi(2)) as usize
 }
 
 impl RayCache {
@@ -58,13 +49,10 @@ impl RayCache {
         // We're always projecting from (0.0, 0.0, -Z)
         let cache_pos = -camera_pos.length() * DVec3::Z;
 
-        let min_z = -1.0;
         let max_z = find_bound(&cache_pos, field, 0.0000001);
 
         for i in 0..size {
-            let r = (i as f64) / ((size - 1) as f64);
-            let r = rescale(r);
-            let z = min_z + (max_z - min_z) * r;
+            let z = index_to_z(i, size, max_z);
             let dir = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
             let ray = Ray::new(cache_pos, dir);
             let result = cast_ray_steps(&ray, &field, 100.0);
@@ -80,20 +68,25 @@ impl RayCache {
             }
         }
 
-        Self { cache }
+        Self {
+            cache,
+            max_z: max_z as f32,
+        }
     }
 
+    // r = (i / (size-1)).sqrt()
+    // z = -1 + (max_z +1)* (i / (size-1)).sqrt()
+    // if z', then
+
+    // (size-1)*(z + 1) ^ 2 / (max_z + 1) = i
+    // z[i] = (max_z + 1)
+    // i -> (max_z + 1)
     pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
-        let cache_last = self.cache.len() - 1;
-        if z > self.cache[cache_last].z {
+        if z > self.max_z {
             return None;
         }
-
-        let closest_index = binary_search(&self.cache, z);
+        let closest_index = z_to_index(z, self.cache.len() - 1, self.max_z);
         let left = &self.cache[closest_index];
-        if closest_index == cache_last {
-            return Some(left.final_dir);
-        }
         let right = &self.cache[closest_index + 1];
         let diff = right.z - left.z;
 
@@ -108,33 +101,6 @@ mod tests {
     use glam::{DVec3, Vec3};
 
     use crate::{cast_ray_steps, structs::ray_cache::RayCache, Field, Ray};
-
-    use super::{binary_search, RayCachedAnswer};
-
-    #[test]
-    fn binary_search_all() {
-        let cache = [
-            RayCachedAnswer {
-                z: -10.0,
-                final_dir: Vec3::ZERO,
-            },
-            RayCachedAnswer {
-                z: -2.0,
-                final_dir: Vec3::ZERO,
-            },
-            RayCachedAnswer {
-                z: 0.0,
-                final_dir: Vec3::ZERO,
-            },
-        ];
-
-        assert_eq!(binary_search(&cache, -10.0), 0);
-        assert_eq!(binary_search(&cache, -5.0), 0);
-        assert_eq!(binary_search(&cache, -2.0), 1);
-        assert_eq!(binary_search(&cache, -1.0), 1);
-        assert_eq!(binary_search(&cache, 0.0), 2);
-        assert_eq!(binary_search(&cache, 1.0), 2);
-    }
 
     #[test]
     fn ray_cache_absorbed_in_x_plane() {

@@ -46,8 +46,8 @@ fn main() {
 
     set_up(&mut file_name, &mut dimensions);
 
-    let distance = 2.0;
-    let vertical_fov = 20.0;
+    let distance = 2.5;
+    let vertical_fov = 120.0;
 
     let mut reader = Reader::open("uv.png").unwrap();
     reader.no_limits();
@@ -65,14 +65,14 @@ fn main() {
     }
     fs::create_dir(&full_folder_name).unwrap();
 
-    let orbit = circular_orbit_facing_horizon(distance as f32, 100);
+    let orbit = circular_orbit(distance as f32, 100);
     for i in 0..orbit.len() {
         let (pos, dir) = orbit[i];
         let observer = Observer::new(to_dvec(pos), to_dvec(dir), DVec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &black_hole);
         let frame_name = format!("{}/frame_{:04}", folder_name, i);
 
-        //image_data.write_image(&frame_name);
+        image_data.write_image(&frame_name);
     }
 }
 
