@@ -1,4 +1,4 @@
-use glam::DVec3;
+use glam::{DVec3, Vec3};
 
 use super::polar_coordinates::PolarCoordinates;
 
@@ -6,7 +6,7 @@ use super::polar_coordinates::PolarCoordinates;
 pub enum Data {
     None,
     Sample(usize, usize, f32, f32),
-    CanonDir(usize, usize, DVec3),
+    CanonDir(usize, usize, Vec3),
     FinalDir(usize, usize, DVec3),
     Polar(usize, usize, PolarCoordinates),
     RGBA(usize, usize, [u8; 4]),
