@@ -27,8 +27,8 @@ impl PolarCoordinates {
     pub fn to_polar(data: &mut Vec<Data>) {
         for sample in data.iter_mut() {
             match sample {
-                Data::FinalDir(x, y, final_dir) => {
-                    *sample = Data::Polar(*x, *y, PolarCoordinates::new(final_dir));
+                Data::FinalDir(index, final_dir) => {
+                    *sample = Data::Polar(*index, PolarCoordinates::new(final_dir));
                 }
                 _ => {}
             }

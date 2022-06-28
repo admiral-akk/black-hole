@@ -31,6 +31,7 @@ impl ImageData {
     pub fn set_samples(&self, data: &mut Vec<Data>) {
         for x in 0..self.width {
             for y in 0..self.width {
+                let index = self.to_index(x, y);
                 let (base_x, base_y) = (x as f32 / self.width as f32, y as f32 / self.width as f32);
                 for i_x in 0..SAMPLES_PER_DIMENSION {
                     for i_y in 0..SAMPLES_PER_DIMENSION {
@@ -40,7 +41,7 @@ impl ImageData {
                         );
                         data[(self.width * y + x) * SAMPLES_PER_PIXEL
                             + i_x * SAMPLES_PER_DIMENSION
-                            + i_y] = Data::Sample(x, y, view_x, view_y);
+                            + i_y] = Data::Sample(index, view_x, view_y);
                     }
                 }
             }
@@ -50,8 +51,8 @@ impl ImageData {
     pub fn load_colors(&mut self, data: &Vec<Data>) {
         for sample in data.iter() {
             match sample {
-                Data::RGBA(x, y, c) => {
-                    self.add_sample(*x, *y, c);
+                Data::RGBA(index, c) => {
+                    self.add_sample(*index, c);
                 }
                 _ => {}
             }
@@ -61,8 +62,7 @@ impl ImageData {
         self.width * (self.width - y - 1) + x
     }
 
-    pub fn add_sample(&mut self, x: usize, y: usize, c: &[u8; 4]) {
-        let index = self.to_index(x, y);
+    pub fn add_sample(&mut self, index: usize, c: &[u8; 4]) {
         self.image[index].x += c[0] as f32;
         self.image[index].y += c[1] as f32;
         self.image[index].z += c[2] as f32;

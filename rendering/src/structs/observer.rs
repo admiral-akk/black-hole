@@ -54,8 +54,8 @@ impl Observer {
     pub fn to_start_dir(&self, data: &mut Vec<Data>) {
         for sample in data.iter_mut() {
             match sample {
-                Data::Sample(x, y, view_x, view_y) => {
-                    *sample = Data::CanonDir(*x, *y, self.canon(*view_x, *view_y));
+                Data::Sample(index, view_x, view_y) => {
+                    *sample = Data::CanonDir(*index, self.canon(*view_x, *view_y));
                 }
                 _ => {}
             }
@@ -67,11 +67,11 @@ impl Observer {
 
         for i in 0..data.len() {
             match data[i] {
-                Data::CanonDir(x, y, start_dir) => {
+                Data::CanonDir(index, start_dir) => {
                     let fetch = black_hole.fetch_final_dir(start_dir.z as f32);
                     if fetch.is_some() {
                         let test = self.to_final_dir_transform(&start_dir, &fetch.unwrap());
-                        data[empty_index] = Data::FinalDir(x, y, test);
+                        data[empty_index] = Data::FinalDir(index, test);
                         empty_index += 1;
                     }
                 }

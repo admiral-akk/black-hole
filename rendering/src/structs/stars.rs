@@ -14,7 +14,7 @@ impl Stars {
     pub fn to_rgba(&self, data: &mut Vec<Data>) {
         for sample in data.iter_mut() {
             match sample {
-                Data::Polar(x, y, polar) => {
+                Data::Polar(index, polar) => {
                     let x_image = (self.background.width() as f64) * (polar.phi as f64)
                         / std::f64::consts::TAU;
                     let y_image = (self.background.height() as f64) * (polar.theta as f64)
@@ -23,7 +23,7 @@ impl Stars {
                         (x_image as u32) % self.background.width(),
                         (y_image as u32) % self.background.height(),
                     );
-                    *sample = Data::RGBA(*x, *y, rgba.0);
+                    *sample = Data::RGBA(*index, rgba.0);
                 }
                 _ => {}
             }
