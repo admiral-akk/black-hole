@@ -13,11 +13,6 @@ impl BlackHole {
         let cache = RayCache::compute_new(10000, &field, &camera_pos);
         Self { cache }
     }
-
-    pub fn final_dir(&self, ray: &Ray) -> Option<DVec3> {
-        self.cache.final_dir(ray)
-    }
-
     pub fn fetch_final_dir(&self, z: f64) -> Option<DVec3> {
         self.cache.fetch_final_dir(z)
     }
