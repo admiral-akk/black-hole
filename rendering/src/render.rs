@@ -21,7 +21,7 @@ pub fn render(
     // get an array to store the data
     let mut data = vec![Data::None; image_data.get_sample_count()];
 
-    // get the x/y -> view_port
+    // get the index -> view_port
     image_data.set_samples(&mut data);
 
     // get the view_port -> start_dir

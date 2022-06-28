@@ -93,7 +93,7 @@ impl Observer {
     }
 
     fn to_final_dir_transform(&self, canon: &Vec3, dir: &Vec3) -> Vec3 {
-        let angle = f32::atan2(canon.y, -canon.x);
+        let angle = fast_math::atan2(canon.y, -canon.x);
         let first_rot = Quat::from_rotation_z(-angle);
         self.from_canon * first_rot * *dir
     }

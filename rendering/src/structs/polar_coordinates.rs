@@ -14,13 +14,13 @@ impl PolarCoordinates {
     // Note that y is up, not z.
     pub fn new(vec: &Vec3) -> PolarCoordinates {
         let horizontal_len = (vec.x * vec.x + vec.z * vec.z).sqrt();
-        let mut phi = f32::atan2(vec.z, vec.x);
+        let mut phi = fast_math::atan2(vec.z, vec.x);
         if phi < 0.0 {
             phi += TAU;
         }
         PolarCoordinates {
             phi,
-            theta: f32::atan2(vec.y, horizontal_len) + FRAC_PI_2,
+            theta: fast_math::atan2(vec.y, horizontal_len) + FRAC_PI_2,
         }
     }
 
@@ -62,7 +62,12 @@ mod tests {
         ];
         for (vector, phi) in test_cases {
             let polar = PolarCoordinates::new(&vector);
-            assert_eq!(polar.phi, phi, "Vector: {:?}", vector);
+            assert_eq!(
+                (polar.phi - phi).abs() < 0.0001,
+                true,
+                "Vector: {:?}",
+                vector
+            );
         }
     }
 
@@ -86,7 +91,12 @@ mod tests {
         ];
         for (vector, theta) in test_cases {
             let polar = PolarCoordinates::new(&vector);
-            assert_eq!(polar.theta, theta, "Vector: {:?}", vector);
+            assert_eq!(
+                (polar.theta - theta).abs() < 0.0001,
+                true,
+                "Vector: {:?}",
+                vector
+            );
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::{env, f64::consts::TAU};
+use std::{env, f64::consts::TAU, fs, path::Path};
 
 use glam::DVec3;
 
@@ -25,14 +25,21 @@ fn main() {
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let stars = Stars::new(image::DynamicImage::ImageRgb8(background));
     let black_hole = BlackHole::new(radius, distance);
-    let iterations = 30;
+    let iterations = 100;
+
+    let folder_name = format!("main/{}", file_name);
+    let full_folder_name = format!("output/{}", &folder_name);
+    if Path::new(&full_folder_name).exists() {
+        fs::remove_dir_all(&full_folder_name).unwrap();
+    }
+    fs::create_dir(&full_folder_name).unwrap();
 
     for i in 0..iterations {
         let angle = TAU * (i as f64) / (iterations as f64);
         let pos = -distance * (angle.cos() * DVec3::Z + angle.sin() * DVec3::X);
         let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &black_hole);
-        let frame_name = format!("animation/clear_4/{}_frame_{:04}", file_name, i);
+        let frame_name = format!("{}/frame_{:04}", folder_name, i);
 
         image_data.write_image(&frame_name);
     }
