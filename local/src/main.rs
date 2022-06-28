@@ -27,7 +27,7 @@ fn main() {
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
     let black_hole = BlackHole::new(radius, pos.length());
-    for i in 1..100 {
+    for _i in 1..100 {
         let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &black_hole);
     }
