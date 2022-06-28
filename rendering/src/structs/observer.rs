@@ -53,7 +53,7 @@ impl Observer {
         for sample in data.iter_mut() {
             match sample {
                 Data::Sample(x, y, view_x, view_y) => {
-                    *sample = Data::CanonDir(*x, *y, self.canon(*view_x, *view_y));
+                    *sample = Data::CanonDir(*x, *y, self.canon(*view_x as f64, *view_y as f64));
                 }
                 _ => {}
             }

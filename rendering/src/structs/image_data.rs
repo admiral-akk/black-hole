@@ -5,7 +5,7 @@ use super::data::Data;
 
 pub struct ImageData {
     width: usize,
-    half_sample_delta: f64,
+    half_sample_delta: f32,
     image: Vec<Vec3>,
     buf: Vec<u8>,
 }
@@ -22,7 +22,7 @@ impl ImageData {
         let buf = vec![255; 4 * width * height];
         Self {
             width,
-            half_sample_delta: 0.5 / ((SAMPLES_PER_DIMENSION as f64) * (width as f64)),
+            half_sample_delta: 0.5 / ((SAMPLES_PER_DIMENSION as f32) * (width as f32)),
             image,
             buf,
         }
@@ -31,12 +31,12 @@ impl ImageData {
     pub fn set_samples(&self, data: &mut Vec<Data>) {
         for x in 0..self.width {
             for y in 0..self.width {
-                let (base_x, base_y) = (x as f64 / self.width as f64, y as f64 / self.width as f64);
+                let (base_x, base_y) = (x as f32 / self.width as f32, y as f32 / self.width as f32);
                 for i_x in 0..SAMPLES_PER_DIMENSION {
                     for i_y in 0..SAMPLES_PER_DIMENSION {
                         let (view_x, view_y) = (
-                            base_x + self.half_sample_delta * ((2 * i_x + 1) as f64),
-                            base_y + self.half_sample_delta * ((2 * i_y + 1) as f64),
+                            base_x + self.half_sample_delta * ((2 * i_x + 1) as f32),
+                            base_y + self.half_sample_delta * ((2 * i_y + 1) as f32),
                         );
                         data[(self.width * y + x) * SAMPLES_PER_PIXEL
                             + i_x * SAMPLES_PER_DIMENSION
@@ -57,23 +57,6 @@ impl ImageData {
             }
         }
     }
-
-    pub fn get_samples(&self, x: usize, y: usize) -> Vec<(f64, f64)> {
-        let mut samples = Vec::new();
-
-        let (base_x, base_y) = (x as f64 / self.width as f64, y as f64 / self.width as f64);
-        for i_x in 0..SAMPLES_PER_DIMENSION {
-            for i_y in 0..SAMPLES_PER_DIMENSION {
-                let (view_x, view_y) = (
-                    base_x + self.half_sample_delta * ((2 * i_x + 1) as f64),
-                    base_y + self.half_sample_delta * ((2 * i_y + 1) as f64),
-                );
-                samples.push((view_x, view_y));
-            }
-        }
-        samples
-    }
-
     fn to_index(&self, x: usize, y: usize) -> usize {
         self.width * (self.width - y - 1) + x
     }

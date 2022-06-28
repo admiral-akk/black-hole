@@ -5,7 +5,7 @@ use super::polar_coordinates::PolarCoordinates;
 #[derive(Clone)]
 pub enum Data {
     None,
-    Sample(usize, usize, f64, f64),
+    Sample(usize, usize, f32, f32),
     CanonDir(usize, usize, DVec3),
     FinalDir(usize, usize, DVec3),
     Polar(usize, usize, PolarCoordinates),
