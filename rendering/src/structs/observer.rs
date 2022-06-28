@@ -71,9 +71,7 @@ impl Observer {
                 Data::CanonDir(x, y, start_dir) => {
                     let fetch = black_hole.fetch_final_dir(start_dir.z as f32);
                     if fetch.is_some() {
-                        let test = self
-                            .to_final_dir_transform(&start_dir, &fetch.unwrap())
-                            .normalize();
+                        let test = self.to_final_dir_transform(&start_dir, &fetch.unwrap());
                         data[empty_index] = Data::FinalDir(x, y, test);
                         empty_index += 1;
                     }

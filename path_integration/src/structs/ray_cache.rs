@@ -19,7 +19,7 @@ fn binary_search(cache: &[RayCachedAnswer], z: f32) -> usize {
     let mut high = cache.len();
     while high > low + 1 {
         let mid = (high + low) / 2;
-        if cache[mid].z < z {
+        if cache[mid].z <= z {
             low = mid;
         } else {
             high = mid;
@@ -84,12 +84,16 @@ impl RayCache {
     }
 
     pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
-        if z > self.cache[self.cache.len() - 1].z {
+        let cache_last = self.cache.len() - 1;
+        if z > self.cache[cache_last].z {
             return None;
         }
 
         let closest_index = binary_search(&self.cache, z);
         let left = &self.cache[closest_index];
+        if closest_index == cache_last {
+            return Some(left.final_dir);
+        }
         let right = &self.cache[closest_index + 1];
         let diff = right.z - left.z;
 
