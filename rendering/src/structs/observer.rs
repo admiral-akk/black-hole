@@ -1,6 +1,5 @@
 use std::f64::consts::PI;
 
-use glam::f64::DQuat;
 use glam::{DVec3, Quat, Vec3};
 use path_integration::BlackHole;
 
