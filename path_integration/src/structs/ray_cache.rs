@@ -12,14 +12,14 @@ struct RayCachedAnswer {
     pub final_dir: Vec3,
 }
 
-// Finds the element with largest val.x such that val.z <= z
+// Finds the element with largest val.z such that val.z < z
 // Assumes that cache[0].z <= z
 fn binary_search(cache: &[RayCachedAnswer], z: f32) -> usize {
     let mut low = 0;
     let mut high = cache.len();
     while high > low + 1 {
         let mid = (high + low) / 2;
-        if cache[mid].z <= z {
+        if cache[mid].z < z {
             low = mid;
         } else {
             high = mid;

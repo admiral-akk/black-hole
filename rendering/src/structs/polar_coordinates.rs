@@ -1,26 +1,26 @@
-use std::f64::consts::{FRAC_PI_2, TAU};
+use std::f32::consts::{FRAC_PI_2, TAU};
 
-use glam::DVec3;
+use glam::Vec3;
 
 use super::data::Data;
 
 #[derive(Clone)]
 pub struct PolarCoordinates {
-    pub phi: f64,
-    pub theta: f64,
+    pub phi: f32,
+    pub theta: f32,
 }
 
 impl PolarCoordinates {
     // Note that y is up, not z.
-    pub fn new(vec: &DVec3) -> PolarCoordinates {
+    pub fn new(vec: &Vec3) -> PolarCoordinates {
         let horizontal_len = (vec.x * vec.x + vec.z * vec.z).sqrt();
-        let mut phi = f64::atan2(vec.z, vec.x);
+        let mut phi = f32::atan2(vec.z, vec.x);
         if phi < 0.0 {
             phi += TAU;
         }
         PolarCoordinates {
             phi,
-            theta: f64::atan2(vec.y, horizontal_len) + FRAC_PI_2,
+            theta: f32::atan2(vec.y, horizontal_len) + FRAC_PI_2,
         }
     }
 
@@ -38,27 +38,27 @@ impl PolarCoordinates {
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::PI;
+    use std::f32::consts::PI;
 
-    use glam::DVec3;
+    use glam::Vec3;
 
     use super::PolarCoordinates;
 
     #[test]
     fn polar_coordinates_phi() {
         let test_cases = [
-            (DVec3::X, 0.0),
-            (DVec3::X + DVec3::Y, 0.0),
-            (DVec3::X - DVec3::Y, 0.0),
-            (DVec3::Z, 0.5 * PI),
-            (DVec3::Z + DVec3::Y, 0.5 * PI),
-            (DVec3::Z - DVec3::Y, 0.5 * PI),
-            (-DVec3::X, 1.0 * PI),
-            (-DVec3::X + DVec3::Y, 1.0 * PI),
-            (-DVec3::X - DVec3::Y, 1.0 * PI),
-            (-DVec3::Z, 1.5 * PI),
-            (-DVec3::Z + DVec3::Y, 1.5 * PI),
-            (-DVec3::Z - DVec3::Y, 1.5 * PI),
+            (Vec3::X, 0.0),
+            (Vec3::X + Vec3::Y, 0.0),
+            (Vec3::X - Vec3::Y, 0.0),
+            (Vec3::Z, 0.5 * PI),
+            (Vec3::Z + Vec3::Y, 0.5 * PI),
+            (Vec3::Z - Vec3::Y, 0.5 * PI),
+            (-Vec3::X, 1.0 * PI),
+            (-Vec3::X + Vec3::Y, 1.0 * PI),
+            (-Vec3::X - Vec3::Y, 1.0 * PI),
+            (-Vec3::Z, 1.5 * PI),
+            (-Vec3::Z + Vec3::Y, 1.5 * PI),
+            (-Vec3::Z - Vec3::Y, 1.5 * PI),
         ];
         for (vector, phi) in test_cases {
             let polar = PolarCoordinates::new(&vector);
@@ -69,20 +69,20 @@ mod tests {
     #[test]
     fn polar_coordinates_theta() {
         let test_cases = [
-            (DVec3::Y, PI),
-            (DVec3::Y + DVec3::X, 0.75 * PI),
-            (DVec3::Y - DVec3::X, 0.75 * PI),
-            (DVec3::Y + DVec3::Z, 0.75 * PI),
-            (DVec3::Y - DVec3::Z, 0.75 * PI),
-            (DVec3::X, 0.5 * PI),
-            (DVec3::Z, 0.5 * PI),
-            (-DVec3::X, 0.5 * PI),
-            (-DVec3::Z, 0.5 * PI),
-            (-DVec3::Y + DVec3::X, 0.25 * PI),
-            (-DVec3::Y - DVec3::X, 0.25 * PI),
-            (-DVec3::Y + DVec3::Z, 0.25 * PI),
-            (-DVec3::Y - DVec3::Z, 0.25 * PI),
-            (-DVec3::Y, 0.0),
+            (Vec3::Y, PI),
+            (Vec3::Y + Vec3::X, 0.75 * PI),
+            (Vec3::Y - Vec3::X, 0.75 * PI),
+            (Vec3::Y + Vec3::Z, 0.75 * PI),
+            (Vec3::Y - Vec3::Z, 0.75 * PI),
+            (Vec3::X, 0.5 * PI),
+            (Vec3::Z, 0.5 * PI),
+            (-Vec3::X, 0.5 * PI),
+            (-Vec3::Z, 0.5 * PI),
+            (-Vec3::Y + Vec3::X, 0.25 * PI),
+            (-Vec3::Y - Vec3::X, 0.25 * PI),
+            (-Vec3::Y + Vec3::Z, 0.25 * PI),
+            (-Vec3::Y - Vec3::Z, 0.25 * PI),
+            (-Vec3::Y, 0.0),
         ];
         for (vector, theta) in test_cases {
             let polar = PolarCoordinates::new(&vector);

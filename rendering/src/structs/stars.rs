@@ -1,4 +1,4 @@
-use glam::DVec3;
+use glam::Vec3;
 use image::{DynamicImage, GenericImageView};
 
 use super::{data::Data, polar_coordinates::PolarCoordinates};
@@ -15,10 +15,10 @@ impl Stars {
         for sample in data.iter_mut() {
             match sample {
                 Data::Polar(x, y, polar) => {
-                    let x_image =
-                        (self.background.width() as f64) * polar.phi / std::f64::consts::TAU;
-                    let y_image =
-                        (self.background.height() as f64) * polar.theta / std::f64::consts::PI;
+                    let x_image = (self.background.width() as f64) * (polar.phi as f64)
+                        / std::f64::consts::TAU;
+                    let y_image = (self.background.height() as f64) * (polar.theta as f64)
+                        / std::f64::consts::PI;
                     let rgba = self.background.get_pixel(
                         (x_image as u32) % self.background.width(),
                         (y_image as u32) % self.background.height(),
@@ -30,10 +30,10 @@ impl Stars {
         }
     }
 
-    pub fn get_rgba(&self, dir: &DVec3) -> [u8; 4] {
+    pub fn get_rgba(&self, dir: &Vec3) -> [u8; 4] {
         let polar = PolarCoordinates::new(&dir);
-        let x = (self.background.width() as f64) * polar.phi / std::f64::consts::TAU;
-        let y = (self.background.height() as f64) * polar.theta / std::f64::consts::PI;
+        let x = (self.background.width() as f64) * (polar.phi as f64) / std::f64::consts::TAU;
+        let y = (self.background.height() as f64) * (polar.theta as f64) / std::f64::consts::PI;
         let rgba = self.background.get_pixel(
             (x as u32) % self.background.width(),
             (y as u32) % self.background.height(),

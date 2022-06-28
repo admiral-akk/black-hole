@@ -2,7 +2,7 @@
 mod tests {
     use std::path::Path;
 
-    use glam::DVec3;
+    use glam::Vec3;
     use rendering::structs::{dimensions::Dimensions, stars::Stars};
 
     fn write_image(image_name: &str, buffer: &[u8], dimensions: &Dimensions) {
@@ -27,17 +27,17 @@ mod tests {
         for x in 0..width {
             for y in 0..height {
                 let (phi, theta) = (
-                    std::f64::consts::TAU * (x as f64) / (width as f64),
-                    std::f64::consts::PI * (y as f64) / (height as f64)
-                        - std::f64::consts::FRAC_PI_2,
+                    std::f32::consts::TAU * (x as f32) / (width as f32),
+                    std::f32::consts::PI * (y as f32) / (height as f32)
+                        - std::f32::consts::FRAC_PI_2,
                 );
 
-                let cos_theta = f64::cos(theta);
+                let cos_theta = f32::cos(theta);
 
-                let dir = DVec3::new(
-                    cos_theta * f64::cos(phi),
-                    cos_theta * f64::sin(phi),
-                    f64::sin(theta),
+                let dir = Vec3::new(
+                    cos_theta * f32::cos(phi),
+                    cos_theta * f32::sin(phi),
+                    f32::sin(theta),
                 )
                 .normalize();
                 let c = stars.get_rgba(&dir);

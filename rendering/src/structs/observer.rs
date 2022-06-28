@@ -74,7 +74,6 @@ impl Observer {
                         let test = self
                             .to_final_dir_transform(&start_dir, &fetch.unwrap())
                             .normalize();
-                        let test = DVec3::new(test.x as f64, test.y as f64, test.z as f64);
                         data[empty_index] = Data::FinalDir(x, y, test);
                         empty_index += 1;
                     }
