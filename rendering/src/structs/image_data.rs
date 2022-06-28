@@ -1,4 +1,4 @@
-use glam::IVec4;
+use glam::Vec3;
 use std::path::Path;
 
 use super::data::Data;
@@ -6,15 +6,19 @@ use super::data::Data;
 pub struct ImageData {
     width: usize,
     half_sample_delta: f64,
-    image: Vec<IVec4>,
+    image: Vec<Vec3>,
     buf: Vec<u8>,
 }
-const SAMPLES_PER_DIMENSION: usize = 1;
+const SAMPLES_PER_DIMENSION: usize = 2;
 const SAMPLES_PER_PIXEL: usize = SAMPLES_PER_DIMENSION * SAMPLES_PER_DIMENSION;
+const PIXEL_AVERAGING: f32 = 255.0 * (SAMPLES_PER_PIXEL as f32);
 
+fn color_correction(v: f32) -> f32 {
+    v
+}
 impl ImageData {
     pub fn new(width: usize, height: usize) -> Self {
-        let image = vec![IVec4::ZERO; width * height];
+        let image = vec![Vec3::ZERO; width * height];
         let buf = vec![255; 4 * width * height];
         Self {
             width,
@@ -76,20 +80,19 @@ impl ImageData {
 
     pub fn add_sample(&mut self, x: usize, y: usize, c: &[u8; 4]) {
         let index = self.to_index(x, y);
-        self.image[index].x += c[0] as i32;
-        self.image[index].y += c[1] as i32;
-        self.image[index].z += c[2] as i32;
-        self.image[index].w += 1;
+        self.image[index].x += c[0] as f32;
+        self.image[index].y += c[1] as f32;
+        self.image[index].z += c[2] as f32;
     }
 
     fn get_image(&mut self) -> &[u8] {
         for i in 0..self.image.len() {
             let c = &self.image[i];
             let buffer_index = 4 * i;
-            self.buf[buffer_index] = (((c.x as f32 / c.w as f32) / 255.0).sqrt() * 255.0) as u8;
-            self.buf[buffer_index + 1] = (((c.y as f32 / c.w as f32) / 255.0).sqrt() * 255.0) as u8;
-            self.buf[buffer_index + 2] = (((c.z as f32 / c.w as f32) / 255.0).sqrt() * 255.0) as u8;
-            self.image[i] = IVec4::ZERO;
+            self.buf[buffer_index] = (255.0 * color_correction(c.x / PIXEL_AVERAGING)) as u8;
+            self.buf[buffer_index + 1] = (255.0 * color_correction(c.y / PIXEL_AVERAGING)) as u8;
+            self.buf[buffer_index + 2] = (255.0 * color_correction(c.z / PIXEL_AVERAGING)) as u8;
+            self.image[i] = Vec3::ZERO;
         }
 
         &self.buf

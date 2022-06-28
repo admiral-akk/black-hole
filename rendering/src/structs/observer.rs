@@ -61,17 +61,18 @@ impl Observer {
     }
 
     pub fn all_to_final_dir(&self, black_hole: &BlackHole, data: &mut Vec<Data>) {
-        for sample in data.iter_mut() {
-            match sample {
+        let mut empty_index = 0_usize;
+
+        for i in 0..data.len() {
+            match data[i] {
                 Data::CanonDir(x, y, start_dir) => {
                     let fetch = black_hole.fetch_final_dir(start_dir.z);
                     if fetch.is_some() {
                         let test = self
                             .to_final_dir_transform(&start_dir, &fetch.unwrap())
                             .normalize();
-                        *sample = Data::FinalDir(*x, *y, test);
-                    } else {
-                        *sample = Data::NoFinalDir(*x, *y);
+                        data[empty_index] = Data::FinalDir(x, y, test);
+                        empty_index += 1;
                     }
                 }
                 _ => {
@@ -79,6 +80,8 @@ impl Observer {
                 }
             }
         }
+
+        data.drain(empty_index..data.len());
     }
 
     pub fn to_final_dir(&self, view_x: f64, view_y: f64, black_hole: &BlackHole) -> Option<DVec3> {

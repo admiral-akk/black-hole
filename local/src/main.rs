@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, f64::consts::TAU};
 
 use glam::DVec3;
 
@@ -14,24 +14,28 @@ fn main() {
 
     set_up(&mut file_name, &mut dimensions);
 
-    let pos = -5.0 * DVec3::Z;
+    let distance = 5.0;
     let vertical_fov = 60.0;
 
-    let background = Reader::open("milkyway_2020_4k_gal.exr")
-        .unwrap()
-        .decode()
-        .unwrap()
-        .into_rgba32f();
+    let mut reader = Reader::open("milkyway_2020_4k_gal.exr").unwrap();
+    reader.no_limits();
+    let background = reader.decode().unwrap().into_rgb8();
     let radius = 1.5;
 
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
-    let stars = Stars::new(image::DynamicImage::ImageRgba32F(background));
-    let black_hole = BlackHole::new(radius, pos.length());
-    for _i in 1..100 {
+    let stars = Stars::new(image::DynamicImage::ImageRgb8(background));
+    let black_hole = BlackHole::new(radius, distance);
+    let iterations = 30;
+
+    for i in 0..iterations {
+        let angle = TAU * (i as f64) / (iterations as f64);
+        let pos = -distance * (angle.cos() * DVec3::Z + angle.sin() * DVec3::X);
         let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &black_hole);
+        let frame_name = format!("animation/clear_4/{}_frame_{:04}", file_name, i);
+
+        image_data.write_image(&frame_name);
     }
-    image_data.write_image(&file_name);
 }
 
 fn set_up(file_name: &mut String, dimensions: &mut Dimensions) {
