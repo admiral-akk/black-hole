@@ -1,5 +1,3 @@
-use std::f64::consts::{FRAC_PI_2, TAU};
-
 use glam::DVec3;
 use image::{DynamicImage, GenericImageView};
 
