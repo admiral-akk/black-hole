@@ -11,7 +11,6 @@ crate-type = ["cdylib", "rlib"]
 path-integration = { path = "../path_integration" }
 image = "0.24.2"
 glam = "0.21.1"
-quaternion = "0.4.1"
 
 [dev-dependencies]
 criterion = "0.3"
