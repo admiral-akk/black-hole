@@ -1,6 +1,11 @@
-use std::{env, f64::consts::TAU, fs, path::Path};
+use std::{
+    env,
+    f32::consts::{FRAC_PI_4, TAU},
+    fs,
+    path::Path,
+};
 
-use glam::DVec3;
+use glam::{DVec3, Vec3};
 
 use image::io::Reader;
 use path_integration::BlackHole;
@@ -8,16 +13,43 @@ use rendering::{
     render::render,
     structs::{dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars},
 };
+
+fn circular_orbit(distance: f32, count: usize) -> Vec<(Vec3, Vec3)> {
+    let mut pos_dir = Vec::new();
+    for i in 0..count {
+        let angle = TAU * (i as f32) / (count as f32);
+        let pos = -distance * (angle.cos() * Vec3::Z + angle.sin() * Vec3::X);
+        pos_dir.push((pos, -pos));
+    }
+    pos_dir
+}
+
+fn circular_orbit_facing_horizon(distance: f32, count: usize) -> Vec<(Vec3, Vec3)> {
+    let mut pos_dir = Vec::new();
+    for i in 0..count {
+        let angle = TAU * (i as f32) / (count as f32);
+        let pos = -distance * (angle.cos() * Vec3::Z + angle.sin() * Vec3::X);
+        let horizon_angle = angle + FRAC_PI_4;
+        let dir = -distance * (horizon_angle.cos() * Vec3::Z + horizon_angle.sin() * Vec3::X) - pos;
+        pos_dir.push((pos, dir));
+    }
+    pos_dir
+}
+
+fn to_dvec(v: Vec3) -> DVec3 {
+    DVec3::new(v.x as f64, v.y as f64, v.z as f64)
+}
+
 fn main() {
     let mut file_name: String = "image".to_string();
     let mut dimensions = Dimensions::new(100, 100);
 
     set_up(&mut file_name, &mut dimensions);
 
-    let distance = 5.0;
-    let vertical_fov = 60.0;
+    let distance = 2.0;
+    let vertical_fov = 20.0;
 
-    let mut reader = Reader::open("milkyway_2020_4k_gal.exr").unwrap();
+    let mut reader = Reader::open("uv.png").unwrap();
     reader.no_limits();
     let background = reader.decode().unwrap().into_rgb8();
     let radius = 1.5;
@@ -25,7 +57,6 @@ fn main() {
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let stars = Stars::new(image::DynamicImage::ImageRgb8(background));
     let black_hole = BlackHole::new(radius, distance);
-    let iterations = 100;
 
     let folder_name = format!("main/{}", file_name);
     let full_folder_name = format!("output/{}", &folder_name);
@@ -34,14 +65,14 @@ fn main() {
     }
     fs::create_dir(&full_folder_name).unwrap();
 
-    for i in 0..iterations {
-        let angle = TAU * (i as f64) / (iterations as f64);
-        let pos = -distance * (angle.cos() * DVec3::Z + angle.sin() * DVec3::X);
-        let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
+    let orbit = circular_orbit_facing_horizon(distance as f32, 100);
+    for i in 0..orbit.len() {
+        let (pos, dir) = orbit[i];
+        let observer = Observer::new(to_dvec(pos), to_dvec(dir), DVec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &black_hole);
         let frame_name = format!("{}/frame_{:04}", folder_name, i);
 
-        image_data.write_image(&frame_name);
+        //image_data.write_image(&frame_name);
     }
 }
 

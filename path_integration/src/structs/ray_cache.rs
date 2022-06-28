@@ -48,7 +48,7 @@ fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64) -> f64 {
 
 // want to skew sample ([0,1]) to 1 values, as they're closer to the boundary.
 fn rescale(r: f64) -> f64 {
-    r.powf(1.0 / 3.0)
+    r.powf(1.0 / 5.0)
 }
 
 impl RayCache {

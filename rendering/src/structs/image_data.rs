@@ -14,7 +14,7 @@ const SAMPLES_PER_PIXEL: usize = SAMPLES_PER_DIMENSION * SAMPLES_PER_DIMENSION;
 const PIXEL_AVERAGING: f32 = 255.0 * (SAMPLES_PER_PIXEL as f32);
 
 fn color_correction(v: f32) -> f32 {
-    v
+    v.sqrt()
 }
 impl ImageData {
     pub fn new(width: usize, height: usize) -> Self {
