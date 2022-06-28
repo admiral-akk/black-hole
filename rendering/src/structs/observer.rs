@@ -1,7 +1,7 @@
 use std::f64::consts::PI;
 
 use glam::f64::DQuat;
-use glam::DVec3;
+use glam::{DVec3, Vec3};
 use path_integration::BlackHole;
 
 use super::data::Data;
@@ -66,7 +66,7 @@ impl Observer {
         for i in 0..data.len() {
             match data[i] {
                 Data::CanonDir(x, y, start_dir) => {
-                    let fetch = black_hole.fetch_final_dir(start_dir.z);
+                    let fetch = black_hole.fetch_final_dir(start_dir.z as f32);
                     if fetch.is_some() {
                         let test = self
                             .to_final_dir_transform(&start_dir, &fetch.unwrap())
@@ -86,14 +86,14 @@ impl Observer {
 
     pub fn to_final_dir(&self, view_x: f64, view_y: f64, black_hole: &BlackHole) -> Option<DVec3> {
         let canon = self.canon(view_x, view_y);
-        let fetch = black_hole.fetch_final_dir(canon.z);
+        let fetch = black_hole.fetch_final_dir(canon.z as f32);
         if fetch.is_some() {
             let test = self
                 .to_final_dir_transform(&canon, &fetch.unwrap())
                 .normalize();
             return Some(test);
         }
-        return fetch;
+        return None;
     }
     // note that this isn't rotated into the XZ plane.
     fn canon(&self, view_x: f64, view_y: f64) -> DVec3 {
@@ -103,9 +103,10 @@ impl Observer {
             .normalize();
     }
 
-    fn to_final_dir_transform(&self, canon: &DVec3, dir: &DVec3) -> DVec3 {
+    fn to_final_dir_transform(&self, canon: &DVec3, dir: &Vec3) -> DVec3 {
+        let dir = DVec3::new(dir.x as f64, dir.y as f64, dir.z as f64);
         let angle = f64::atan2(canon.y, -canon.x);
         let first_rot = DQuat::from_rotation_z(-angle);
-        self.from_canon * first_rot * *dir
+        self.from_canon * first_rot * dir
     }
 }

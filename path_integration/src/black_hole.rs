@@ -1,4 +1,4 @@
-use glam::DVec3;
+use glam::{DVec3, Vec3};
 
 use crate::{structs::ray_cache::RayCache, Field};
 
@@ -13,7 +13,7 @@ impl BlackHole {
         let cache = RayCache::compute_new(10000, &field, &camera_pos);
         Self { cache }
     }
-    pub fn fetch_final_dir(&self, z: f64) -> Option<DVec3> {
+    pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
         self.cache.fetch_final_dir(z)
     }
 }

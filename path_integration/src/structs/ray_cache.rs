@@ -1,4 +1,4 @@
-use glam::DVec3;
+use glam::{DVec3, Vec3};
 
 use crate::{cast_ray_steps, Field, Ray};
 
@@ -8,13 +8,13 @@ pub struct RayCache {
 
 #[derive(Debug)]
 struct RayCachedAnswer {
-    pub z: f64,
-    pub final_dir: DVec3,
+    pub z: f32,
+    pub final_dir: Vec3,
 }
 
 // Finds the element with largest val.x such that val.z <= z
 // Assumes that cache[0].z <= z
-fn binary_search(cache: &[RayCachedAnswer], z: f64) -> usize {
+fn binary_search(cache: &[RayCachedAnswer], z: f32) -> usize {
     let mut low = 0;
     let mut high = cache.len();
     while high > low + 1 {
@@ -72,9 +72,10 @@ impl RayCache {
                 println!("Caching missed unexpectedly!");
                 break;
             } else {
+                let result = result.unwrap();
                 cache.push(RayCachedAnswer {
-                    z: ray.dir.z,
-                    final_dir: result.unwrap(),
+                    z: ray.dir.z as f32,
+                    final_dir: Vec3::new(result.x as f32, result.y as f32, result.z as f32),
                 })
             }
         }
@@ -82,7 +83,7 @@ impl RayCache {
         Self { cache }
     }
 
-    pub fn fetch_final_dir(&self, z: f64) -> Option<DVec3> {
+    pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
         if z > self.cache[self.cache.len() - 1].z {
             return None;
         }
@@ -92,7 +93,7 @@ impl RayCache {
         let right = &self.cache[closest_index + 1];
         let diff = right.z - left.z;
 
-        let lerp = DVec3::lerp(left.final_dir, right.final_dir, (z - left.z) / diff);
+        let lerp = Vec3::lerp(left.final_dir, right.final_dir, (z - left.z) / diff);
 
         Some(lerp)
     }
@@ -100,7 +101,7 @@ impl RayCache {
 
 #[cfg(test)]
 mod tests {
-    use glam::DVec3;
+    use glam::{DVec3, Vec3};
 
     use crate::{cast_ray_steps, structs::ray_cache::RayCache, Field, Ray};
 
@@ -111,15 +112,15 @@ mod tests {
         let cache = [
             RayCachedAnswer {
                 z: -10.0,
-                final_dir: DVec3::ZERO,
+                final_dir: Vec3::ZERO,
             },
             RayCachedAnswer {
                 z: -2.0,
-                final_dir: DVec3::ZERO,
+                final_dir: Vec3::ZERO,
             },
             RayCachedAnswer {
                 z: 0.0,
-                final_dir: DVec3::ZERO,
+                final_dir: Vec3::ZERO,
             },
         ];
 
@@ -146,7 +147,7 @@ mod tests {
             let x = (x as f64) / (iterations as f64);
             let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
-            let approx_dir = ray_cache.fetch_final_dir(ray.dir.z);
+            let approx_dir = ray_cache.fetch_final_dir(ray.dir.z as f32);
             if approx_dir.is_none() != actual_dir.is_none() {
                 if approx_dir.is_none() {
                     false_negative.push(ray);
@@ -186,7 +187,7 @@ mod tests {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
-            let approx_dir = ray_cache.fetch_final_dir(ray.dir.z);
+            let approx_dir = ray_cache.fetch_final_dir(ray.dir.z as f32);
             if approx_dir.is_none() != actual_dir.is_none() {
                 if approx_dir.is_none() {
                     false_negative.push(ray);
@@ -223,8 +224,8 @@ mod tests {
         let mut max_error = 0.0;
         let iterations = 100000;
         let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
-        let mut approx = DVec3::new(0.0, 0.0, -10.0);
-        let mut actual = DVec3::new(0.0, 0.0, -10.0);
+        let mut approx = Vec3::new(0.0, 0.0, -10.0);
+        let mut actual = Vec3::new(0.0, 0.0, -10.0);
         let mut index = 0;
         for x in 0..=(iterations + 1) {
             let t = x;
@@ -232,8 +233,13 @@ mod tests {
             let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
-                let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z).unwrap();
+                let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
                 let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
+                let actual_dir = Vec3::new(
+                    actual_dir.x as f32,
+                    actual_dir.y as f32,
+                    actual_dir.z as f32,
+                );
                 let error = (approximate_dir - actual_dir).length();
                 if error > max_error {
                     index = t;
@@ -262,8 +268,8 @@ mod tests {
         let iterations = 100000;
         let mut max_error = 0.0;
         let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
-        let mut approx = DVec3::new(0.0, 0.0, -10.0);
-        let mut actual = DVec3::new(0.0, 0.0, -10.0);
+        let mut approx = Vec3::new(0.0, 0.0, -10.0);
+        let mut actual = Vec3::new(0.0, 0.0, -10.0);
         let mut index = 0;
         for y in 0..=(iterations + 1) {
             let t = y;
@@ -271,8 +277,13 @@ mod tests {
             let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
-                let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z).unwrap();
+                let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
                 let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
+                let actual_dir = Vec3::new(
+                    actual_dir.x as f32,
+                    actual_dir.y as f32,
+                    actual_dir.z as f32,
+                );
                 let error = (approximate_dir - actual_dir).length();
                 if error > max_error {
                     index = t;
