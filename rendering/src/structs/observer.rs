@@ -1,14 +1,10 @@
 use std::f64::consts::PI;
 
 use glam::DVec3;
-use path_integration::{BlackHole, Ray};
+use path_integration::BlackHole;
 use quaternion::Quaternion;
 
 pub struct Observer {
-    pos: DVec3,
-    forward: DVec3,
-    up: DVec3,
-    right: DVec3,
     canon_forward: DVec3,
     canon_up: DVec3,
     canon_right: DVec3,
@@ -39,15 +35,9 @@ impl Observer {
         let canon_forward =
             DVec3::from_array(quaternion::rotate_vector(to_canon, forward.to_array())).normalize();
         let view_mag = 2.0 * f64::tan(PI * vertical_fov_degrees / 360.0);
-        let up = view_mag * (up - forward.dot(up) * forward).normalize();
         let canon_up = DVec3::Y;
-        let right = view_mag * forward.cross(up).normalize();
         let canon_right = canon_forward.cross(canon_up).normalize();
         Self {
-            pos,
-            forward,
-            up,
-            right,
             canon_forward,
             canon_up,
             canon_right,
@@ -57,31 +47,25 @@ impl Observer {
     }
 
     pub fn to_final_dir(&self, view_x: f64, view_y: f64, black_hole: &BlackHole) -> Option<DVec3> {
-        let alt_canon = self.alt_canon_dir(view_x, view_y).normalize();
-        let fetch = black_hole.fetch_final_dir(alt_canon.z);
+        let canon = self.canon(view_x, view_y);
+        let fetch = black_hole.fetch_final_dir(canon.z);
         if fetch.is_some() {
             let test = self
-                .to_final_dir_transform(view_x, view_y, &fetch.unwrap())
+                .to_final_dir_transform(&canon, &fetch.unwrap())
                 .normalize();
             return Some(test);
         }
         return fetch;
     }
-
-    fn alt_canon_dir(&self, view_x: f64, view_y: f64) -> DVec3 {
-        let canon = self.view_width
+    // note that this isn't rotated into the XZ plane.
+    fn canon(&self, view_x: f64, view_y: f64) -> DVec3 {
+        return (self.view_width
             * ((view_x - 0.5) * self.canon_right + (view_y - 0.5) * self.canon_up)
-            + self.canon_forward;
-
-        let angle = f64::atan2(canon.y, -canon.x);
-        let final_rot = quaternion::euler_angles(0.0, 0.0, angle);
-        DVec3::from_array(quaternion::rotate_vector(final_rot, canon.to_array()))
+            + self.canon_forward)
+            .normalize();
     }
 
-    fn to_final_dir_transform(&self, view_x: f64, view_y: f64, dir: &DVec3) -> DVec3 {
-        let canon = self.view_width
-            * ((view_x - 0.5) * self.canon_right + (view_y - 0.5) * self.canon_up)
-            + self.canon_forward;
+    fn to_final_dir_transform(&self, canon: &DVec3, dir: &DVec3) -> DVec3 {
         let angle = f64::atan2(canon.y, -canon.x);
         let final_rot = quaternion::euler_angles(0.0, 0.0, -angle);
         let inv = quaternion::rotate_vector(final_rot, dir.to_array());
