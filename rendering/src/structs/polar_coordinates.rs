@@ -38,9 +38,9 @@ impl PolarCoordinates {
     pub fn to_vec(&self) -> Vec3 {
         let cos_theta = self.theta.cos();
         Vec3::new(
-            self.phi.sin() * cos_theta,
-            self.theta.sin(),
             self.phi.cos() * cos_theta,
+            self.theta.sin(),
+            self.phi.sin() * cos_theta,
         )
     }
 }
