@@ -14,13 +14,13 @@ impl PolarCoordinates {
     // Note that y is up, not z.
     pub fn new(vec: &Vec3) -> PolarCoordinates {
         let horizontal_len = (vec.x * vec.x + vec.z * vec.z).sqrt();
-        let mut phi = fast_math::atan2(vec.z, vec.x);
+        let mut phi = f32::atan2(vec.z, vec.x);
         if phi < 0.0 {
             phi += TAU;
         }
         PolarCoordinates {
             phi,
-            theta: fast_math::atan2(vec.y, horizontal_len),
+            theta: f32::atan2(vec.y, horizontal_len),
         }
     }
 
@@ -38,14 +38,14 @@ impl PolarCoordinates {
     pub fn to_vec(&self) -> Vec3 {
         let cos_theta = self.theta.cos();
         Vec3::new(
-            self.phi.cos() * cos_theta,
-            self.theta.sin(),
             self.phi.sin() * cos_theta,
+            self.theta.sin(),
+            self.phi.cos() * cos_theta,
         )
     }
 }
 
-trait Polar {
+pub trait Polar {
     fn to_polar(&self) -> PolarCoordinates;
 }
 
