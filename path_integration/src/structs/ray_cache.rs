@@ -5,6 +5,7 @@ use crate::{cast_ray_steps, Field, Ray};
 pub struct RayCache {
     cache: Vec<RayCachedAnswer>,
     max_z: f32,
+    z_to_index_multiple: f32,
 }
 
 #[derive(Debug)]
@@ -38,11 +39,11 @@ fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     let r = r.sqrt();
     MIN_Z_F64 + (max_z - MIN_Z_F64) * r
 }
-fn z_to_index(z: f32, size: usize, max_z: f32) -> usize {
-    ((size - 1) as f32 * ((z - MIN_Z) / (max_z - MIN_Z)).powi(2)) as usize
-}
 
 impl RayCache {
+    fn z_to_index(&self, z: f32) -> usize {
+        (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z)) as usize
+    }
     pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3) -> Self {
         let mut cache = Vec::new();
 
@@ -71,6 +72,7 @@ impl RayCache {
         Self {
             cache,
             max_z: max_z as f32,
+            z_to_index_multiple: ((size - 1) as f64 / (max_z as f64 - MIN_Z_F64).powi(2)) as f32,
         }
     }
 
@@ -85,7 +87,7 @@ impl RayCache {
         if z > self.max_z {
             return None;
         }
-        let closest_index = z_to_index(z, self.cache.len() - 1, self.max_z);
+        let closest_index = self.z_to_index(z);
         let left = &self.cache[closest_index];
         let right = &self.cache[closest_index + 1];
         let diff = right.z - left.z;
