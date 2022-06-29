@@ -1,16 +1,15 @@
-use path_integration::BlackHole;
 use structs::stars::Stars;
 
 use crate::structs::{
     self, data::Data, image_data::ImageData, observer::Observer,
-    polar_coordinates::PolarCoordinates,
+    polar_coordinates::PolarCoordinates, ray_cache::RayCache,
 };
 
 pub fn render(
     image_data: &mut ImageData,
     observer: &Observer,
     stars: &Stars,
-    black_hole: &BlackHole,
+    ray_cache: &RayCache,
 ) {
     // We need to calculate the rgba value of each pixel. We can do this by:
     // 1. iterating over x/y
@@ -28,7 +27,7 @@ pub fn render(
     observer.to_start_dir(&mut data);
 
     // get the start_dir -> final_dir
-    observer.all_to_final_dir(&black_hole, &mut data);
+    observer.all_to_final_dir(&ray_cache, &mut data);
 
     // get the final_dir -> polar coordinates
     PolarCoordinates::to_polar(&mut data);

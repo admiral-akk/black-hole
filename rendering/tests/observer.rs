@@ -3,10 +3,10 @@ mod tests {
     use std::f64::consts::{FRAC_PI_4, PI};
 
     use glam::DVec3;
-    use path_integration::BlackHole;
+    use path_integration::Field;
     use rendering::{
         render::render,
-        structs::{image_data::ImageData, observer::Observer, stars::Stars},
+        structs::{image_data::ImageData, observer::Observer, ray_cache::RayCache, stars::Stars},
     };
 
     fn init(
@@ -14,7 +14,7 @@ mod tests {
         facing: DVec3,
         up: DVec3,
         vertical_fov: f64,
-    ) -> (ImageData, Observer, Stars, BlackHole) {
+    ) -> (ImageData, Observer, Stars, RayCache) {
         let dim = 800;
         let observer = Observer::new(pos, facing, up, vertical_fov);
         let image_data = ImageData::new(dim, dim);
@@ -24,8 +24,9 @@ mod tests {
 
         let radius = 1.0;
 
-        let black_hole = BlackHole::new(radius, pos.length());
-        (image_data, observer, stars, black_hole)
+        let field = Field::new(radius, &pos);
+        let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+        (image_data, observer, stars, ray_cache)
     }
 
     #[test]
@@ -48,9 +49,9 @@ mod tests {
             let angle_rad = angle_degrees * PI / 180.0;
             let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X);
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) =
+            let (mut image_data, observer, stars, ray_cache) =
                 init(pos, -pos, DVec3::Y, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_XZ_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -67,8 +68,8 @@ mod tests {
             let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::X);
             let up = DVec3::Z;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, -pos, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_XY_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -85,8 +86,8 @@ mod tests {
             let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::Z);
             let up = DVec3::X;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, -pos, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_YZ_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -103,8 +104,8 @@ mod tests {
             let pos = -5.0 * DVec3::X;
             let up = f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::Z;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, -pos, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_rotate_up_X_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -121,8 +122,8 @@ mod tests {
             let pos = -5.0 * DVec3::Y;
             let up = f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, -pos, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_rotate_up_Y_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -139,8 +140,8 @@ mod tests {
             let pos = -5.0 * DVec3::Z;
             let up = f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::X;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, -pos, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_rotate_up_Z_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -158,8 +159,8 @@ mod tests {
             let dir = f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X;
             let up = DVec3::Y;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, dir, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_rotate_view_XZ_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -177,8 +178,8 @@ mod tests {
             let dir = f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::Y;
             let up = DVec3::X;
             let vertical_fov = 90.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, dir, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_rotate_view_YZ_angle_{}", angle_degrees);
             image_data.write_image(&file_name);
@@ -193,9 +194,9 @@ mod tests {
             let dist = (step as f64) / 2.0;
             let pos = -dist * DVec3::Z;
             let vertical_fov = 120.0;
-            let (mut image_data, observer, stars, black_hole) =
+            let (mut image_data, observer, stars, ray_cache) =
                 init(pos, -pos, DVec3::Y, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_distance_{:.1}", dist);
             image_data.write_image(&file_name);
@@ -216,8 +217,8 @@ mod tests {
             let dir = (target_pos - pos).normalize();
             let up = (DVec3::X - DVec3::X.dot(dir.normalize()) * dir.normalize()).normalize();
             let vertical_fov = 120.0;
-            let (mut image_data, observer, stars, black_hole) = init(pos, dir, up, vertical_fov);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_orbit_XZ_angle_{}", angle_degrees);
             image_data.write_image(&file_name);

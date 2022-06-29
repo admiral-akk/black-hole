@@ -1,6 +1,5 @@
 use glam::{DVec3, Vec3};
-
-use crate::{cast_ray_steps, Field, Ray};
+use path_integration::{cast_ray_steps, Field, Ray};
 
 pub struct RayCache {
     cache: Vec<RayCachedAnswer>,
@@ -44,11 +43,11 @@ impl RayCache {
     fn z_to_index(&self, z: f32) -> usize {
         (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z)) as usize
     }
-    pub fn compute_new(size: usize, field: &Field, camera_pos: &DVec3) -> Self {
+    pub fn compute_new(size: usize, field: &Field, camera_distance: f64) -> Self {
         let mut cache = Vec::new();
 
         // We're always projecting from (0.0, 0.0, -Z)
-        let cache_pos = -camera_pos.length() * DVec3::Z;
+        let cache_pos = -camera_distance * DVec3::Z;
 
         let max_z = find_bound(&cache_pos, field, 0.0000001);
 
@@ -101,15 +100,16 @@ impl RayCache {
 #[cfg(test)]
 mod tests {
     use glam::{DVec3, Vec3};
+    use path_integration::{cast_ray_steps, Field, Ray};
 
-    use crate::{cast_ray_steps, structs::ray_cache::RayCache, Field, Ray};
+    use crate::structs::ray_cache::RayCache;
 
     #[test]
     fn ray_cache_absorbed_in_x_plane() {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(10000, &field, &start);
+        let ray_cache = RayCache::compute_new(10000, &field, 5.0);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -150,7 +150,7 @@ mod tests {
         let start = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(10000, &field, &start);
+        let ray_cache = RayCache::compute_new(10000, &field, 5.0);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -191,7 +191,7 @@ mod tests {
         let r = 1.0;
         let field = Field::new(r, &start);
         let cache_size = 10000;
-        let ray_cache = RayCache::compute_new(cache_size, &field, &start);
+        let ray_cache = RayCache::compute_new(cache_size, &field, 5.0);
 
         let mut max_error = 0.0;
         let iterations = 100000;
@@ -235,7 +235,7 @@ mod tests {
         let r = 1.0;
         let field = Field::new(r, &start);
         let cache_size = 10000;
-        let ray_cache = RayCache::compute_new(cache_size, &field, &start);
+        let ray_cache = RayCache::compute_new(cache_size, &field, 5.0);
 
         let iterations = 100000;
         let mut max_error = 0.0;

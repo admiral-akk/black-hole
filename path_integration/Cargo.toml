@@ -18,7 +18,3 @@ criterion = "0.3"
 [[bench]]
 name = "path"
 harness = false
-
-[[bench]]
-name = "ray_cache"
-harness = false

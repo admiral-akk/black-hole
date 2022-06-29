@@ -3,11 +3,12 @@
 mod tests {
 
     use glam::DVec3;
-    use path_integration::BlackHole;
+    use path_integration::Field;
     use rendering::{
         render::render,
         structs::{
-            dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars,
+            dimensions::Dimensions, image_data::ImageData, observer::Observer, ray_cache::RayCache,
+            stars::Stars,
         },
     };
 
@@ -26,8 +27,9 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(radius, pos.length());
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let field = Field::new(radius, &pos);
+            let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("uv_field_{}_size_{}", radius, dim);
             image_data.write_image(&file_name);
@@ -49,8 +51,9 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(radius, pos.length());
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let field = Field::new(radius, &pos);
+            let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("uv_field_{}_size_{}", radius, dim);
             image_data.write_image(&file_name);
@@ -73,8 +76,9 @@ mod tests {
 
             let radius = 0.0;
 
-            let black_hole = BlackHole::new(radius, pos.length());
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let field = Field::new(radius, &pos);
+            let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("black_hole_field_{}_size_{}", radius, dim);
             image_data.write_image(&file_name);
@@ -97,8 +101,9 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(radius, pos.length());
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let field = Field::new(radius, &pos);
+            let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("black_hole_field_{}_size_{}", radius, dim);
             image_data.write_image(&file_name);
@@ -121,8 +126,9 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(radius, pos.length());
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let field = Field::new(radius, &pos);
+            let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("black_hole_field_{}_size_{}_below", radius, dim);
             image_data.write_image(&file_name);
@@ -145,8 +151,9 @@ mod tests {
 
             let radius = 1.0;
 
-            let black_hole = BlackHole::new(radius, pos.length());
-            render(&mut image_data, &observer, &stars, &black_hole);
+            let field = Field::new(radius, &pos);
+            let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("black_hole_field_{}_size_{}_left", radius, dim);
             image_data.write_image(&file_name);
@@ -159,7 +166,8 @@ mod tests {
         let vertical_fov = 75.0;
         let radius = 1.5;
 
-        let black_hole = BlackHole::new(radius, 5.0);
+        let field = Field::new(radius, &(5.0 * DVec3::Z));
+        let ray_cache = RayCache::compute_new(10000, &field, 5.0);
         for i in 0..1 {
             let dim = 50 * 2_usize.pow(4);
             let dimensions = Dimensions::new(dim, dim);
@@ -171,7 +179,7 @@ mod tests {
             let mut image_data = ImageData::new(dimensions.width, dimensions.height);
             let background = image::open("starmap_2020_4k_gal.exr").unwrap();
             let stars = Stars::new(background);
-            render(&mut image_data, &observer, &stars, &black_hole);
+            render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("black_hole_field_{}_size_{}_angle_{}", radius, dim, angle);
             image_data.write_image(&file_name);

@@ -8,10 +8,13 @@ use std::{
 use glam::{DVec3, Vec3};
 
 use image::io::Reader;
-use path_integration::BlackHole;
+use path_integration::Field;
 use rendering::{
     render::render,
-    structs::{dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars},
+    structs::{
+        dimensions::Dimensions, image_data::ImageData, observer::Observer, ray_cache::RayCache,
+        stars::Stars,
+    },
 };
 
 fn circular_orbit(distance: f32, count: usize) -> Vec<(Vec3, Vec3)> {
@@ -56,7 +59,8 @@ fn main() {
 
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let stars = Stars::new(image::DynamicImage::ImageRgb8(background));
-    let black_hole = BlackHole::new(radius, distance);
+    let field = Field::new(radius, &(distance * DVec3::Z));
+    let ray_cache = RayCache::compute_new(10000, &field, distance);
 
     let folder_name = format!("main/{}", file_name);
     let full_folder_name = format!("output/{}", &folder_name);
@@ -69,7 +73,7 @@ fn main() {
     for i in 0..orbit.len() {
         let (pos, dir) = orbit[i];
         let observer = Observer::new(to_dvec(pos), to_dvec(dir), DVec3::Y, vertical_fov);
-        render(&mut image_data, &observer, &stars, &black_hole);
+        render(&mut image_data, &observer, &stars, &ray_cache);
         let frame_name = format!("{}/frame_{:04}", folder_name, i);
 
         image_data.write_image(&frame_name);

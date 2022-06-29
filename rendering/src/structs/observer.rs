@@ -1,9 +1,8 @@
 use std::f64::consts::PI;
 
 use glam::{DVec3, Quat, Vec3};
-use path_integration::BlackHole;
 
-use super::data::Data;
+use super::{data::Data, ray_cache::RayCache};
 pub struct Observer {
     canon_forward: Vec3,
     canon_up: Vec3,
@@ -62,13 +61,13 @@ impl Observer {
         }
     }
 
-    pub fn all_to_final_dir(&self, black_hole: &BlackHole, data: &mut Vec<Data>) {
+    pub fn all_to_final_dir(&self, ray_cache: &RayCache, data: &mut Vec<Data>) {
         let mut empty_index = 0_usize;
 
         for i in 0..data.len() {
             match data[i] {
                 Data::CanonDir(index, start_dir) => {
-                    let fetch = black_hole.fetch_final_dir(start_dir.z as f32);
+                    let fetch = ray_cache.fetch_final_dir(start_dir.z as f32);
                     if fetch.is_some() {
                         let test = self.to_final_dir_transform(&start_dir, &fetch.unwrap());
                         data[empty_index] = Data::FinalDir(index, test);

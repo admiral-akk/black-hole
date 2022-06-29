@@ -1,9 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::DVec3;
-use path_integration::{Field, RayCache};
+use path_integration::Field;
+use rendering::structs::ray_cache::RayCache;
 
 fn generate_ray_cache(size: usize, field: &Field, camera_pos: &DVec3) -> RayCache {
-    RayCache::compute_new(size, field, camera_pos)
+    RayCache::compute_new(size, field, camera_pos.length())
 }
 
 pub fn ray_cache_benchmark(c: &mut Criterion) {

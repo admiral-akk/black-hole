@@ -1,10 +1,13 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::DVec3;
 
-use path_integration::BlackHole;
+use path_integration::Field;
 use rendering::{
     render::render,
-    structs::{dimensions::Dimensions, image_data::ImageData, observer::Observer, stars::Stars},
+    structs::{
+        dimensions::Dimensions, image_data::ImageData, observer::Observer, ray_cache::RayCache,
+        stars::Stars,
+    },
 };
 
 pub fn render_benchmark(c: &mut Criterion) {
@@ -20,9 +23,10 @@ pub fn render_benchmark(c: &mut Criterion) {
 
         let observer = Observer::new(pos, -pos, DVec3::Y, vertical_fov);
         let mut image_data = ImageData::new(dimensions.width, dimensions.height);
-        let black_hole = BlackHole::new(radius, pos.length());
+        let field = Field::new(radius, &pos);
+        let ray_cache = RayCache::compute_new(10000, &field, pos.length());
         let stars = Stars::new(background);
-        b.iter(|| black_box(render(&mut image_data, &observer, &stars, &black_hole)));
+        b.iter(|| black_box(render(&mut image_data, &observer, &stars, &ray_cache)));
     });
 }
 
