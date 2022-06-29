@@ -17,7 +17,8 @@ impl Stars {
                 Data::Polar(index, polar) => {
                     let x_image = (self.background.width() as f64) * (polar.phi as f64)
                         / std::f64::consts::TAU;
-                    let y_image = (self.background.height() as f64) * (polar.theta as f64)
+                    let y_image = (self.background.height() as f64)
+                        * ((polar.theta as f64) + std::f64::consts::FRAC_PI_2)
                         / std::f64::consts::PI;
                     let rgba = self.background.get_pixel(
                         (x_image as u32) % self.background.width(),
