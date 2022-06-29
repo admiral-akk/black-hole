@@ -1,10 +1,10 @@
-use std::f32::consts::{FRAC_PI_2, TAU};
+use std::f32::consts::TAU;
 
 use glam::Vec3;
 
 use super::data::Data;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PolarCoordinates {
     pub phi: f32,
     pub theta: f32,
@@ -20,7 +20,7 @@ impl PolarCoordinates {
         }
         PolarCoordinates {
             phi,
-            theta: fast_math::atan2(vec.y, horizontal_len) + FRAC_PI_2,
+            theta: fast_math::atan2(vec.y, horizontal_len),
         }
     }
 
@@ -34,15 +34,35 @@ impl PolarCoordinates {
             }
         }
     }
+
+    pub fn to_vec(&self) -> Vec3 {
+        let cos_theta = self.theta.cos();
+        Vec3::new(
+            self.phi.cos() * cos_theta,
+            self.theta.sin(),
+            self.phi.sin() * cos_theta,
+        )
+    }
+}
+
+trait Polar {
+    fn to_polar(&self) -> PolarCoordinates;
+}
+
+impl Polar for Vec3 {
+    fn to_polar(&self) -> PolarCoordinates {
+        PolarCoordinates::new(self)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::PI;
+    const EPSILON: f32 = 0.01;
+    use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
 
     use glam::Vec3;
 
-    use super::PolarCoordinates;
+    use super::{Polar, PolarCoordinates};
 
     #[test]
     fn polar_coordinates_phi() {
@@ -63,7 +83,7 @@ mod tests {
         for (vector, phi) in test_cases {
             let polar = PolarCoordinates::new(&vector);
             assert_eq!(
-                (polar.phi - phi).abs() < 0.0001,
+                (polar.phi - phi).abs() < EPSILON,
                 true,
                 "Vector: {:?}",
                 vector
@@ -74,29 +94,54 @@ mod tests {
     #[test]
     fn polar_coordinates_theta() {
         let test_cases = [
-            (Vec3::Y, PI),
-            (Vec3::Y + Vec3::X, 0.75 * PI),
-            (Vec3::Y - Vec3::X, 0.75 * PI),
-            (Vec3::Y + Vec3::Z, 0.75 * PI),
-            (Vec3::Y - Vec3::Z, 0.75 * PI),
-            (Vec3::X, 0.5 * PI),
-            (Vec3::Z, 0.5 * PI),
-            (-Vec3::X, 0.5 * PI),
-            (-Vec3::Z, 0.5 * PI),
-            (-Vec3::Y + Vec3::X, 0.25 * PI),
-            (-Vec3::Y - Vec3::X, 0.25 * PI),
-            (-Vec3::Y + Vec3::Z, 0.25 * PI),
-            (-Vec3::Y - Vec3::Z, 0.25 * PI),
-            (-Vec3::Y, 0.0),
+            (Vec3::Y, FRAC_PI_2),
+            (Vec3::Y + Vec3::X, FRAC_PI_4),
+            (Vec3::Y - Vec3::X, FRAC_PI_4),
+            (Vec3::Y + Vec3::Z, FRAC_PI_4),
+            (Vec3::Y - Vec3::Z, FRAC_PI_4),
+            (Vec3::X, 0.0),
+            (Vec3::Z, 0.0),
+            (-Vec3::X, 0.0),
+            (-Vec3::Z, 0.0),
+            (-Vec3::Y + Vec3::X, -FRAC_PI_4),
+            (-Vec3::Y - Vec3::X, -FRAC_PI_4),
+            (-Vec3::Y + Vec3::Z, -FRAC_PI_4),
+            (-Vec3::Y - Vec3::Z, -FRAC_PI_4),
+            (-Vec3::Y, -FRAC_PI_2),
         ];
         for (vector, theta) in test_cases {
             let polar = PolarCoordinates::new(&vector);
             assert_eq!(
-                (polar.theta - theta).abs() < 0.0001,
+                (polar.theta - theta).abs() < EPSILON,
                 true,
                 "Vector: {:?}",
                 vector
             );
+        }
+    }
+
+    #[test]
+    fn to_polar_idempotent() {
+        let epsilon = EPSILON;
+        for x in [-Vec3::X, Vec3::ZERO, Vec3::X] {
+            for y in [-Vec3::Y, Vec3::ZERO, Vec3::Y] {
+                for z in [-Vec3::Z, Vec3::ZERO, Vec3::Z] {
+                    let mut v = x + y + z;
+                    if v == Vec3::ZERO {
+                        continue;
+                    }
+                    v = v.normalize();
+                    assert_eq!(
+                        (v - v.to_polar().to_vec()).length() < epsilon,
+                        true,
+                        "\npolar: {:?}\nvec: {:?}\nnve: {:?}\ndist: {}",
+                        v.to_polar(),
+                        v,
+                        v.to_polar().to_vec(),
+                        (v - v.to_polar().to_vec()).length()
+                    );
+                }
+            }
         }
     }
 }
