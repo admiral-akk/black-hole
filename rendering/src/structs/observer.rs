@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use glam::{DVec3, Quat, Vec3};
 
-use super::{data::Data, ray_cache::RayCache};
+use super::{data::Data, polar_coordinates::Polar, ray_cache::RayCache};
 pub struct Observer {
     canon_forward: Vec3,
     canon_up: Vec3,
@@ -70,7 +70,7 @@ impl Observer {
                     let fetch = ray_cache.fetch_final_dir(start_dir.z as f32);
                     if fetch.is_some() {
                         let test = self.to_final_dir_transform(&start_dir, &fetch.unwrap());
-                        data[empty_index] = Data::FinalDir(index, test);
+                        data[empty_index] = Data::Polar(index, test.to_polar());
                         empty_index += 1;
                     }
                 }

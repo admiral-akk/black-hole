@@ -1,8 +1,7 @@
 use structs::stars::Stars;
 
 use crate::structs::{
-    self, data::Data, image_data::ImageData, observer::Observer,
-    polar_coordinates::PolarCoordinates, ray_cache::RayCache,
+    self, data::Data, image_data::ImageData, observer::Observer, ray_cache::RayCache,
 };
 
 pub fn render(
@@ -27,10 +26,8 @@ pub fn render(
     observer.to_start_dir(&mut data);
 
     // get the start_dir -> final_dir
-    observer.all_to_final_dir(&ray_cache, &mut data);
-
     // get the final_dir -> polar coordinates
-    PolarCoordinates::to_polar(&mut data);
+    observer.all_to_final_dir(&ray_cache, &mut data);
 
     // get the polar_coordinates -> colors
     stars.to_rgba(&mut data);

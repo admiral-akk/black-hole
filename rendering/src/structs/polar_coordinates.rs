@@ -24,17 +24,6 @@ impl PolarCoordinates {
         }
     }
 
-    pub fn to_polar(data: &mut Vec<Data>) {
-        for sample in data.iter_mut() {
-            match sample {
-                Data::FinalDir(index, final_dir) => {
-                    *sample = Data::Polar(*index, PolarCoordinates::new(final_dir));
-                }
-                _ => {}
-            }
-        }
-    }
-
     pub fn to_vec(&self) -> Vec3 {
         let cos_theta = self.theta.cos();
         Vec3::new(
