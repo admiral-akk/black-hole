@@ -1,6 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::Vec3;
-use path_integration::Field;
 use rendering::structs::ray_cache::RayCache;
 
 fn generate_ray_cache(size: usize, radius: f32, camera_distance: f32) -> RayCache {

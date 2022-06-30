@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::{FRAC_PI_4, PI, TAU};
+    use std::f32::consts::{FRAC_PI_4, TAU};
 
     use glam::Vec3;
     use rendering::{
