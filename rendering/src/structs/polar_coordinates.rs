@@ -7,18 +7,17 @@ pub struct PolarCoordinates {
     pub phi: f32,
     pub theta: f32,
 }
-
 impl PolarCoordinates {
     // Note that y is up, not z.
     pub fn new(vec: &Vec3) -> PolarCoordinates {
         let horizontal_len = (vec.x * vec.x + vec.z * vec.z).sqrt();
-        let mut phi = f32::atan2(vec.z, vec.x);
+        let mut phi = fast_math::atan2(vec.z, vec.x);
         if phi < 0.0 {
             phi += TAU;
         }
         PolarCoordinates {
             phi,
-            theta: f32::atan2(vec.y, horizontal_len),
+            theta: fast_math::atan2(vec.y, horizontal_len),
         }
     }
 }

@@ -98,7 +98,7 @@ impl RayCache {
                     let fetch = self.fetch_final_dir(start_dir.z);
                     if fetch.is_some() {
                         let mut fetch = fetch.unwrap();
-                        rotate_about_z(f32::atan2(start_dir.y, start_dir.x), &mut fetch);
+                        rotate_about_z(fast_math::atan2(start_dir.y, start_dir.x), &mut fetch);
 
                         // rotate final_dir to match start_dir
                         data[empty_index] = Data::Polar(index, fetch.to_polar());
@@ -122,7 +122,7 @@ impl RayCache {
     // z[i] = (max_z + 1)
     // i -> (max_z + 1)
     pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
-        if z > self.max_z {
+        if z >= self.max_z {
             return None;
         }
         let closest_index = self.z_to_index(z);

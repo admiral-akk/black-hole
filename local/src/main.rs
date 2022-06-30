@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use glam::{Vec3};
+use glam::Vec3;
 
 use image::io::Reader;
 
@@ -54,7 +54,7 @@ fn main() {
     let radius = 1.5;
 
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
-    let stars = Stars::new(image::DynamicImage::ImageRgb8(background));
+    let mut stars = Stars::new(image::DynamicImage::ImageRgb8(background));
     let ray_cache = RayCache::compute_new(10000, radius, distance);
 
     let folder_name = format!("main/{}", file_name);
@@ -68,6 +68,7 @@ fn main() {
     for i in 0..orbit.len() {
         let (pos, dir) = orbit[i];
         let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
+        stars.update_position(&pos);
         render(&mut image_data, &observer, &stars, &ray_cache);
         let frame_name = format!("{}/frame_{:04}", folder_name, i);
 
