@@ -125,11 +125,14 @@ impl RayCache {
     // z[i] = (max_z + 1)
     // i -> (max_z + 1)
     pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
-        if z >= self.max_z {
+        if z > self.max_z {
             return None;
         }
         let closest_index = self.z_to_index(z);
         let left = &self.cache[closest_index];
+        if closest_index == self.cache.len() - 1 {
+            return Some(left.final_dir);
+        }
         let right = &self.cache[closest_index + 1];
         let diff = right.z - left.z;
 

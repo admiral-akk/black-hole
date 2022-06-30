@@ -45,10 +45,10 @@ fn main() {
 
     set_up(&mut file_name, &mut dimensions);
 
-    let distance = 2.5;
+    let distance = 3.0;
     let vertical_fov = 120.0;
 
-    let mut reader = Reader::open("uv.png").unwrap();
+    let mut reader = Reader::open("starmap_2020_4k_gal.exr").unwrap();
     reader.no_limits();
     let background = reader.decode().unwrap().into_rgb8();
     let radius = 1.5;
