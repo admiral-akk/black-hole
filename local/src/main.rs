@@ -55,7 +55,7 @@ fn main() {
 
     let mut image_data = ImageData::new(dimensions.width, dimensions.height);
     let mut stars = Stars::new(image::DynamicImage::ImageRgb8(background));
-    let ray_cache = RayCache::compute_new(10000, radius, distance);
+    let ray_cache = RayCache::compute_new(1024, radius, distance);
 
     let folder_name = format!("main/{}", file_name);
     let full_folder_name = format!("output/{}", &folder_name);
