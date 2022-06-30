@@ -26,8 +26,8 @@ impl Stars {
         Self {
             background,
             offset: PolarCoordinates {
-                phi: 0.0,
-                theta: FRAC_PI_2,
+                phi: 0.0 + TAU,
+                theta: FRAC_PI_2 + TAU,
             },
             scaling: ScalingFactors {
                 background_width_f32: (width as f32) * FRAC_1_TAU,
@@ -38,7 +38,8 @@ impl Stars {
 
     pub fn update_position(&mut self, pos: &Vec3) {
         self.offset = pos.to_polar();
-        self.offset.theta += FRAC_PI_2;
+        self.offset.phi += TAU;
+        self.offset.theta += FRAC_PI_2 + TAU;
     }
 
     pub fn to_rgba(&self, data: &mut Vec<Data>) {

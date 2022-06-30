@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::{FRAC_PI_4, TAU};
+    use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI, TAU};
 
     use glam::Vec3;
     use rendering::{
@@ -19,7 +19,7 @@ mod tests {
         vertical_fov: f32,
     ) -> (ImageData, Observer, Stars, RayCache) {
         let dim = 800;
-        let observer = Observer::new(-pos.length() * Vec3::Z, facing, up, vertical_fov);
+        let observer = Observer::new(pos, facing, up, vertical_fov);
         let image_data = ImageData::new(dim, dim);
 
         let background = image::open("uv.png").unwrap();
@@ -58,7 +58,7 @@ mod tests {
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
                 theta: 0.0,
-                phi: rad,
+                phi: rad + FRAC_PI_2,
             };
             let pos = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
@@ -77,8 +77,8 @@ mod tests {
         let rotation_count = 8;
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
-                theta: rad,
-                phi: 90.0_f32.to_radians(),
+                theta: rad + FRAC_PI_2,
+                phi: 0.0,
             };
             let pos = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
@@ -97,8 +97,8 @@ mod tests {
         let rotation_count = 8;
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
-                theta: rad,
-                phi: 0.0,
+                theta: rad + FRAC_PI_2,
+                phi: 90.0_f32.to_radians(),
             };
             let pos = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
@@ -117,11 +117,11 @@ mod tests {
         let rotation_count = 8;
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
-                theta: rad,
-                phi: 0.0,
+                theta: rad + FRAC_PI_2,
+                phi: 90.0_f32.to_radians(),
             };
             let pos = -5.0 * Vec3::X;
-            let up = -5.0 * polar.to_vec3();
+            let up = polar.to_vec3();
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
@@ -141,10 +141,10 @@ mod tests {
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
                 theta: 0.0,
-                phi: rad,
+                phi: rad + FRAC_PI_2 + PI,
             };
             let pos = -5.0 * Vec3::Y;
-            let up = -5.0 * polar.to_vec3();
+            let up = polar.to_vec3();
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
@@ -163,10 +163,10 @@ mod tests {
         let rotation_count = 8;
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
-                theta: rad,
-                phi: 90.0_f32.to_degrees(),
+                theta: rad + FRAC_PI_2,
+                phi: 0.0,
             };
-            let up = -5.0 * polar.to_vec3();
+            let up = polar.to_vec3();
             let pos = -5.0 * Vec3::Z;
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
@@ -187,7 +187,7 @@ mod tests {
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
                 theta: 0.0,
-                phi: rad,
+                phi: rad + FRAC_PI_2,
             };
             let dir = polar.to_vec3();
             let pos = -5.0 * Vec3::Z;
@@ -210,8 +210,8 @@ mod tests {
         let rotation_count = 8;
         for rad in rad_angles(rotation_count) {
             let polar = PolarCoordinates {
-                theta: rad,
-                phi: 0.0,
+                theta: rad + FRAC_PI_2,
+                phi: 90.0_f32.to_radians(),
             };
             let dir = polar.to_vec3();
             let pos = -5.0 * Vec3::Z;

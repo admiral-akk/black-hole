@@ -16,7 +16,6 @@ impl Observer {
 
         let forward = q * forward.normalize();
         let up = q * up.normalize();
-        let up = (up - up.dot(forward) * forward).normalize();
         let right = forward.cross(up);
 
         let view_width = 2.0 * f32::tan(PI * vertical_fov_degrees / 360.0);

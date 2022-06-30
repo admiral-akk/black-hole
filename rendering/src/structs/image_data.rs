@@ -59,7 +59,7 @@ impl ImageData {
         }
     }
     fn to_index(&self, x: usize, y: usize) -> usize {
-        self.width * (self.width - y - 1) + x
+        self.width * y + x
     }
 
     pub fn add_sample(&mut self, index: usize, c: &[u8; 4]) {
