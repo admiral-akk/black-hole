@@ -11,6 +11,9 @@ pub struct RayCache {
     z_to_index_multiple: f32,
 }
 
+// We're always projecting from (0.0, 0.0, -Z)
+pub const RAY_START_DIR: Vec3 = Vec3::new(0.0, 0.0, -1.0);
+
 #[derive(Debug)]
 struct RayCachedAnswer {
     pub z: f32,
@@ -58,8 +61,7 @@ impl RayCache {
         let mut cache = Vec::new();
         let field = Field::new(black_hole_radius as f64, camera_distance as f64);
 
-        // We're always projecting from (0.0, 0.0, -Z)
-        let cache_pos = -camera_distance * Vec3::Z;
+        let cache_pos = camera_distance * RAY_START_DIR;
 
         let max_z = find_bound(&cache_pos, &field, 0.0000001);
 
