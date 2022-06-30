@@ -39,8 +39,7 @@ impl Observer {
     }
 
     fn start_dir(&self, view_x: f32, view_y: f32) -> Vec3 {
-        return (self.view_width * ((view_x - 0.5) * self.right + (view_y - 0.5) * self.up)
-            + self.forward)
-            .normalize();
+        return self.view_width * ((view_x - 0.5) * self.right + (view_y - 0.5) * self.up)
+            + self.forward;
     }
 }

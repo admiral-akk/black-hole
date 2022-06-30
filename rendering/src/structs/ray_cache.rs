@@ -43,7 +43,9 @@ const MIN_Z_F64: f64 = MIN_Z as f64;
 fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     let r = (index as f64) / ((size - 1) as f64);
     let r = r.sqrt();
-    MIN_Z_F64 + (max_z - MIN_Z_F64) * r
+
+    let z = (MIN_Z_F64 + (max_z - MIN_Z_F64) * r);
+    z
 }
 
 fn rotate_about_z(angle: f32, vec: &mut Vec3) {
@@ -95,7 +97,8 @@ impl RayCache {
         for i in 0..data.len() {
             match data[i] {
                 Data::ObserverDir(index, start_dir) => {
-                    let fetch = self.fetch_final_dir(start_dir.z);
+                    let z = start_dir.z / start_dir.length();
+                    let fetch = self.fetch_final_dir(z);
                     if fetch.is_some() {
                         let mut fetch = fetch.unwrap();
                         rotate_about_z(fast_math::atan2(start_dir.y, start_dir.x), &mut fetch);
