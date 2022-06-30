@@ -59,16 +59,4 @@ impl Stars {
             }
         }
     }
-
-    pub fn get_rgba(&self, dir: &Vec3) -> [u8; 4] {
-        let polar = PolarCoordinates::new(&dir);
-        let x = self.scaling.background_width_f32 * polar.phi;
-        let y = self.scaling.background_height_f32 * polar.theta;
-        let rgba = self.background.get_pixel(
-            (x as u32) % self.background.width(),
-            (y as u32) % self.background.height(),
-        );
-
-        rgba.0
-    }
 }
