@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use glam::{DVec3, Vec3};
+use glam::{DVec3, Vec3, Vec3A};
 
 use crate::structs::polar_coordinates::PolarCoordinates;
 
@@ -11,6 +11,12 @@ pub trait ToPolar {
 impl ToPolar for Vec3 {
     fn to_polar(&self) -> PolarCoordinates {
         PolarCoordinates::new(self)
+    }
+}
+
+impl ToPolar for Vec3A {
+    fn to_polar(&self) -> PolarCoordinates {
+        PolarCoordinates::newA(self)
     }
 }
 

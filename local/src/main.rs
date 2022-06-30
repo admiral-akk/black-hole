@@ -72,7 +72,7 @@ fn main() {
         render(&mut image_data, &observer, &stars, &ray_cache);
         let frame_name = format!("{}/frame_{:04}", folder_name, i);
 
-        image_data.write_image(&frame_name);
+        // image_data.write_image(&frame_name);
     }
 }
 

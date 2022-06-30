@@ -1,4 +1,4 @@
-use glam::{DVec3, Vec3};
+use glam::{DVec3, Vec3, Vec3A};
 use path_integration::{cast_ray_steps, Field, Ray};
 
 use crate::utils::extensions::ToPolar;
@@ -17,7 +17,7 @@ pub const RAY_START_DIR: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 #[derive(Debug)]
 struct RayCachedAnswer {
     pub z: f32,
-    pub final_dir: Vec3,
+    pub final_dir: Vec3A,
 }
 
 fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64) -> f64 {
@@ -48,7 +48,7 @@ fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     z
 }
 
-fn rotate_about_z(angle: f32, vec: &mut Vec3) {
+fn rotate_about_z(angle: f32, vec: &mut Vec3A) {
     let (sin, cos) = angle.sin_cos();
     let (x, y) = (vec.x, vec.y);
     vec.x = x * cos - y * sin;
@@ -79,7 +79,7 @@ impl RayCache {
                 let result = result.unwrap();
                 cache.push(RayCachedAnswer {
                     z: ray.dir.z as f32,
-                    final_dir: Vec3::new(result.x as f32, result.y as f32, result.z as f32),
+                    final_dir: Vec3A::new(result.x as f32, result.y as f32, result.z as f32),
                 })
             }
         }
@@ -124,7 +124,7 @@ impl RayCache {
     // (size-1)*(z + 1) ^ 2 / (max_z + 1) = i
     // z[i] = (max_z + 1)
     // i -> (max_z + 1)
-    pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3> {
+    pub fn fetch_final_dir(&self, z: f32) -> Option<Vec3A> {
         if z >= self.max_z {
             return None;
         }
@@ -133,7 +133,7 @@ impl RayCache {
         let right = &self.cache[closest_index + 1];
         let diff = right.z - left.z;
 
-        let lerp = Vec3::lerp(left.final_dir, right.final_dir, (z - left.z) / diff);
+        let lerp = Vec3A::lerp(left.final_dir, right.final_dir, (z - left.z) / diff);
 
         Some(lerp)
     }

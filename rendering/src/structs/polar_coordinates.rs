@@ -1,6 +1,6 @@
 use std::f32::consts::TAU;
 
-use glam::Vec3;
+use glam::{Vec3, Vec3A};
 
 #[derive(Clone, Debug)]
 pub struct PolarCoordinates {
@@ -10,6 +10,18 @@ pub struct PolarCoordinates {
 impl PolarCoordinates {
     // Note that y is up, not z.
     pub fn new(vec: &Vec3) -> PolarCoordinates {
+        let horizontal_len = (vec.x * vec.x + vec.z * vec.z).sqrt();
+        let mut phi = fast_math::atan2(vec.z, vec.x);
+        if phi < 0.0 {
+            phi += TAU;
+        }
+        PolarCoordinates {
+            phi,
+            theta: fast_math::atan2(vec.y, horizontal_len),
+        }
+    }
+    // Note that y is up, not z.
+    pub fn newA(vec: &Vec3A) -> PolarCoordinates {
         let horizontal_len = (vec.x * vec.x + vec.z * vec.z).sqrt();
         let mut phi = fast_math::atan2(vec.z, vec.x);
         if phi < 0.0 {
