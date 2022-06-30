@@ -1,14 +1,12 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::Vec3;
 
-use path_integration::Field;
 use rendering::{
     render::render,
     structs::{
         dimensions::Dimensions, image_data::ImageData, observer::Observer, ray_cache::RayCache,
         stars::Stars,
     },
-    utils::extensions::ToDVec3,
 };
 
 pub fn render_benchmark(c: &mut Criterion) {
@@ -24,8 +22,7 @@ pub fn render_benchmark(c: &mut Criterion) {
 
         let observer = Observer::new(pos, -pos, Vec3::Y, vertical_fov);
         let mut image_data = ImageData::new(dimensions.width, dimensions.height);
-        let field = Field::new(radius, &pos.to_dvec3());
-        let ray_cache = RayCache::compute_new(10000, &field, pos.length() as f64);
+        let ray_cache = RayCache::compute_new(10000, radius, pos.length());
         let stars = Stars::new(background);
         b.iter(|| black_box(render(&mut image_data, &observer, &stars, &ray_cache)));
     });

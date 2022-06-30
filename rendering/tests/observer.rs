@@ -2,15 +2,14 @@
 mod tests {
     use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
-    use glam::{DVec3, Vec3};
-    use path_integration::Field;
+    use glam::Vec3;
     use rendering::{
         render::render,
         structs::{
             image_data::ImageData, observer::Observer, polar_coordinates::PolarCoordinates,
             ray_cache::RayCache, stars::Stars,
         },
-        utils::extensions::{ToDVec3, ToVec3},
+        utils::extensions::ToVec3,
     };
 
     fn init(
@@ -26,11 +25,9 @@ mod tests {
         let background = image::open("uv.png").unwrap();
         let radius = 1.0;
 
-        let field = Field::new(radius, &pos.to_dvec3());
-        let ray_cache = RayCache::compute_new(10000, &field, pos.length() as f64);
+        let ray_cache = RayCache::compute_new(10000, radius, pos.length());
         let mut stars = Stars::new(background);
-        let pos2 = Vec3::new(pos.x as f32, pos.y as f32, pos.z as f32);
-        stars.update_position(&pos2);
+        stars.update_position(&pos);
 
         (image_data, observer, stars, ray_cache)
     }

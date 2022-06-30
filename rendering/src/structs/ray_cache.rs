@@ -13,12 +13,12 @@ struct RayCachedAnswer {
     pub final_dir: Vec3,
 }
 
-fn find_bound(camera_pos: &DVec3, field: &Field, epsilon: f64) -> f64 {
+fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64) -> f64 {
     let (mut miss_z, mut hit_z) = (-1.0, 1.0);
     while hit_z - miss_z > epsilon {
         let z = 0.5 * (hit_z + miss_z);
         let test = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
-        let ray = Ray::new(*camera_pos, test);
+        let ray = Ray::new(camera_pos.as_dvec3(), test);
         let final_dir = cast_ray_steps(&ray, field, 100.0);
         if final_dir.is_none() {
             // hit the black hole
@@ -43,18 +43,19 @@ impl RayCache {
     fn z_to_index(&self, z: f32) -> usize {
         (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z)) as usize
     }
-    pub fn compute_new(size: usize, field: &Field, camera_distance: f64) -> Self {
+    pub fn compute_new(size: usize, black_hole_radius: f32, camera_distance: f32) -> Self {
         let mut cache = Vec::new();
+        let field = Field::new(black_hole_radius as f64, camera_distance as f64);
 
         // We're always projecting from (0.0, 0.0, -Z)
-        let cache_pos = -camera_distance * DVec3::Z;
+        let cache_pos = -camera_distance * Vec3::Z;
 
-        let max_z = find_bound(&cache_pos, field, 0.0000001);
+        let max_z = find_bound(&cache_pos, &field, 0.0000001);
 
         for i in 0..size {
             let z = index_to_z(i, size, max_z);
             let dir = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
-            let ray = Ray::new(cache_pos, dir);
+            let ray = Ray::new(cache_pos.as_dvec3(), dir);
             let result = cast_ray_steps(&ray, &field, 100.0);
             if result.is_none() {
                 println!("Caching missed unexpectedly!");
@@ -106,10 +107,11 @@ mod tests {
 
     #[test]
     fn ray_cache_absorbed_in_x_plane() {
-        let start = -5.0 * DVec3::Z;
+        let pos = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(10000, &field, 5.0);
+        let field = Field::new(r, pos.length());
+        let cache_size = 10000;
+        let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
@@ -117,7 +119,7 @@ mod tests {
         let iterations = 100000;
         for x in (-iterations)..=iterations {
             let x = (x as f64) / (iterations as f64);
-            let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
+            let ray = Ray::new(pos, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             let approx_dir = ray_cache.fetch_final_dir(ray.dir.z as f32);
             if approx_dir.is_none() != actual_dir.is_none() {
@@ -147,17 +149,18 @@ mod tests {
 
     #[test]
     fn ray_cache_absorbed_in_y_plane() {
-        let start = -5.0 * DVec3::Z;
+        let pos = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(r, &start);
-        let ray_cache = RayCache::compute_new(10000, &field, 5.0);
+        let field = Field::new(r, pos.length());
+        let cache_size = 10000;
+        let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
         let iterations = 100000;
         for y in 0..=(iterations + 1) {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
-            let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
+            let ray = Ray::new(pos, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             let approx_dir = ray_cache.fetch_final_dir(ray.dir.z as f32);
             if approx_dir.is_none() != actual_dir.is_none() {
@@ -187,11 +190,11 @@ mod tests {
 
     #[test]
     fn final_dir_in_x_plane() {
-        let start = -5.0 * DVec3::Z;
+        let pos = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(r, &start);
+        let field = Field::new(r, pos.length());
         let cache_size = 10000;
-        let ray_cache = RayCache::compute_new(cache_size, &field, 5.0);
+        let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let mut max_error = 0.0;
         let iterations = 100000;
@@ -202,7 +205,7 @@ mod tests {
         for x in 0..=(iterations + 1) {
             let t = x;
             let x = (x as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
-            let ray = Ray::new(start, DVec3::new(x, 0.0, 1.0));
+            let ray = Ray::new(pos, DVec3::new(x, 0.0, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
@@ -231,11 +234,11 @@ mod tests {
 
     #[test]
     fn final_dir_in_y_plane() {
-        let start = -5.0 * DVec3::Z;
+        let pos = -5.0 * DVec3::Z;
         let r = 1.0;
-        let field = Field::new(r, &start);
+        let field = Field::new(r, pos.length());
         let cache_size = 10000;
-        let ray_cache = RayCache::compute_new(cache_size, &field, 5.0);
+        let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let iterations = 100000;
         let mut max_error = 0.0;
@@ -246,7 +249,7 @@ mod tests {
         for y in 0..=(iterations + 1) {
             let t = y;
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
-            let ray = Ray::new(start, DVec3::new(0.0, y, 1.0));
+            let ray = Ray::new(pos, DVec3::new(0.0, y, 1.0));
             let actual_dir = cast_ray_steps(&ray, &field, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
