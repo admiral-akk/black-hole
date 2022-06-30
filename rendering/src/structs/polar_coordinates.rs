@@ -2,8 +2,6 @@ use std::f32::consts::TAU;
 
 use glam::Vec3;
 
-use super::data::Data;
-
 #[derive(Clone, Debug)]
 pub struct PolarCoordinates {
     pub phi: f32,

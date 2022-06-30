@@ -2,11 +2,14 @@
 mod tests {
     use std::f64::consts::{FRAC_PI_4, PI};
 
-    use glam::DVec3;
+    use glam::{DVec3, Vec3};
     use path_integration::Field;
     use rendering::{
         render::render,
-        structs::{image_data::ImageData, observer::Observer, ray_cache::RayCache, stars::Stars},
+        structs::{
+            image_data::ImageData, observer::Observer, polar_coordinates::Polar,
+            ray_cache::RayCache, stars::Stars,
+        },
     };
 
     fn init(
@@ -16,16 +19,18 @@ mod tests {
         vertical_fov: f64,
     ) -> (ImageData, Observer, Stars, RayCache) {
         let dim = 800;
-        let observer = Observer::new(pos, facing, up, vertical_fov);
+        let observer = Observer::new(-pos.length() * DVec3::Z, facing, DVec3::Y, vertical_fov);
         let image_data = ImageData::new(dim, dim);
 
         let background = image::open("uv.png").unwrap();
-        let stars = Stars::new(background);
-
         let radius = 1.0;
 
         let field = Field::new(radius, &pos);
         let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+        let mut stars = Stars::new(background);
+        let pos2 = Vec3::new(pos.x as f32, pos.y as f32, pos.z as f32);
+        stars.update_position(&pos2);
+
         (image_data, observer, stars, ray_cache)
     }
 
