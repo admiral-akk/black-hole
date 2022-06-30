@@ -19,11 +19,8 @@ pub fn render(
     // get an array to store the data
     let mut data = vec![Data::None; image_data.get_sample_count()];
 
-    // get the index -> view_port
-    image_data.set_samples(&mut data);
-
     // get the view_port -> start_dir
-    observer.to_start_dir(&mut data);
+    observer.to_start_dir(&image_data.samples, &mut data);
 
     // get the start_dir -> final_dir
     // get the final_dir -> polar coordinates
