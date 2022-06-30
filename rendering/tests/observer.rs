@@ -143,7 +143,6 @@ mod tests {
                 theta: 0.0,
                 phi: rad,
             };
-            let vertical_fov = 90.0;
             let pos = -5.0 * Vec3::Y;
             let up = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
@@ -216,7 +215,6 @@ mod tests {
             };
             let dir = polar.to_vec3();
             let pos = -5.0 * Vec3::Z;
-            let vertical_fov = 90.0;
             let up = Vec3::X;
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
