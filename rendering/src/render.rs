@@ -27,7 +27,7 @@ pub fn render(
 
     // get the start_dir -> final_dir
     // get the final_dir -> polar coordinates
-    observer.all_to_final_dir(&ray_cache, &mut data);
+    ray_cache.calculate_final_dir(&mut data);
 
     // get the polar_coordinates -> colors
     stars.to_rgba(&mut data);

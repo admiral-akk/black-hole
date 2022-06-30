@@ -1,6 +1,10 @@
 use glam::{DVec3, Vec3};
 use path_integration::{cast_ray_steps, Field, Ray};
 
+use crate::utils::extensions::ToPolar;
+
+use super::data::Data;
+
 pub struct RayCache {
     cache: Vec<RayCachedAnswer>,
     max_z: f32,
@@ -39,6 +43,13 @@ fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     MIN_Z_F64 + (max_z - MIN_Z_F64) * r
 }
 
+fn rotate_about_z(angle: f32, vec: &mut Vec3) {
+    let (sin, cos) = angle.sin_cos();
+    let (x, y) = (vec.x, vec.y);
+    vec.x = x * cos - y * sin;
+    vec.y = x * sin + y * cos;
+}
+
 impl RayCache {
     fn z_to_index(&self, z: f32) -> usize {
         (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z)) as usize
@@ -74,6 +85,31 @@ impl RayCache {
             max_z: max_z as f32,
             z_to_index_multiple: ((size - 1) as f64 / (max_z as f64 - MIN_Z_F64).powi(2)) as f32,
         }
+    }
+
+    pub fn calculate_final_dir(&self, data: &mut Vec<Data>) {
+        let mut empty_index = 0_usize;
+
+        for i in 0..data.len() {
+            match data[i] {
+                Data::ObserverDir(index, start_dir) => {
+                    let fetch = self.fetch_final_dir(start_dir.z);
+                    if fetch.is_some() {
+                        let mut fetch = fetch.unwrap();
+                        rotate_about_z(f32::atan2(start_dir.y, start_dir.x), &mut fetch);
+
+                        // rotate final_dir to match start_dir
+                        data[empty_index] = Data::Polar(index, fetch.to_polar());
+                        empty_index += 1;
+                    }
+                }
+                _ => {
+                    panic!("Should be canon dir format here!")
+                }
+            }
+        }
+
+        data.drain(empty_index..data.len());
     }
 
     // r = (i / (size-1)).sqrt()
