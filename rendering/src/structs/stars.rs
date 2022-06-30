@@ -1,3 +1,5 @@
+use std::f32::consts::{FRAC_1_PI, TAU};
+
 use glam::Vec3;
 use image::{DynamicImage, GenericImageView};
 
@@ -7,8 +9,10 @@ use super::{data::Data, polar_coordinates::PolarCoordinates};
 
 pub struct Stars {
     background: DynamicImage,
-    pub offset: PolarCoordinates,
+    offset: PolarCoordinates,
 }
+
+const FRAC_1_TAU: f32 = 1.0 / TAU;
 
 impl Stars {
     pub fn new(background: DynamicImage) -> Stars {
@@ -29,13 +33,12 @@ impl Stars {
         for sample in data.iter_mut() {
             match sample {
                 Data::Polar(index, polar) => {
-                    let x_image = (self.background.width() as f64)
-                        * (self.offset.phi as f64 + polar.phi as f64)
-                        / std::f64::consts::TAU;
-                    let y_image = (self.background.height() as f64)
-                        * ((self.offset.theta as f64 + polar.theta as f64)
-                            + std::f64::consts::FRAC_PI_2)
-                        / std::f64::consts::PI;
+                    let x_image = FRAC_1_TAU
+                        * (self.background.width() as f32)
+                        * (self.offset.phi as f32 + polar.phi as f32);
+                    let y_image = FRAC_1_PI
+                        * (self.background.height() as f32)
+                        * ((self.offset.theta + polar.theta) + std::f32::consts::FRAC_PI_2);
                     let rgba = self.background.get_pixel(
                         (x_image as u32) % self.background.width(),
                         (y_image as u32) % self.background.height(),

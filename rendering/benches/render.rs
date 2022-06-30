@@ -25,7 +25,7 @@ pub fn render_benchmark(c: &mut Criterion) {
         let observer = Observer::new(pos, -pos, Vec3::Y, vertical_fov);
         let mut image_data = ImageData::new(dimensions.width, dimensions.height);
         let field = Field::new(radius, &pos.to_dvec3());
-        let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+        let ray_cache = RayCache::compute_new(10000, &field, pos.length() as f64);
         let stars = Stars::new(background);
         b.iter(|| black_box(render(&mut image_data, &observer, &stars, &ray_cache)));
     });
