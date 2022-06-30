@@ -95,22 +95,16 @@ impl RayCache {
         let mut empty_index = 0_usize;
 
         for i in 0..data.len() {
-            match data[i] {
-                Data::ObserverDir(index, start_dir) => {
-                    let z = start_dir.z / start_dir.length();
-                    let fetch = self.fetch_final_dir(z);
-                    if fetch.is_some() {
-                        let mut fetch = fetch.unwrap();
-                        rotate_about_z(fast_math::atan2(start_dir.y, start_dir.x), &mut fetch);
+            let start_dir = data[i].get_start_dir();
+            let z = start_dir.z / start_dir.length();
+            let fetch = self.fetch_final_dir(z);
+            if fetch.is_some() {
+                let mut fetch = fetch.unwrap();
+                rotate_about_z(fast_math::atan2(start_dir.y, start_dir.x), &mut fetch);
 
-                        // rotate final_dir to match start_dir
-                        data[empty_index] = Data::Polar(index, fetch.to_polar());
-                        empty_index += 1;
-                    }
-                }
-                _ => {
-                    panic!("Should be canon dir format here!")
-                }
+                // rotate final_dir to match start_dir
+                data[empty_index].set_polar(&fetch.to_polar());
+                empty_index += 1;
             }
         }
 

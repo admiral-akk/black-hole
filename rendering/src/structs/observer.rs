@@ -29,12 +29,9 @@ impl Observer {
 
     pub fn to_start_dir(&self, data: &mut Vec<Data>) {
         for sample in data.iter_mut() {
-            match sample {
-                Data::Sample(index, view_x, view_y) => {
-                    *sample = Data::ObserverDir(*index, self.start_dir(*view_x, *view_y));
-                }
-                _ => {}
-            }
+            let (x, y) = sample.get_sample();
+            let start_dir = self.start_dir(x, y);
+            sample.set_start_dir(&start_dir);
         }
     }
 

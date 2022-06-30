@@ -44,19 +44,14 @@ impl Stars {
 
     pub fn to_rgba(&self, data: &mut Vec<Data>) {
         for sample in data.iter_mut() {
-            match sample {
-                Data::Polar(index, polar) => {
-                    let x_image = self.scaling.background_width_f32 * (self.offset.phi + polar.phi);
-                    let y_image =
-                        self.scaling.background_height_f32 * (self.offset.theta + polar.theta);
-                    let rgba = self.background.get_pixel(
-                        (x_image as u32) % self.background.width(),
-                        (y_image as u32) % self.background.height(),
-                    );
-                    *sample = Data::RGBA(*index, rgba.0);
-                }
-                _ => {}
-            }
+            let (phi, theta) = sample.get_polar();
+            let x_image = self.scaling.background_width_f32 * (self.offset.phi + phi);
+            let y_image = self.scaling.background_height_f32 * (self.offset.theta + theta);
+            let rgba = self.background.get_pixel(
+                (x_image as u32) % self.background.width(),
+                (y_image as u32) % self.background.height(),
+            );
+            sample.set_color(&rgba.0);
         }
     }
 }

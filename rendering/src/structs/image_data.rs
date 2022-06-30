@@ -41,7 +41,8 @@ impl ImageData {
                         );
                         data[(self.width * y + x) * SAMPLES_PER_PIXEL
                             + i_x * SAMPLES_PER_DIMENSION
-                            + i_y] = Data::Sample(index, view_x, view_y);
+                            + i_y]
+                            .set_sample(index, view_x, view_y);
                     }
                 }
             }
@@ -50,12 +51,10 @@ impl ImageData {
 
     pub fn load_colors(&mut self, data: &Vec<Data>) {
         for sample in data.iter() {
-            match sample {
-                Data::RGBA(index, c) => {
-                    self.add_sample(*index, c);
-                }
-                _ => {}
-            }
+            let (index, r, g, b) = sample.get_result();
+            self.image[index].x += r;
+            self.image[index].y += g;
+            self.image[index].z += b;
         }
     }
     fn to_index(&self, x: usize, y: usize) -> usize {

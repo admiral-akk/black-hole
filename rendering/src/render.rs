@@ -1,7 +1,11 @@
 use structs::stars::Stars;
 
 use crate::structs::{
-    self, data::Data, image_data::ImageData, observer::Observer, ray_cache::RayCache,
+    self,
+    data::{Data, DEFAULT_DATA},
+    image_data::ImageData,
+    observer::Observer,
+    ray_cache::RayCache,
 };
 
 pub fn render(
@@ -17,7 +21,7 @@ pub fn render(
     // 4. recombining the values into a single rgba value.
 
     // get an array to store the data
-    let mut data = vec![Data::None; image_data.get_sample_count()];
+    let mut data = vec![DEFAULT_DATA; image_data.get_sample_count()];
 
     // get the index -> view_port
     image_data.set_samples(&mut data);
