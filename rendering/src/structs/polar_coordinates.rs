@@ -21,25 +21,6 @@ impl PolarCoordinates {
             theta: f32::atan2(vec.y, horizontal_len),
         }
     }
-
-    pub fn to_vec(&self) -> Vec3 {
-        let cos_theta = self.theta.cos();
-        Vec3::new(
-            self.phi.cos() * cos_theta,
-            self.theta.sin(),
-            self.phi.sin() * cos_theta,
-        )
-    }
-}
-
-pub trait Polar {
-    fn to_polar(&self) -> PolarCoordinates;
-}
-
-impl Polar for Vec3 {
-    fn to_polar(&self) -> PolarCoordinates {
-        PolarCoordinates::new(self)
-    }
 }
 
 #[cfg(test)]
@@ -49,7 +30,9 @@ mod tests {
 
     use glam::Vec3;
 
-    use super::{Polar, PolarCoordinates};
+    use crate::utils::extensions::{ToPolar, ToVec3};
+
+    use super::PolarCoordinates;
 
     #[test]
     fn polar_coordinates_phi() {
@@ -119,13 +102,13 @@ mod tests {
                     }
                     v = v.normalize();
                     assert_eq!(
-                        (v - v.to_polar().to_vec()).length() < epsilon,
+                        (v - v.to_polar().to_vec3()).length() < epsilon,
                         true,
                         "\npolar: {:?}\nvec: {:?}\nnve: {:?}\ndist: {}",
                         v.to_polar(),
                         v,
-                        v.to_polar().to_vec(),
-                        (v - v.to_polar().to_vec()).length()
+                        v.to_polar().to_vec3(),
+                        (v - v.to_polar().to_vec3()).length()
                     );
                 }
             }

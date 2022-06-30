@@ -1,32 +1,33 @@
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::{FRAC_PI_4, PI};
+    use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
     use glam::{DVec3, Vec3};
     use path_integration::Field;
     use rendering::{
         render::render,
         structs::{
-            image_data::ImageData, observer::Observer, polar_coordinates::Polar,
+            image_data::ImageData, observer::Observer, polar_coordinates::PolarCoordinates,
             ray_cache::RayCache, stars::Stars,
         },
+        utils::extensions::{ToDVec3, ToVec3},
     };
 
     fn init(
-        pos: DVec3,
-        facing: DVec3,
-        up: DVec3,
-        vertical_fov: f64,
+        pos: Vec3,
+        facing: Vec3,
+        up: Vec3,
+        vertical_fov: f32,
     ) -> (ImageData, Observer, Stars, RayCache) {
         let dim = 800;
-        let observer = Observer::new(-pos.length() * DVec3::Z, facing, DVec3::Y, vertical_fov);
+        let observer = Observer::new(-pos.length() * Vec3::Z, facing, up, vertical_fov);
         let image_data = ImageData::new(dim, dim);
 
         let background = image::open("uv.png").unwrap();
         let radius = 1.0;
 
-        let field = Field::new(radius, &pos);
-        let ray_cache = RayCache::compute_new(10000, &field, pos.length());
+        let field = Field::new(radius, &pos.to_dvec3());
+        let ray_cache = RayCache::compute_new(10000, &field, pos.length() as f64);
         let mut stars = Stars::new(background);
         let pos2 = Vec3::new(pos.x as f32, pos.y as f32, pos.z as f32);
         stars.update_position(&pos2);
@@ -34,11 +35,19 @@ mod tests {
         (image_data, observer, stars, ray_cache)
     }
 
+    fn rad_angles(count: u32) -> Vec<f32> {
+        let mut arr = Vec::new();
+        for i in 0..count {
+            arr.push(TAU * (i as f32) / (count as f32));
+        }
+        arr
+    }
+
     #[test]
     fn base_observer() -> Result<(), Box<dyn std::error::Error>> {
-        let pos = -5.0 * DVec3::Z;
+        let pos = -5.0 * Vec3::Z;
         let vertical_fov = 90.0;
-        let (mut image_data, observer, stars, black_hole) = init(pos, -pos, DVec3::Y, vertical_fov);
+        let (mut image_data, observer, stars, black_hole) = init(pos, -pos, Vec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &black_hole);
 
         let file_name = format!("observer/base_observer");
@@ -49,16 +58,18 @@ mod tests {
     #[test]
     fn rotation_xz_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X);
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: 0.0,
+                phi: rad,
+            };
+            let pos = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) =
-                init(pos, -pos, DVec3::Y, vertical_fov);
+                init(pos, -pos, Vec3::Y, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_XZ_angle_{}", angle_degrees);
+            let file_name = format!("observer/observer_XZ_angle_{:.0}", rad.to_degrees());
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -67,16 +78,18 @@ mod tests {
     #[test]
     fn rotation_xy_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::X);
-            let up = DVec3::Z;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: rad,
+                phi: 90.0_f32.to_radians(),
+            };
+            let pos = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
+            let up = Vec3::Z;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_XY_angle_{}", angle_degrees);
+            let file_name = format!("observer/observer_XY_angle_{:.0}", rad.to_degrees());
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -85,16 +98,18 @@ mod tests {
     #[test]
     fn rotation_yz_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * (f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::Z);
-            let up = DVec3::X;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: rad,
+                phi: 0.0,
+            };
+            let pos = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
+            let up = Vec3::X;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_YZ_angle_{}", angle_degrees);
+            let file_name = format!("observer/observer_YZ_angle_{:.0}", rad.to_degrees());
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -103,16 +118,21 @@ mod tests {
     #[test]
     fn rotation_up_x_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * DVec3::X;
-            let up = f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::Z;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: rad,
+                phi: 0.0,
+            };
+            let pos = -5.0 * Vec3::X;
+            let up = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_rotate_up_X_angle_{}", angle_degrees);
+            let file_name = format!(
+                "observer/observer_rotate_up_X_angle_{:.0}",
+                rad.to_degrees()
+            );
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -121,16 +141,22 @@ mod tests {
     #[test]
     fn rotation_up_y_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * DVec3::Y;
-            let up = f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: 0.0,
+                phi: rad,
+            };
+            let vertical_fov = 90.0;
+            let pos = -5.0 * Vec3::Y;
+            let up = -5.0 * polar.to_vec3();
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_rotate_up_Y_angle_{}", angle_degrees);
+            let file_name = format!(
+                "observer/observer_rotate_up_Y_angle_{:.0}",
+                rad.to_degrees()
+            );
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -139,16 +165,21 @@ mod tests {
     #[test]
     fn rotation_up_z_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * DVec3::Z;
-            let up = f64::cos(angle_rad) * DVec3::Y + f64::sin(angle_rad) * DVec3::X;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: rad,
+                phi: 90.0_f32.to_degrees(),
+            };
+            let up = -5.0 * polar.to_vec3();
+            let pos = -5.0 * Vec3::Z;
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, -pos, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_rotate_up_Z_angle_{}", angle_degrees);
+            let file_name = format!(
+                "observer/observer_rotate_up_Z_angle_{:.0}",
+                rad.to_degrees()
+            );
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -157,17 +188,22 @@ mod tests {
     #[test]
     fn rotation_view_xz_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * DVec3::Z;
-            let dir = f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X;
-            let up = DVec3::Y;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: 0.0,
+                phi: rad,
+            };
+            let dir = polar.to_vec3();
+            let pos = -5.0 * Vec3::Z;
             let vertical_fov = 90.0;
+            let up = Vec3::Y;
             let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_rotate_view_XZ_angle_{}", angle_degrees);
+            let file_name = format!(
+                "observer/observer_rotate_view_XZ_angle_{:.0}",
+                rad.to_degrees()
+            );
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -176,17 +212,23 @@ mod tests {
     #[test]
     fn rotation_view_yz_observer() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -5.0 * DVec3::Z;
-            let dir = f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::Y;
-            let up = DVec3::X;
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: rad,
+                phi: 0.0,
+            };
+            let dir = polar.to_vec3();
+            let pos = -5.0 * Vec3::Z;
+            let vertical_fov = 90.0;
+            let up = Vec3::X;
             let vertical_fov = 90.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_rotate_view_YZ_angle_{}", angle_degrees);
+            let file_name = format!(
+                "observer/observer_rotate_view_YZ_angle_{:.0}",
+                rad.to_degrees()
+            );
             image_data.write_image(&file_name);
         }
         Ok(())
@@ -196,11 +238,11 @@ mod tests {
     fn set_distance_observer() -> Result<(), Box<dyn std::error::Error>> {
         let steps = 20;
         for step in 3..=steps {
-            let dist = (step as f64) / 2.0;
-            let pos = -dist * DVec3::Z;
+            let dist = (step as f32) / 2.0;
+            let pos = -dist * Vec3::Z;
             let vertical_fov = 120.0;
             let (mut image_data, observer, stars, ray_cache) =
-                init(pos, -pos, DVec3::Y, vertical_fov);
+                init(pos, -pos, Vec3::Y, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
             let file_name = format!("observer/observer_distance_{:.1}", dist);
@@ -212,20 +254,24 @@ mod tests {
     #[test]
     fn orbit_close_to_horizon() -> Result<(), Box<dyn std::error::Error>> {
         let rotation_count = 8;
-        for rot in 0..rotation_count {
-            let angle_degrees = 360.0 * (rot as f64) / (rotation_count as f64);
-            let angle_rad = angle_degrees * PI / 180.0;
-            let pos = -1.5 * (f64::cos(angle_rad) * DVec3::Z + f64::sin(angle_rad) * DVec3::X);
-            let target_pos = -1.2
-                * (f64::cos(angle_rad + FRAC_PI_4) * DVec3::Z
-                    + f64::sin(angle_rad + FRAC_PI_4) * DVec3::X);
+        for rad in rad_angles(rotation_count) {
+            let polar = PolarCoordinates {
+                theta: 0.0,
+                phi: rad,
+            };
+            let pos = -1.5 * polar.to_vec3();
+            let polar = PolarCoordinates {
+                theta: 0.0,
+                phi: rad + FRAC_PI_4,
+            };
+            let target_pos = -1.2 * polar.to_vec3();
             let dir = (target_pos - pos).normalize();
-            let up = (DVec3::X - DVec3::X.dot(dir.normalize()) * dir.normalize()).normalize();
+            let up = (Vec3::X - Vec3::X.dot(dir.normalize()) * dir.normalize()).normalize();
             let vertical_fov = 120.0;
             let (mut image_data, observer, stars, ray_cache) = init(pos, dir, up, vertical_fov);
             render(&mut image_data, &observer, &stars, &ray_cache);
 
-            let file_name = format!("observer/observer_orbit_XZ_angle_{}", angle_degrees);
+            let file_name = format!("observer/observer_orbit_XZ_angle_{:.0}", rad.to_degrees());
             image_data.write_image(&file_name);
         }
         Ok(())

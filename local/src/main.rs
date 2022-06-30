@@ -39,10 +39,6 @@ fn circular_orbit_facing_horizon(distance: f32, count: usize) -> Vec<(Vec3, Vec3
     pos_dir
 }
 
-fn to_dvec(v: Vec3) -> DVec3 {
-    DVec3::new(v.x as f64, v.y as f64, v.z as f64)
-}
-
 fn main() {
     let mut file_name: String = "image".to_string();
     let mut dimensions = Dimensions::new(100, 100);
@@ -72,7 +68,7 @@ fn main() {
     let orbit = circular_orbit(distance as f32, 100);
     for i in 0..orbit.len() {
         let (pos, dir) = orbit[i];
-        let observer = Observer::new(to_dvec(pos), to_dvec(dir), DVec3::Y, vertical_fov);
+        let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
         render(&mut image_data, &observer, &stars, &ray_cache);
         let frame_name = format!("{}/frame_{:04}", folder_name, i);
 

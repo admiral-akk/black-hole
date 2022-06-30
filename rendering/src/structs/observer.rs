@@ -1,8 +1,10 @@
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 
-use glam::{DVec3, Quat, Vec3};
+use glam::{Quat, Vec3};
 
-use super::{data::Data, polar_coordinates::Polar, ray_cache::RayCache};
+use crate::utils::extensions::ToPolar;
+
+use super::{data::Data, ray_cache::RayCache};
 pub struct Observer {
     canon_forward: Vec3,
     canon_up: Vec3,
@@ -31,21 +33,18 @@ fn canon_rotation(pos: Vec3, up: Vec3) -> (Quat, Quat) {
 }
 
 impl Observer {
-    pub fn new(pos: DVec3, forward: DVec3, up: DVec3, vertical_fov_degrees: f64) -> Self {
-        let pos = Vec3::new(pos.x as f32, pos.y as f32, pos.z as f32);
-        let forward = Vec3::new(forward.x as f32, forward.y as f32, forward.z as f32);
-        let up = Vec3::new(up.x as f32, up.y as f32, up.z as f32);
+    pub fn new(pos: Vec3, forward: Vec3, up: Vec3, vertical_fov_degrees: f32) -> Self {
         let (to_canon, from_canon) = canon_rotation(pos, up);
         let forward = forward.normalize();
         let canon_forward = (to_canon * forward).normalize();
-        let view_mag = 2.0 * f64::tan(PI * vertical_fov_degrees / 360.0);
+        let view_width = 2.0 * f32::tan(PI * vertical_fov_degrees / 360.0);
         let canon_up = Vec3::Y;
         let canon_right = canon_forward.cross(canon_up).normalize();
         Self {
             canon_forward,
             canon_up,
             canon_right,
-            view_width: view_mag as f32,
+            view_width,
             from_canon,
         }
     }

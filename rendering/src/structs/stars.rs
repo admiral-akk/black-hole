@@ -1,10 +1,9 @@
 use glam::Vec3;
 use image::{DynamicImage, GenericImageView};
 
-use super::{
-    data::Data,
-    polar_coordinates::{Polar, PolarCoordinates},
-};
+use crate::utils::extensions::ToPolar;
+
+use super::{data::Data, polar_coordinates::PolarCoordinates};
 
 pub struct Stars {
     background: DynamicImage,
