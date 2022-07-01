@@ -1,7 +1,10 @@
 extern crate cfg_if;
 extern crate wasm_bindgen;
 
+mod color_map;
+
 use cfg_if::cfg_if;
+use color_map::colormap1;
 use js_sys::Float32Array;
 use wasm_bindgen::prelude::*;
 
@@ -9,6 +12,7 @@ use wasm_bindgen::prelude::*;
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
 // https://michaelerule.github.io/webgpgpu/examples/Example_1_hello_gpu.html
 // https://github.com/michaelerule/webgpgpu/blob/master/examples/Example_1_hello_gpu.html
+// https://github.com/michaelerule/webgpgpu
 cfg_if! {
     // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
     // allocator.
@@ -59,33 +63,13 @@ pub fn start() -> Result<(), JsValue> {
     let vert_shader = compile_shader(
         &context,
         WebGl2RenderingContext::VERTEX_SHADER,
-        r##"#version 300 es
- 
-        in vec4 position;
-
-        void main() {
-        
-            gl_Position = position;
-        }
-        "##,
+        include_str!("vertex.glsl"),
     )?;
 
     let frag_shader = compile_shader(
         &context,
         WebGl2RenderingContext::FRAGMENT_SHADER,
-        r##"#version 300 es
-    
-        precision mediump float;
-        out vec4 outColor;
-        
-        void main() {
-            outColor = vec4(
-                gl_FragCoord.x<256.?1:0,
-                gl_FragCoord.y<256.?1:0,
-                mod(floor(gl_FragCoord.y/8.),2.),
-                1);
-        }
-        "##,
+        include_str!("fragment.glsl"),
     )?;
     let program = link_program(&context, &vert_shader, &frag_shader)?;
     context.use_program(Some(&program));
@@ -107,6 +91,7 @@ pub fn start() -> Result<(), JsValue> {
     // As a result, after `Float32Array::view` we have to be very careful not to
     // do any memory allocations before it's dropped.
     unsafe {
+        // Safe as long as there's no memory allocation between this and buffering the data to webgl.
         let positions_array_buf_view = js_sys::Float32Array::view(&vertices);
 
         context.buffer_data_with_array_buffer_view(
@@ -115,6 +100,7 @@ pub fn start() -> Result<(), JsValue> {
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }
+    add_texture(&context);
 
     let vao = context
         .create_vertex_array()
@@ -129,7 +115,52 @@ pub fn start() -> Result<(), JsValue> {
     let vert_count = (vertices.len() / 3) as i32;
     draw(&context, vert_count);
 
+    web_sys::console::log_1(&format!("hello").into());
+    let texture_binding = context
+        .get_parameter(WebGl2RenderingContext::TEXTURE_BINDING_2D)
+        .unwrap();
+    web_sys::console::log_1(&texture_binding);
     Ok(())
+}
+
+fn add_texture(context: &WebGl2RenderingContext) {
+    let texture = context.create_texture().unwrap();
+    web_sys::console::log_1(&texture);
+    context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&texture));
+    let colors = colormap1();
+    context
+        .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            WebGl2RenderingContext::TEXTURE_2D,
+            0,
+            WebGl2RenderingContext::RGBA as i32,
+            (colors.len() / 4) as i32,
+            1,
+            0,
+            WebGl2RenderingContext::RGBA,
+            WebGl2RenderingContext::UNSIGNED_BYTE,
+            Some(&colors),
+        )
+        .unwrap();
+    context.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
+        WebGl2RenderingContext::LINEAR as i32,
+    );
+    context.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
+        WebGl2RenderingContext::LINEAR as i32,
+    );
+    context.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_WRAP_S,
+        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
+    );
+    context.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_WRAP_T,
+        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
+    );
 }
 
 fn draw(context: &WebGl2RenderingContext, vert_count: i32) {

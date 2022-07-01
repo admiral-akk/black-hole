@@ -1,12 +1,11 @@
 #version 300 es
 
-precision highp float;
+precision mediump float;
 out vec4 outColor;
 
+uniform sampler2D u_palette;
+
 void main(){
-    gl_FragColor=vec4(
-        gl_FragCoord.x<256.?1:0,
-        gl_FragCoord.y<256.?1:0,
-        mod(floor(gl_FragCoord.y/8.),2.),
-    1);
+    float index=(cos((gl_FragCoord.x+gl_FragCoord.y)*.1227184630308513)+1.)*128.;
+    outColor=texture(u_palette,vec2((index+.5)/256.,.5));
 }

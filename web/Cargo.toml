@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
 
-
 [lib]
 crate-type = ["cdylib"]
 
@@ -22,7 +21,13 @@ features = [
   'WebGlBuffer',
   'WebGlVertexArrayObject',
   'WebGl2RenderingContext',
+  'WebGlTexture',
   'WebGlProgram',
   'WebGlShader',
   'Window',
+  'console',
 ]
+
+[package.metadata.wasm-pack.profile.release]
+# previously had just ['-O4']
+wasm-opt = ['-O4', '-g']
