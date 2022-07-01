@@ -3,6 +3,7 @@ members = [
     "path_integration",
     "rendering",
     "local",
+    "web",
 ]
 resolver = "2"
 
