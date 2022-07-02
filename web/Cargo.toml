@@ -28,6 +28,8 @@ features = [
   'Window',
   'WebGlRenderingContext', 'WebGlUniformLocation',
   'console',
+  'WebGlFramebuffer',
+  'WebGlRenderbuffer',
 ]
 
 [package.metadata.wasm-pack.profile.release]

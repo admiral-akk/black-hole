@@ -1,11 +1,12 @@
-use wasm_bindgen::JsCast;
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
 use super::shader_cache::{get_shaders, Exercise};
 
 pub struct WebGLWrapper {
     gl: WebGl2RenderingContext,
     program: WebGlProgram,
+    canvas: HtmlCanvasElement,
     texture_count: i32,
 }
 impl WebGLWrapper {
@@ -46,8 +47,51 @@ impl WebGLWrapper {
         WebGLWrapper {
             gl: context,
             program,
+            canvas,
             texture_count: 0,
         }
+    }
+
+    pub fn render_texture(&self) -> Result<(), JsValue> {
+        let gl = &self.gl;
+        let frame_buffer = gl.create_framebuffer();
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, frame_buffer.as_ref());
+        let texture = gl.create_texture();
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
+        gl.tex_parameteri(
+            WebGl2RenderingContext::TEXTURE_2D,
+            WebGl2RenderingContext::TEXTURE_MAG_FILTER,
+            WebGl2RenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            WebGl2RenderingContext::TEXTURE_2D,
+            WebGl2RenderingContext::TEXTURE_MIN_FILTER,
+            WebGl2RenderingContext::LINEAR as i32,
+        );
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            WebGl2RenderingContext::TEXTURE_2D,
+            0,
+            WebGl2RenderingContext::RGBA as i32,
+            self.canvas.width() as i32,
+            self.canvas.height() as i32,
+            0,
+            WebGl2RenderingContext::RGBA,
+            WebGl2RenderingContext::UNSIGNED_BYTE,
+            None,
+        )?;
+        gl.framebuffer_texture_2d(
+            WebGl2RenderingContext::FRAMEBUFFER,
+            WebGl2RenderingContext::COLOR_ATTACHMENT0,
+            WebGl2RenderingContext::TEXTURE_2D,
+            texture.as_ref(),
+            0,
+        );
+
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+        gl.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, None);
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+
+        Ok(())
     }
 
     pub fn add_texture(&mut self, colors: &[u8], width: i32, height: i32, name: &str) {
