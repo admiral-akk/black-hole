@@ -62,10 +62,10 @@ macro_rules! console_log {
     // `bare_bones`
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::console;
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+
+
+
+
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
