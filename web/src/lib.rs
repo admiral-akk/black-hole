@@ -2,11 +2,12 @@ extern crate cfg_if;
 extern crate wasm_bindgen;
 
 mod color_map;
+mod something2;
 mod utils;
-
 use cfg_if::cfg_if;
 use color_map::colormap1;
 use color_map::colormap2;
+use something2::draw;
 use utils::texture::Texture;
 use utils::web_gl;
 use utils::web_gl::WebGLWrapper;
@@ -87,7 +88,7 @@ pub fn start() -> Result<(), JsValue> {
     }
 
     let vertex = include_str!("shaders/vertex/position.glsl");
-    web_gl.draw(vertex, frag, &textures, None);
+    draw(vertex, frag, &textures, None);
     Ok(())
 }
 
