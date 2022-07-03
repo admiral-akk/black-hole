@@ -1,7 +1,10 @@
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
-use super::shader_cache::{get_shaders, Exercise};
+use super::{
+    shader_cache::{get_shaders, Exercise},
+    texture::Texture,
+};
 
 pub struct WebGLWrapper {
     gl: WebGl2RenderingContext,
@@ -106,7 +109,7 @@ impl WebGLWrapper {
         Ok(())
     }
 
-    pub fn add_texture(&mut self, colors: &[u8], width: i32, height: i32, name: &str) {
+    fn add_texture(&mut self, colors: &[u8], width: i32, height: i32, name: &str) {
         let texture = self.gl.create_texture().unwrap();
         let location = self.gl.get_uniform_location(&self.program, name).unwrap();
         self.gl.uniform1i(Some(&location), self.texture_count);
@@ -157,7 +160,15 @@ impl WebGLWrapper {
         );
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&mut self, textures: &[Texture]) {
+        for texture in textures {
+            self.add_texture(
+                &texture.arr[0..texture.arr.len()],
+                texture.width,
+                (texture.arr.len() / (4 * texture.width as usize)) as i32,
+                &texture.name,
+            );
+        }
         let gl = &self.gl;
         let program = &self.program;
         let position_attribute_location = gl.get_attrib_location(&program, "position");

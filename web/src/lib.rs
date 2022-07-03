@@ -8,6 +8,7 @@ use cfg_if::cfg_if;
 use color_map::colormap1;
 use color_map::colormap2;
 use utils::shader_cache::Exercise;
+use utils::texture::Texture;
 use utils::web_gl::WebGLWrapper;
 use wasm_bindgen::prelude::*;
 
@@ -63,23 +64,22 @@ macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
-
-
-
-
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     let exercise = get_exercise();
     let mut web_gl = WebGLWrapper::new(&exercise);
+    let mut textures = Vec::new();
     match exercise {
-        Exercise::Exercise2 => web_gl.add_texture(&colormap1(), 256, 1, "u_palette"),
+        Exercise::Exercise2 => {
+            textures.push(Texture::new(&colormap1(), 256, "u_palette"));
+        }
         Exercise::Exercise3 => {
-            web_gl.add_texture(&colormap1(), 256, 1, "u_palette_1");
-            web_gl.add_texture(&colormap2(), 256, 1, "u_palette_2");
+            textures.push(Texture::new(&colormap1(), 256, "u_palette_1"));
+            textures.push(Texture::new(&colormap2(), 256, "u_palette_2"));
         }
         _ => {}
     }
-    web_gl.draw();
+    web_gl.draw(&textures);
     Ok(())
 }
 
