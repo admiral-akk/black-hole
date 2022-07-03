@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-
 use wasm_bindgen::JsCast;
 use web_sys::{
     HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlProgram, WebGlShader,
-    WebGlTexture,
 };
 
-use super::{shader_cache::Exercise, texture::Texture};
+use super::texture::Texture;
 
 pub struct WebGLWrapper {
     gl: WebGl2RenderingContext,
@@ -25,7 +22,7 @@ pub struct WebGLWrapper {
 // Clear
 
 impl WebGLWrapper {
-    pub fn new(exercise: &Exercise) -> WebGLWrapper {
+    pub fn new() -> WebGLWrapper {
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement =

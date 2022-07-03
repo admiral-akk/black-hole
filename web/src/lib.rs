@@ -7,7 +7,6 @@ mod utils;
 use cfg_if::cfg_if;
 use color_map::colormap1;
 use color_map::colormap2;
-use utils::shader_cache::Exercise;
 use utils::texture::Texture;
 use utils::web_gl;
 use utils::web_gl::WebGLWrapper;
@@ -68,30 +67,31 @@ macro_rules! console_log {
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     let exercise = get_exercise();
-    let mut web_gl = WebGLWrapper::new(&exercise);
+    let mut web_gl = WebGLWrapper::new();
     let mut textures = Vec::new();
-    let vertex = include_str!("shaders/vertex/position.glsl");
     let mut frag = "";
     match exercise {
-        Exercise::Exercise1 => {
+        1 => {
             frag = include_str!("shaders/fragment/striped.glsl");
         }
-        Exercise::Exercise2 => {
+        2 => {
             frag = include_str!("shaders/fragment/1_color_map.glsl");
             textures.push(Texture::new(&colormap1(), 256, "u_palette"));
         }
-        Exercise::Exercise3 => {
+        3 => {
             frag = include_str!("shaders/fragment/2_color_map.glsl");
             textures.push(Texture::new(&colormap1(), 256, "u_palette_1"));
             textures.push(Texture::new(&colormap2(), 256, "u_palette_2"));
         }
         _ => {}
     }
+
+    let vertex = include_str!("shaders/vertex/position.glsl");
     web_gl.draw(vertex, frag, &textures, None);
     Ok(())
 }
 
-fn get_exercise() -> Exercise {
+fn get_exercise() -> u32 {
     let window = web_sys::window().unwrap();
     let query = decode_request(&window).unwrap();
     let params = query.split("&");
@@ -107,23 +107,10 @@ fn get_exercise() -> Exercise {
     let arg = args.iter().find(|&&s| {
         return s.0 == "exercise";
     });
-    let mut exercise: Exercise = Exercise::Exercise1;
     if arg.is_some() {
-        let num: u32 = arg.unwrap().1.parse().unwrap();
-        match num {
-            1 => {
-                exercise = Exercise::Exercise1;
-            }
-            2 => {
-                exercise = Exercise::Exercise2;
-            }
-            3 => {
-                exercise = Exercise::Exercise3;
-            }
-            _ => {}
-        }
+        return arg.unwrap().1.parse().unwrap();
     }
-    return exercise;
+    return 0;
 }
 
 fn decode_request(window: &web_sys::Window) -> Option<String> {
