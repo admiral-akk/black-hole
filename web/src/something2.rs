@@ -157,16 +157,17 @@ pub fn draw(
     }
 
     let position_attribute_location = gl.get_attrib_location(&program, "position");
-    let vao = gl
-        .create_vertex_array()
-        .ok_or("Could not create vertex array object")
-        .unwrap();
-    gl.bind_vertex_array(Some(&vao));
 
-    gl.vertex_attrib_pointer_with_i32(0, 3, WebGl2RenderingContext::FLOAT, false, 0, 0);
+    gl.vertex_attrib_pointer_with_i32(
+        position_attribute_location as u32,
+        3,
+        WebGl2RenderingContext::FLOAT,
+        false,
+        0,
+        0,
+    );
     gl.enable_vertex_attrib_array(position_attribute_location as u32);
 
-    gl.bind_vertex_array(Some(&vao));
     gl.clear_color(0.0, 0.0, 0.0, 1.0);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
