@@ -9,6 +9,17 @@ pub struct WebGLWrapper {
     canvas: HtmlCanvasElement,
     texture_count: i32,
 }
+
+// Create context
+
+// Get frame buffer
+
+// Set up program
+
+// Load textures and compute, if has framebuffer then output to that. If not, then to screen.
+
+// Clear
+
 impl WebGLWrapper {
     pub fn new(exercise: &Exercise) -> WebGLWrapper {
         let document = web_sys::window().unwrap().document().unwrap();
@@ -27,6 +38,7 @@ impl WebGLWrapper {
         context.clear_color(0.5, 0.7, 0.6, 1.0);
         context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
         context.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
+
         let context = canvas
             .get_context("webgl2")
             .unwrap()
@@ -43,7 +55,7 @@ impl WebGLWrapper {
             compile_shader(&context, WebGl2RenderingContext::FRAGMENT_SHADER, &frag).unwrap();
         let program = link_program(&context, &vert_shader, &frag_shader).unwrap();
         context.use_program(Some(&program));
-        add_vertices(&context, &program);
+        add_vertices(&context);
         WebGLWrapper {
             gl: context,
             program,
@@ -146,16 +158,31 @@ impl WebGLWrapper {
     }
 
     pub fn draw(&self) {
-        draw(&self.gl, 4);
+        let gl = &self.gl;
+        let program = &self.program;
+        let position_attribute_location = gl.get_attrib_location(&program, "position");
+        let vao = gl
+            .create_vertex_array()
+            .ok_or("Could not create vertex array object")
+            .unwrap();
+        gl.bind_vertex_array(Some(&vao));
+
+        gl.vertex_attrib_pointer_with_i32(0, 3, WebGl2RenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(position_attribute_location as u32);
+
+        gl.bind_vertex_array(Some(&vao));
+        gl.clear_color(0.0, 0.0, 0.0, 1.0);
+        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
+        gl.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
     }
 }
 
-pub fn add_vertices(gl: &WebGl2RenderingContext, program: &WebGlProgram) {
+pub fn add_vertices(gl: &WebGl2RenderingContext) {
     let vertices: [f32; 12] = [
         -1.0, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
     ];
 
-    let position_attribute_location = gl.get_attrib_location(program, "position");
     let buffer = gl.create_buffer().ok_or("Failed to create buffer").unwrap();
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
@@ -177,24 +204,6 @@ pub fn add_vertices(gl: &WebGl2RenderingContext, program: &WebGlProgram) {
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }
-
-    let vao = gl
-        .create_vertex_array()
-        .ok_or("Could not create vertex array object")
-        .unwrap();
-    gl.bind_vertex_array(Some(&vao));
-
-    gl.vertex_attrib_pointer_with_i32(0, 3, WebGl2RenderingContext::FLOAT, false, 0, 0);
-    gl.enable_vertex_attrib_array(position_attribute_location as u32);
-
-    gl.bind_vertex_array(Some(&vao));
-}
-
-fn draw(context: &WebGl2RenderingContext, vert_count: i32) {
-    context.clear_color(0.0, 0.0, 0.0, 1.0);
-    context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-
-    context.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, vert_count);
 }
 
 pub fn compile_shader(
@@ -222,26 +231,26 @@ pub fn compile_shader(
 }
 
 pub fn link_program(
-    context: &WebGl2RenderingContext,
+    gl: &WebGl2RenderingContext,
     vert_shader: &WebGlShader,
     frag_shader: &WebGlShader,
 ) -> Result<WebGlProgram, String> {
-    let program = context
+    let program = gl
         .create_program()
         .ok_or_else(|| String::from("Unable to create shader object"))?;
 
-    context.attach_shader(&program, vert_shader);
-    context.attach_shader(&program, frag_shader);
-    context.link_program(&program);
+    gl.attach_shader(&program, vert_shader);
+    gl.attach_shader(&program, frag_shader);
+    gl.link_program(&program);
 
-    if context
+    if gl
         .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
         .as_bool()
         .unwrap_or(false)
     {
         Ok(program)
     } else {
-        Err(context
+        Err(gl
             .get_program_info_log(&program)
             .unwrap_or_else(|| String::from("Unknown error creating program object")))
     }
