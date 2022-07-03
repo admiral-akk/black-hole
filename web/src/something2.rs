@@ -11,9 +11,7 @@ pub struct RenderContext {
 }
 
 fn initialize_raster_vertices(gl: &WebGl2RenderingContext) {
-    let vertices: [f32; 12] = [
-        -1.0, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
-    ];
+    let vertices: [f32; 8] = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0];
 
     let buffer = gl.create_buffer().ok_or("Failed to create buffer").unwrap();
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
@@ -178,7 +176,7 @@ pub fn draw(
 
     gl.vertex_attrib_pointer_with_i32(
         position_attribute_location as u32,
-        3,
+        2,
         WebGl2RenderingContext::FLOAT,
         false,
         0,
