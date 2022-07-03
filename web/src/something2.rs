@@ -57,11 +57,42 @@ impl RenderContext {
         initialize_raster_vertices(&gl);
         RenderContext { gl, canvas }
     }
+
+    pub fn draw(&self, out_buffer: Option<WebGlFramebuffer>) {
+        let gl = &self.gl;
+
+        gl.clear_color(0.0, 0.0, 0.0, 1.0);
+        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
+        if out_buffer.is_some() {
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer.as_ref());
+        }
+
+        gl.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
+
+        if out_buffer.is_some() {
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+        }
+    }
 }
 
 pub struct ProgramContext {
     pub program: WebGlProgram,
     texture_count: u32,
+}
+
+fn initalize_position(gl: &WebGl2RenderingContext, program: &WebGlProgram) {
+    let position_attribute_location = gl.get_attrib_location(program, "position");
+
+    gl.vertex_attrib_pointer_with_i32(
+        position_attribute_location as u32,
+        2,
+        WebGl2RenderingContext::FLOAT,
+        false,
+        0,
+        0,
+    );
+    gl.enable_vertex_attrib_array(position_attribute_location as u32);
 }
 
 impl ProgramContext {
@@ -95,6 +126,7 @@ impl ProgramContext {
         gl.attach_shader(&program, &vert_shader);
         gl.attach_shader(&program, &frag_shader);
         gl.link_program(&program);
+        initalize_position(gl, &program);
         ProgramContext {
             program,
             texture_count: 0,
@@ -172,28 +204,5 @@ pub fn draw(
         );
     }
 
-    let position_attribute_location = gl.get_attrib_location(&program_context.program, "position");
-
-    gl.vertex_attrib_pointer_with_i32(
-        position_attribute_location as u32,
-        2,
-        WebGl2RenderingContext::FLOAT,
-        false,
-        0,
-        0,
-    );
-    gl.enable_vertex_attrib_array(position_attribute_location as u32);
-
-    gl.clear_color(0.0, 0.0, 0.0, 1.0);
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-
-    if out_buffer.is_some() {
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer.as_ref());
-    }
-
-    gl.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
-
-    if out_buffer.is_some() {
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
-    }
+    render_context.draw(out_buffer);
 }
