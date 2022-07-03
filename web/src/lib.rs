@@ -9,6 +9,7 @@ use color_map::colormap1;
 use color_map::colormap2;
 use utils::shader_cache::Exercise;
 use utils::texture::Texture;
+use utils::web_gl;
 use utils::web_gl::WebGLWrapper;
 use wasm_bindgen::prelude::*;
 
@@ -69,17 +70,24 @@ pub fn start() -> Result<(), JsValue> {
     let exercise = get_exercise();
     let mut web_gl = WebGLWrapper::new(&exercise);
     let mut textures = Vec::new();
+    let vertex = include_str!("shaders/vertex/position.glsl");
+    let mut frag = "";
     match exercise {
+        Exercise::Exercise1 => {
+            frag = include_str!("shaders/fragment/striped.glsl");
+        }
         Exercise::Exercise2 => {
+            frag = include_str!("shaders/fragment/1_color_map.glsl");
             textures.push(Texture::new(&colormap1(), 256, "u_palette"));
         }
         Exercise::Exercise3 => {
+            frag = include_str!("shaders/fragment/2_color_map.glsl");
             textures.push(Texture::new(&colormap1(), 256, "u_palette_1"));
             textures.push(Texture::new(&colormap2(), 256, "u_palette_2"));
         }
         _ => {}
     }
-    web_gl.draw(&textures);
+    web_gl.draw(vertex, frag, &textures, None);
     Ok(())
 }
 
