@@ -63,6 +63,7 @@ impl RenderContext {
 
 pub struct ProgramContext {
     pub program: WebGlProgram,
+    texture_count: u32,
 }
 
 impl ProgramContext {
@@ -96,42 +97,36 @@ impl ProgramContext {
         gl.attach_shader(&program, &vert_shader);
         gl.attach_shader(&program, &frag_shader);
         gl.link_program(&program);
-        ProgramContext { program }
+        ProgramContext {
+            program,
+            texture_count: 0,
+        }
     }
-}
 
-pub fn draw(
-    vertex_source: &str,
-    fragment_source: &str,
-    textures: &[Texture],
-    out_buffer: Option<WebGlFramebuffer>,
-) {
-    let render_context = RenderContext::new(500, 500);
-    let gl = &render_context.gl;
-
-    let program_context = ProgramContext::new(gl, vertex_source, fragment_source);
-    let program = &program_context.program;
-    gl.use_program(Some(&program));
-
-    for i in 0..textures.len() {
+    pub fn add_texture_from_u8(
+        &mut self,
+        gl: &WebGl2RenderingContext,
+        arr: &[u8],
+        width: i32,
+        name: &str,
+    ) {
+        let program = &self.program;
         let texture = gl.create_texture();
-        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + i as u32);
+        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + self.texture_count);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
-        let loc = gl.get_uniform_location(&program, &textures[i].name);
-        gl.uniform1i(loc.as_ref(), i as i32);
-
-        let width = textures[i].width;
+        let loc = gl.get_uniform_location(program, name);
+        gl.uniform1i(loc.as_ref(), self.texture_count as i32);
 
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D,
             0,
             WebGl2RenderingContext::RGBA as i32,
             width,
-            (textures[i].arr.len() / (4 * width) as usize) as i32,
+            (arr.len() / (4 * width) as usize) as i32,
             0,
             WebGl2RenderingContext::RGBA,
             WebGl2RenderingContext::UNSIGNED_BYTE,
-            Some(&textures[i].arr),
+            Some(arr),
         )
         .unwrap();
         gl.tex_parameteri(
@@ -154,9 +149,32 @@ pub fn draw(
             WebGl2RenderingContext::TEXTURE_WRAP_T,
             WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
         );
+        self.texture_count += 1;
+    }
+}
+
+pub fn draw(
+    vertex_source: &str,
+    fragment_source: &str,
+    textures: &[Texture],
+    out_buffer: Option<WebGlFramebuffer>,
+) {
+    let render_context = RenderContext::new(500, 500);
+    let gl = &render_context.gl;
+
+    let mut program_context = ProgramContext::new(gl, vertex_source, fragment_source);
+    gl.use_program(Some(&program_context.program));
+
+    for i in 0..textures.len() {
+        program_context.add_texture_from_u8(
+            gl,
+            &textures[i].arr,
+            textures[i].width,
+            &textures[i].name,
+        );
     }
 
-    let position_attribute_location = gl.get_attrib_location(&program, "position");
+    let position_attribute_location = gl.get_attrib_location(&program_context.program, "position");
 
     gl.vertex_attrib_pointer_with_i32(
         position_attribute_location as u32,
