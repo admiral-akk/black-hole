@@ -1,44 +1,16 @@
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer};
+use web_sys::{
+    HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlProgram, WebGlShader,
+};
 
 use crate::utils::texture::Texture;
 
 pub struct RenderContext {
     pub gl: WebGl2RenderingContext,
-    canvas: HtmlCanvasElement,
+    pub canvas: HtmlCanvasElement,
 }
 
-impl RenderContext {
-    pub fn new(width: u32, height: u32) -> RenderContext {
-        let document = web_sys::window().unwrap().document().unwrap();
-        let canvas = document.get_element_by_id("canvas").unwrap();
-        let canvas: web_sys::HtmlCanvasElement =
-            canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
-
-        let gl = canvas
-            .get_context("webgl2")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<WebGl2RenderingContext>()
-            .unwrap();
-        canvas.set_width(width);
-        canvas.set_height(height);
-        gl.clear_color(0.5, 0.7, 0.6, 1.0);
-        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-        gl.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
-        RenderContext { gl, canvas }
-    }
-}
-
-pub fn draw(
-    vertex_source: &str,
-    fragment_source: &str,
-    textures: &[Texture],
-    out_buffer: Option<WebGlFramebuffer>,
-) {
-    let render_context = RenderContext::new(500, 500);
-    let gl = &render_context.gl;
-
+fn initialize_raster_vertices(gl: &WebGl2RenderingContext) {
     let vertices: [f32; 12] = [
         -1.0, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
     ];
@@ -64,32 +36,81 @@ pub fn draw(
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }
+}
 
-    let shader = gl
-        .create_shader(WebGl2RenderingContext::VERTEX_SHADER)
-        .ok_or_else(|| String::from("Unable to create shader object"))
-        .unwrap();
-    gl.shader_source(&shader, vertex_source);
-    gl.compile_shader(&shader);
+impl RenderContext {
+    pub fn new(width: u32, height: u32) -> RenderContext {
+        let document = web_sys::window().unwrap().document().unwrap();
+        let canvas = document.get_element_by_id("canvas").unwrap();
+        let canvas: web_sys::HtmlCanvasElement =
+            canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
 
-    let vert_shader = shader;
+        let gl = canvas
+            .get_context("webgl2")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<WebGl2RenderingContext>()
+            .unwrap();
+        canvas.set_width(width);
+        canvas.set_height(height);
+        gl.clear_color(0.5, 0.7, 0.6, 1.0);
+        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+        gl.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
+        initialize_raster_vertices(&gl);
+        RenderContext { gl, canvas }
+    }
+}
 
-    let shader = gl
-        .create_shader(WebGl2RenderingContext::FRAGMENT_SHADER)
-        .ok_or_else(|| String::from("Unable to create shader object"))
-        .unwrap();
-    gl.shader_source(&shader, fragment_source);
-    gl.compile_shader(&shader);
+pub struct ProgramContext {
+    pub program: WebGlProgram,
+}
 
-    let frag_shader = shader;
-    let program = gl
-        .create_program()
-        .ok_or_else(|| String::from("Unable to create shader object"))
-        .unwrap();
+impl ProgramContext {
+    pub fn new(
+        gl: &WebGl2RenderingContext,
+        vertex_source: &str,
+        fragment_source: &str,
+    ) -> ProgramContext {
+        let shader = gl
+            .create_shader(WebGl2RenderingContext::VERTEX_SHADER)
+            .ok_or_else(|| String::from("Unable to create shader object"))
+            .unwrap();
+        gl.shader_source(&shader, vertex_source);
+        gl.compile_shader(&shader);
 
-    gl.attach_shader(&program, &vert_shader);
-    gl.attach_shader(&program, &frag_shader);
-    gl.link_program(&program);
+        let vert_shader = shader;
+
+        let shader = gl
+            .create_shader(WebGl2RenderingContext::FRAGMENT_SHADER)
+            .ok_or_else(|| String::from("Unable to create shader object"))
+            .unwrap();
+        gl.shader_source(&shader, fragment_source);
+        gl.compile_shader(&shader);
+
+        let frag_shader = shader;
+        let program = gl
+            .create_program()
+            .ok_or_else(|| String::from("Unable to create shader object"))
+            .unwrap();
+
+        gl.attach_shader(&program, &vert_shader);
+        gl.attach_shader(&program, &frag_shader);
+        gl.link_program(&program);
+        ProgramContext { program }
+    }
+}
+
+pub fn draw(
+    vertex_source: &str,
+    fragment_source: &str,
+    textures: &[Texture],
+    out_buffer: Option<WebGlFramebuffer>,
+) {
+    let render_context = RenderContext::new(500, 500);
+    let gl = &render_context.gl;
+
+    let program_context = ProgramContext::new(gl, vertex_source, fragment_source);
+    let program = &program_context.program;
     gl.use_program(Some(&program));
 
     for i in 0..textures.len() {
