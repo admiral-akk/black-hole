@@ -1,7 +1,5 @@
 use wasm_bindgen::JsCast;
-use web_sys::{
-    HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlVertexArrayObject,
-};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer};
 
 use super::{
     frame_buffer_context::FrameBufferContext,
