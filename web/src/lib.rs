@@ -4,20 +4,12 @@ extern crate wasm_bindgen;
 mod color_map;
 mod something2;
 mod utils;
-use std::borrow::Borrow;
-use std::borrow::BorrowMut;
-use std::rc::Rc;
 
 use cfg_if::cfg_if;
 use color_map::colormap1;
 use color_map::colormap2;
-use something2::draw;
-use something2::draw2;
-use something2::RenderContext;
+use utils::render_context::RenderContext;
 use utils::texture::Texture;
-use utils::web_gl;
-use utils::web_gl::WebGLWrapper;
-use wasm_bindgen::closure;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
@@ -88,7 +80,7 @@ extern "C" {
     fn cancelAnimationFrame(id: u32);
 }
 
-const EXERCISE_COUNT: u32 = 3;
+const EXERCISE_COUNT: u32 = 4;
 
 fn get_select() -> Result<HtmlSelectElement, JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -122,22 +114,39 @@ impl RenderState {
         let mut textures = Vec::new();
         let vertex = include_str!("shaders/vertex/position.glsl");
         let mut frag = "";
+        let frame_buffer;
+        let color_map_1 = colormap1();
+        let color_map_2 = colormap2();
         match exercise {
             1 => {
                 frag = include_str!("shaders/fragment/striped.glsl");
+                self.gl.draw(vertex, frag, &textures, None);
             }
             2 => {
                 frag = include_str!("shaders/fragment/1_color_map.glsl");
-                textures.push(Texture::new(&colormap1(), 256, "u_palette"));
+                textures.push(Texture::new_from_u8(&color_map_1, 256, "u_palette"));
+                self.gl.draw(vertex, frag, &textures, None);
             }
             3 => {
                 frag = include_str!("shaders/fragment/2_color_map.glsl");
-                textures.push(Texture::new(&colormap1(), 256, "u_palette_1"));
-                textures.push(Texture::new(&colormap2(), 256, "u_palette_2"));
+                textures.push(Texture::new_from_u8(&color_map_1, 256, "u_palette_1"));
+                textures.push(Texture::new_from_u8(&color_map_2, 256, "u_palette_2"));
+                self.gl.draw(vertex, frag, &textures, None);
+            }
+            4 => {
+                frag = include_str!("shaders/fragment/checkered.glsl");
+                frame_buffer = self.gl.create_framebuffer(500, 500);
+                self.gl
+                    .draw(vertex, frag, &textures, Some(frame_buffer.frame_buffer));
+                textures.push(Texture::new_from_allocated(
+                    &frame_buffer.backing_texture,
+                    "rtt_texture",
+                ));
+                frag = include_str!("shaders/fragment/blur.glsl");
+                self.gl.draw(vertex, frag, &textures, None);
             }
             _ => {}
         }
-        draw(vertex, frag, &textures, None);
         Ok(())
     }
 }
@@ -155,33 +164,4 @@ impl RenderState {
 pub fn start() -> Result<(), JsValue> {
     init_select();
     Ok(())
-}
-
-fn get_exercise() -> u32 {
-    let window = web_sys::window().unwrap();
-    let query = decode_request(&window).unwrap();
-    let params = query.split("&");
-    let args: Vec<(&str, &str)> = params
-        .map(|s| {
-            let split: Vec<&str> = s.split('=').collect();
-            if split.len() != 2 {
-                return ("", "");
-            }
-            return (split[0], split[1]);
-        })
-        .collect();
-    let arg = args.iter().find(|&&s| {
-        return s.0 == "exercise";
-    });
-    if arg.is_some() {
-        return arg.unwrap().1.parse().unwrap();
-    }
-    return 0;
-}
-
-fn decode_request(window: &web_sys::Window) -> Option<String> {
-    match window.location().search() {
-        Ok(s) => Some(s.trim_start_matches('?').to_owned()),
-        _ => None,
-    }
 }
