@@ -8,6 +8,7 @@ use cfg_if::cfg_if;
 use color_map::colormap1;
 use color_map::colormap2;
 use something2::draw;
+use something2::draw2;
 use utils::texture::Texture;
 use utils::web_gl;
 use utils::web_gl::WebGLWrapper;
@@ -68,7 +69,6 @@ macro_rules! console_log {
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     let exercise = get_exercise();
-    let mut web_gl = WebGLWrapper::new();
     let mut textures = Vec::new();
     let mut frag = "";
     match exercise {
@@ -88,6 +88,7 @@ pub fn start() -> Result<(), JsValue> {
     }
 
     let vertex = include_str!("shaders/vertex/position.glsl");
+    // draw2();
     draw(vertex, frag, &textures, None);
     Ok(())
 }
