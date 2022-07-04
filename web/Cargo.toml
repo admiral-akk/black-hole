@@ -30,6 +30,10 @@ features = [
   'console',
   'WebGlFramebuffer',
   'WebGlRenderbuffer',
+  'HtmlInputElement',
+  'HtmlOptionElement',
+  'HtmlSelectElement',
+
 ]
 
 [package.metadata.wasm-pack.profile.release]
