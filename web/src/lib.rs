@@ -168,8 +168,8 @@ impl RenderState {
                     .draw(&vertex, &frag, &[], Some(&frame_buffer.frame_buffer));
 
                 for _ in 0..10 {
-                    frag =
-                        SourceContext::new(include_str!("shaders/fragment/horizontal_blur.glsl"));
+                    frag = SourceContext::new(include_str!("shaders/fragment/gaussian_blur.glsl"));
+                    frag.add_parameter("HORIZONTAL", "TRUE");
                     frag.add_parameter("K", &kernel.len().to_string());
                     self.gl.draw(
                         &vertex,
@@ -178,8 +178,9 @@ impl RenderState {
                         Some(&frame_buffer2.frame_buffer),
                     );
 
-                    frag = SourceContext::new(include_str!("shaders/fragment/vertical_blur.glsl"));
+                    frag = SourceContext::new(include_str!("shaders/fragment/gaussian_blur.glsl"));
                     frag.add_parameter("K", &kernel.len().to_string());
+                    frag.add_parameter("VERTICAL", "TRUE");
                     self.gl.draw(
                         &vertex,
                         &frag,
