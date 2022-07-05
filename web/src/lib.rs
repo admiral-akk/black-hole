@@ -170,6 +170,7 @@ impl RenderState {
                 for _ in 0..10 {
                     frag =
                         SourceContext::new(include_str!("shaders/fragment/horizontal_blur.glsl"));
+                    frag.add_parameter("K", &kernel.len().to_string());
                     self.gl.draw(
                         &vertex,
                         &frag,
@@ -178,6 +179,7 @@ impl RenderState {
                     );
 
                     frag = SourceContext::new(include_str!("shaders/fragment/vertical_blur.glsl"));
+                    frag.add_parameter("K", &kernel.len().to_string());
                     self.gl.draw(
                         &vertex,
                         &frag,

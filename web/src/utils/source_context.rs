@@ -18,7 +18,17 @@ impl SourceContext {
         self.parameters.insert(key.to_string(), val.to_string());
     }
 
+    fn generate_header(&self) -> String {
+        let mut define_string = "#version 300 es\n".to_string();
+        for (key, value) in &self.parameters {
+            define_string.push_str(&format!("#define {} {}\n", key, value));
+        }
+        define_string
+    }
+
     pub fn generate_source(&self) -> String {
-        self.raw_source.clone()
+        let mut source = self.generate_header();
+        source.push_str(&self.raw_source.replace("#version 300 es", ""));
+        source
     }
 }
