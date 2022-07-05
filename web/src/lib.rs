@@ -125,6 +125,7 @@ impl RenderState {
         let color_map_1 = colormap1();
         let color_map_2 = colormap2();
         let arr = [1.0, 0.5, 0.5];
+        let kernel = [6.0 / 16.0, 4.0 / 16.0, 1.0 / 16.0];
         match exercise {
             1 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
@@ -157,6 +158,7 @@ impl RenderState {
                 (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
                 let fb_texture2 =
                     UniformContext::new_from_allocated(backing_texture2, "rtt_sampler");
+                let kernel_weights = UniformContext::array_f32(&gl, &kernel, "w");
 
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 self.gl
@@ -176,10 +178,11 @@ impl RenderState {
                     self.gl.draw(
                         &vertex,
                         &frag,
-                        &[&fb_texture2],
+                        &[&fb_texture2, &kernel_weights],
                         Some(&frame_buffer.frame_buffer),
                     );
                 }
+                frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
                 self.gl.draw(&vertex, &frag, &[&fb_texture], None);
             }
 
