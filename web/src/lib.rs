@@ -170,7 +170,7 @@ impl RenderState {
                     self.gl.draw(
                         &vertex,
                         &frag,
-                        &[&fb_texture],
+                        &[&fb_texture, &kernel_weights],
                         Some(&frame_buffer2.frame_buffer),
                     );
 
