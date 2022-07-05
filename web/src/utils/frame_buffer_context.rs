@@ -4,11 +4,14 @@ use super::texture_utils::create_texture;
 
 pub struct FrameBufferContext {
     pub frame_buffer: WebGlFramebuffer,
-    pub backing_texture: WebGlTexture,
 }
 
 impl FrameBufferContext {
-    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> FrameBufferContext {
+    pub fn new(
+        gl: &WebGl2RenderingContext,
+        width: i32,
+        height: i32,
+    ) -> (FrameBufferContext, WebGlTexture) {
         let backing_texture = create_texture(gl, width, height).unwrap();
         let frame_buffer = gl
             .create_framebuffer()
@@ -21,9 +24,6 @@ impl FrameBufferContext {
             Some(&backing_texture),
             0,
         );
-        FrameBufferContext {
-            frame_buffer,
-            backing_texture,
-        }
+        (FrameBufferContext { frame_buffer }, backing_texture)
     }
 }

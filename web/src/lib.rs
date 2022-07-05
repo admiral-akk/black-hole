@@ -115,10 +115,13 @@ impl RenderState {
         console_log!("selected index: {}", self.select.selected_index());
         let exercise = self.select.selected_index() + 1;
 
+        let gl = &self.gl;
         let vertex = SourceContext::new(VERTEX_DEFAULT);
         let mut frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
         let frame_buffer;
+        let backing_texture;
         let frame_buffer2;
+        let backing_texture2;
         let color_map_1 = colormap1();
         let color_map_2 = colormap2();
         match exercise {
@@ -128,22 +131,19 @@ impl RenderState {
             }
             2 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-                let cm = UniformContext::new_from_u8(&color_map_1, 256, "u_palette");
+                let cm = UniformContext::new_from_u8(gl, &color_map_1, 256, "u_palette");
                 self.gl.draw(&vertex, &frag, &[&cm], None);
             }
             3 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
-                let cm_1 = UniformContext::new_from_u8(&color_map_1, 256, "u_palette_1");
-                let cm_2 = UniformContext::new_from_u8(&color_map_2, 256, "u_palette_2");
+                let cm_1 = UniformContext::new_from_u8(gl, &color_map_1, 256, "u_palette_1");
+                let cm_2 = UniformContext::new_from_u8(gl, &color_map_2, 256, "u_palette_2");
                 self.gl.draw(&vertex, &frag, &[&cm_1, &cm_2], None);
             }
             4 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-                frame_buffer = self.gl.create_framebuffer();
-                let fb_texture = UniformContext::new_from_allocated(
-                    &frame_buffer.backing_texture,
-                    "rtt_sampler",
-                );
+                (frame_buffer, backing_texture) = self.gl.create_framebuffer();
+                let fb_texture = UniformContext::new_from_allocated(backing_texture, "rtt_sampler");
                 self.gl
                     .draw(&vertex, &frag, &[], Some(&frame_buffer.frame_buffer));
 
@@ -151,16 +151,11 @@ impl RenderState {
                 self.gl.draw(&vertex, &frag, &[&fb_texture], None);
             }
             5 => {
-                frame_buffer = self.gl.create_framebuffer();
-                let fb_texture = UniformContext::new_from_allocated(
-                    &frame_buffer.backing_texture,
-                    "rtt_sampler",
-                );
-                frame_buffer2 = self.gl.create_framebuffer();
-                let fb_texture2 = UniformContext::new_from_allocated(
-                    &frame_buffer2.backing_texture,
-                    "rtt_sampler",
-                );
+                (frame_buffer, backing_texture) = self.gl.create_framebuffer();
+                let fb_texture = UniformContext::new_from_allocated(backing_texture, "rtt_sampler");
+                (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
+                let fb_texture2 =
+                    UniformContext::new_from_allocated(backing_texture2, "rtt_sampler");
 
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 self.gl

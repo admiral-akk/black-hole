@@ -1,11 +1,11 @@
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 use super::{
     frame_buffer_context::FrameBufferContext,
     program_context::ProgramContext,
     source_context::SourceContext,
-    uniform_context::{TextureStore, UniformContext},
+    uniform_context::{UniformContext, UniformStore},
 };
 
 pub struct RenderContext {
@@ -60,7 +60,7 @@ impl RenderContext {
         initialize_raster_vertices(&gl);
         RenderContext { gl, canvas }
     }
-    pub fn create_framebuffer(&self) -> FrameBufferContext {
+    pub fn create_framebuffer(&self) -> (FrameBufferContext, WebGlTexture) {
         FrameBufferContext::new(
             &self.gl,
             self.canvas.width() as i32,
@@ -68,7 +68,11 @@ impl RenderContext {
         )
     }
 
-    pub fn create_framebuffer_with_size(&self, width: i32, height: i32) -> FrameBufferContext {
+    pub fn create_framebuffer_with_size(
+        &self,
+        width: i32,
+        height: i32,
+    ) -> (FrameBufferContext, WebGlTexture) {
         FrameBufferContext::new(&self.gl, width, height)
     }
 
@@ -85,12 +89,9 @@ impl RenderContext {
 
         for i in 0..textures.len() {
             let texture = &textures[i];
-            match texture.store {
-                TextureStore::ARRAY(arr) => {
-                    program_context.add_texture_from_u8(gl, arr, texture.width, &texture.name);
-                }
-                TextureStore::ALLOCATED(tex) => {
-                    program_context.add_texture(gl, tex, &texture.name);
+            match &texture.store {
+                UniformStore::TEXTURE_2D(tex) => {
+                    program_context.add_texture(gl, &tex, &texture.name);
                 }
             }
         }
