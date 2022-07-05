@@ -1,5 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlTexture};
 
+use super::source_context::SourceContext;
+
 pub struct ProgramContext {
     pub program: WebGlProgram,
     texture_count: u32,
@@ -22,14 +24,14 @@ fn initalize_position(gl: &WebGl2RenderingContext, program: &WebGlProgram) {
 impl ProgramContext {
     pub fn new(
         gl: &WebGl2RenderingContext,
-        vertex_source: &str,
-        fragment_source: &str,
+        vertex_source: &SourceContext,
+        fragment_source: &SourceContext,
     ) -> ProgramContext {
         let shader = gl
             .create_shader(WebGl2RenderingContext::VERTEX_SHADER)
             .ok_or_else(|| String::from("Unable to create shader object"))
             .unwrap();
-        gl.shader_source(&shader, vertex_source);
+        gl.shader_source(&shader, &vertex_source.generate_source());
         gl.compile_shader(&shader);
 
         let vert_shader = shader;
@@ -38,7 +40,7 @@ impl ProgramContext {
             .create_shader(WebGl2RenderingContext::FRAGMENT_SHADER)
             .ok_or_else(|| String::from("Unable to create shader object"))
             .unwrap();
-        gl.shader_source(&shader, fragment_source);
+        gl.shader_source(&shader, &fragment_source.generate_source());
         gl.compile_shader(&shader);
 
         let frag_shader = shader;

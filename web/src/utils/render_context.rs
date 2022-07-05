@@ -4,6 +4,7 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer};
 use super::{
     frame_buffer_context::FrameBufferContext,
     program_context::ProgramContext,
+    source_context::SourceContext,
     texture::{Texture, TextureStore},
 };
 
@@ -73,8 +74,8 @@ impl RenderContext {
 
     pub fn draw(
         &self,
-        vertex_source: &str,
-        fragment_source: &str,
+        vertex_source: &SourceContext,
+        fragment_source: &SourceContext,
         textures: &[&Texture],
         out_buffer: Option<&WebGlFramebuffer>,
     ) {
