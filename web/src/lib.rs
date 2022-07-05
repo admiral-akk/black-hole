@@ -9,7 +9,7 @@ use color_map::colormap1;
 use color_map::colormap2;
 use utils::render_context::RenderContext;
 use utils::source_context::SourceContext;
-use utils::texture::Texture;
+use utils::uniform_context::UniformContext;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
@@ -128,20 +128,22 @@ impl RenderState {
             }
             2 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-                let cm = Texture::new_from_u8(&color_map_1, 256, "u_palette");
+                let cm = UniformContext::new_from_u8(&color_map_1, 256, "u_palette");
                 self.gl.draw(&vertex, &frag, &[&cm], None);
             }
             3 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
-                let cm_1 = Texture::new_from_u8(&color_map_1, 256, "u_palette_1");
-                let cm_2 = Texture::new_from_u8(&color_map_2, 256, "u_palette_2");
+                let cm_1 = UniformContext::new_from_u8(&color_map_1, 256, "u_palette_1");
+                let cm_2 = UniformContext::new_from_u8(&color_map_2, 256, "u_palette_2");
                 self.gl.draw(&vertex, &frag, &[&cm_1, &cm_2], None);
             }
             4 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 frame_buffer = self.gl.create_framebuffer();
-                let fb_texture =
-                    Texture::new_from_allocated(&frame_buffer.backing_texture, "rtt_sampler");
+                let fb_texture = UniformContext::new_from_allocated(
+                    &frame_buffer.backing_texture,
+                    "rtt_sampler",
+                );
                 self.gl
                     .draw(&vertex, &frag, &[], Some(&frame_buffer.frame_buffer));
 
@@ -150,11 +152,15 @@ impl RenderState {
             }
             5 => {
                 frame_buffer = self.gl.create_framebuffer();
-                let fb_texture =
-                    Texture::new_from_allocated(&frame_buffer.backing_texture, "rtt_sampler");
+                let fb_texture = UniformContext::new_from_allocated(
+                    &frame_buffer.backing_texture,
+                    "rtt_sampler",
+                );
                 frame_buffer2 = self.gl.create_framebuffer();
-                let fb_texture2 =
-                    Texture::new_from_allocated(&frame_buffer2.backing_texture, "rtt_sampler");
+                let fb_texture2 = UniformContext::new_from_allocated(
+                    &frame_buffer2.backing_texture,
+                    "rtt_sampler",
+                );
 
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 self.gl

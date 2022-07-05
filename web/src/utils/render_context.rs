@@ -5,7 +5,7 @@ use super::{
     frame_buffer_context::FrameBufferContext,
     program_context::ProgramContext,
     source_context::SourceContext,
-    texture::{Texture, TextureStore},
+    uniform_context::{TextureStore, UniformContext},
 };
 
 pub struct RenderContext {
@@ -76,7 +76,7 @@ impl RenderContext {
         &self,
         vertex_source: &SourceContext,
         fragment_source: &SourceContext,
-        textures: &[&Texture],
+        textures: &[&UniformContext],
         out_buffer: Option<&WebGlFramebuffer>,
     ) {
         let gl = &self.gl;
