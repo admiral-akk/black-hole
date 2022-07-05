@@ -62,7 +62,7 @@ pub fn greet() {}
 
 #[wasm_bindgen]
 pub fn get_renderer() -> Result<RenderState, JsValue> {
-    RenderState::new(500, 500)
+    RenderState::new(512, 512)
 }
 
 macro_rules! console_log {
@@ -79,7 +79,7 @@ extern "C" {
     fn cancelAnimationFrame(id: u32);
 }
 
-const EXERCISE_COUNT: u32 = 4;
+const EXERCISE_COUNT: u32 = 5;
 
 fn get_select() -> Result<HtmlSelectElement, JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -105,44 +105,77 @@ pub struct RenderState {
     select: HtmlSelectElement,
 }
 
+const VERTEX_DEFAULT: &str = include_str!("shaders/vertex/position.glsl");
+const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
+
 #[wasm_bindgen]
 impl RenderState {
     pub fn render(&self) -> Result<(), JsValue> {
         console_log!("selected index: {}", self.select.selected_index());
         let exercise = self.select.selected_index() + 1;
-        let mut textures = Vec::new();
-        let vertex = include_str!("shaders/vertex/position.glsl");
-        let mut frag = "";
+        let mut frag;
         let frame_buffer;
+        let frame_buffer2;
         let color_map_1 = colormap1();
         let color_map_2 = colormap2();
         match exercise {
             1 => {
                 frag = include_str!("shaders/fragment/striped.glsl");
-                self.gl.draw(vertex, frag, &textures, None);
+                self.gl.draw(VERTEX_DEFAULT, frag, &[], None);
             }
             2 => {
                 frag = include_str!("shaders/fragment/1_color_map.glsl");
-                textures.push(Texture::new_from_u8(&color_map_1, 256, "u_palette"));
-                self.gl.draw(vertex, frag, &textures, None);
+                let cm = Texture::new_from_u8(&color_map_1, 256, "u_palette");
+                self.gl.draw(VERTEX_DEFAULT, frag, &[&cm], None);
             }
             3 => {
                 frag = include_str!("shaders/fragment/2_color_map.glsl");
-                textures.push(Texture::new_from_u8(&color_map_1, 256, "u_palette_1"));
-                textures.push(Texture::new_from_u8(&color_map_2, 256, "u_palette_2"));
-                self.gl.draw(vertex, frag, &textures, None);
+                let cm_1 = Texture::new_from_u8(&color_map_1, 256, "u_palette_1");
+                let cm_2 = Texture::new_from_u8(&color_map_2, 256, "u_palette_2");
+                self.gl.draw(VERTEX_DEFAULT, frag, &[&cm_1, &cm_2], None);
             }
             4 => {
                 frag = include_str!("shaders/fragment/checkered.glsl");
-                frame_buffer = self.gl.create_framebuffer(500, 500);
+                frame_buffer = self.gl.create_framebuffer();
+                let fb_texture =
+                    Texture::new_from_allocated(&frame_buffer.backing_texture, "rtt_sampler");
                 self.gl
-                    .draw(vertex, frag, &textures, Some(frame_buffer.frame_buffer));
-                textures.push(Texture::new_from_allocated(
-                    &frame_buffer.backing_texture,
-                    "rtt_texture",
-                ));
+                    .draw(VERTEX_DEFAULT, frag, &[], Some(&frame_buffer.frame_buffer));
+
                 frag = include_str!("shaders/fragment/blur.glsl");
-                self.gl.draw(vertex, frag, &textures, None);
+                self.gl.draw(VERTEX_DEFAULT, frag, &[&fb_texture], None);
+            }
+            5 => {
+                frame_buffer = self.gl.create_framebuffer();
+                let fb_texture =
+                    Texture::new_from_allocated(&frame_buffer.backing_texture, "rtt_sampler");
+                frame_buffer2 = self.gl.create_framebuffer();
+                let fb_texture2 =
+                    Texture::new_from_allocated(&frame_buffer2.backing_texture, "rtt_sampler");
+
+                frag = include_str!("shaders/fragment/checkered.glsl");
+                self.gl
+                    .draw(VERTEX_DEFAULT, frag, &[], Some(&frame_buffer.frame_buffer));
+
+                for _ in 0..10 {
+                    frag = include_str!("shaders/fragment/horizontal_blur.glsl");
+                    self.gl.draw(
+                        VERTEX_DEFAULT,
+                        frag,
+                        &[&fb_texture],
+                        Some(&frame_buffer2.frame_buffer),
+                    );
+
+                    frag = include_str!("shaders/fragment/vertical_blur.glsl");
+                    self.gl.draw(
+                        VERTEX_DEFAULT,
+                        frag,
+                        &[&fb_texture2],
+                        Some(&frame_buffer.frame_buffer),
+                    );
+                }
+                self.gl
+                    .draw(VERTEX_DEFAULT, RENDER_TEXTURE_DEFAULT, &[&fb_texture], None);
             }
             _ => {}
         }

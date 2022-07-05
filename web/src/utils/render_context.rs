@@ -59,8 +59,15 @@ impl RenderContext {
         initialize_raster_vertices(&gl);
         RenderContext { gl, canvas }
     }
+    pub fn create_framebuffer(&self) -> FrameBufferContext {
+        FrameBufferContext::new(
+            &self.gl,
+            self.canvas.width() as i32,
+            self.canvas.height() as i32,
+        )
+    }
 
-    pub fn create_framebuffer(&self, width: i32, height: i32) -> FrameBufferContext {
+    pub fn create_framebuffer_with_size(&self, width: i32, height: i32) -> FrameBufferContext {
         FrameBufferContext::new(&self.gl, width, height)
     }
 
@@ -68,8 +75,8 @@ impl RenderContext {
         &self,
         vertex_source: &str,
         fragment_source: &str,
-        textures: &[Texture],
-        out_buffer: Option<WebGlFramebuffer>,
+        textures: &[&Texture],
+        out_buffer: Option<&WebGlFramebuffer>,
     ) {
         let gl = &self.gl;
         let mut program_context = ProgramContext::new(gl, vertex_source, fragment_source);
@@ -90,14 +97,14 @@ impl RenderContext {
         self.draw_program(out_buffer);
     }
 
-    fn draw_program(&self, out_buffer: Option<WebGlFramebuffer>) {
+    fn draw_program(&self, out_buffer: Option<&WebGlFramebuffer>) {
         let gl = &self.gl;
 
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
         if out_buffer.is_some() {
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer.as_ref());
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer);
         }
 
         gl.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
