@@ -1,20 +1,21 @@
-enum SourceType {
-    VERTEX,
-    FRAGMENT,
-}
+use std::collections::HashMap;
 
 pub struct SourceContext {
     raw_source: String,
+    parameters: HashMap<String, String>,
 }
 
 impl SourceContext {
     pub fn new(raw_source: &str) -> SourceContext {
-        let mut source_type = SourceType::VERTEX;
-        if raw_source.contains("gl_FragCoord") || raw_source.contains("outColor") {
-            source_type = SourceType::FRAGMENT;
+        let parameters = HashMap::new();
+        SourceContext {
+            raw_source: raw_source.to_string(),
+            parameters,
         }
-        let raw_source = raw_source.to_string();
-        SourceContext { raw_source }
+    }
+
+    pub fn add_parameter(&mut self, key: &str, val: &str) {
+        self.parameters.insert(key.to_string(), val.to_string());
     }
 
     pub fn generate_source(&self) -> String {
