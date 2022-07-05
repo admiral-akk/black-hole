@@ -4,7 +4,7 @@ use super::{program_context::ProgramContext, render_context::RenderContext};
 
 pub enum UniformStore {
     TEXTURE_2D(WebGlTexture),
-    ARRAY_F32(WebGlBuffer),
+    ARRAY_F32(Vec<f32>),
 }
 
 pub struct UniformContext {
@@ -29,31 +29,8 @@ impl UniformContext {
     }
 
     pub fn array_f32(gl: &RenderContext, arr: &[f32], name: &str) -> UniformContext {
-        let gl = &gl.gl;
-        let buffer = gl.create_buffer().ok_or("Failed to create buffer").unwrap();
-        gl.bind_buffer(WebGl2RenderingContext::UNIFORM_BUFFER, Some(&buffer));
-
-        // Note that `Float32Array::view` is somewhat dangerous (hence the
-        // `unsafe`!). This is creating a raw view into our module's
-        // `WebAssembly.Memory` buffer, but if we allocate more pages for ourself
-        // (aka do a memory allocation in Rust) it'll cause the buffer to change,
-        // causing the `Float32Array` to be invalid.
-        //
-        // As a result, after `Float32Array::view` we have to be very careful not to
-        // do any memory allocations before it's dropped.
-        unsafe {
-            // Safe as long as there's no memory allocation between this and buffering the data to webgl.
-            let positions_array_buf_view = js_sys::Float32Array::view(&arr);
-
-            gl.buffer_data_with_array_buffer_view(
-                WebGl2RenderingContext::UNIFORM_BUFFER,
-                &positions_array_buf_view,
-                WebGl2RenderingContext::DYNAMIC_DRAW,
-            );
-        }
-
         UniformContext {
-            store: UniformStore::ARRAY_F32(buffer),
+            store: UniformStore::ARRAY_F32(arr.to_vec()),
             name: name.to_string(),
         }
     }
@@ -63,7 +40,10 @@ impl UniformContext {
             UniformStore::TEXTURE_2D(texture) => {
                 add_texture_to_program(&texture, gl, program, &self.name);
             }
-            UniformStore::ARRAY_F32(arr) => {}
+            UniformStore::ARRAY_F32(arr) => {
+                let loc = gl.gl.get_uniform_location(&program.program, &self.name);
+                gl.gl.uniform1fv_with_f32_array(loc.as_ref(), arr);
+            }
         }
     }
 }

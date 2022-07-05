@@ -80,7 +80,7 @@ extern "C" {
     fn cancelAnimationFrame(id: u32);
 }
 
-const EXERCISE_COUNT: u32 = 5;
+const EXERCISE_COUNT: u32 = 6;
 
 fn get_select() -> Result<HtmlSelectElement, JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -124,6 +124,7 @@ impl RenderState {
         let backing_texture2;
         let color_map_1 = colormap1();
         let color_map_2 = colormap2();
+        let arr = [1.0, 0.5, 0.5];
         match exercise {
             1 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
@@ -180,6 +181,12 @@ impl RenderState {
                     );
                 }
                 self.gl.draw(&vertex, &frag, &[&fb_texture], None);
+            }
+
+            6 => {
+                frag = SourceContext::new(include_str!("shaders/fragment/test_uniform_array.glsl"));
+                let array = UniformContext::array_f32(&self.gl, &arr, "v");
+                self.gl.draw(&vertex, &frag, &[&array], None);
             }
             _ => {}
         }
