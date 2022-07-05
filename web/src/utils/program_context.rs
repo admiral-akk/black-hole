@@ -59,12 +59,9 @@ impl ProgramContext {
         }
     }
 
-    pub fn add_texture(&mut self, gl: &WebGl2RenderingContext, texture: &WebGlTexture, name: &str) {
-        let program = &self.program;
-        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + self.texture_count);
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
-        let loc = gl.get_uniform_location(program, name);
-        gl.uniform1i(loc.as_ref(), self.texture_count as i32);
+    pub fn get_and_increment_texture_count(&mut self) -> u32 {
+        let texture_count = self.texture_count;
         self.texture_count += 1;
+        texture_count
     }
 }

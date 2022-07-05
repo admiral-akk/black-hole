@@ -88,12 +88,7 @@ impl RenderContext {
         gl.use_program(Some(&program_context.program));
 
         for i in 0..textures.len() {
-            let texture = &textures[i];
-            match &texture.store {
-                UniformStore::TEXTURE_2D(tex) => {
-                    program_context.add_texture(gl, &tex, &texture.name);
-                }
-            }
+            textures[i].add_to_program(self, &mut program_context);
         }
 
         self.draw_program(out_buffer);
