@@ -2,6 +2,7 @@ extern crate cfg_if;
 extern crate wasm_bindgen;
 
 mod color_map;
+mod gaussian;
 mod utils;
 
 use cfg_if::cfg_if;
@@ -14,6 +15,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
 use web_sys::HtmlSelectElement;
+
+use crate::gaussian::generate_gaussian_weights;
 
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
@@ -125,7 +128,7 @@ impl RenderState {
         let color_map_1 = colormap1();
         let color_map_2 = colormap2();
         let arr = [1.0, 0.5, 0.5];
-        let kernel = [6.0 / 16.0, 4.0 / 16.0, 1.0 / 16.0];
+        let kernel = generate_gaussian_weights(1.0, 3);
         match exercise {
             1 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
