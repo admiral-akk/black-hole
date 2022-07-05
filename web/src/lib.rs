@@ -127,8 +127,10 @@ impl RenderState {
         let backing_texture2;
         let color_map_1 = colormap1();
         let color_map_2 = colormap2();
-        let arr = [1.0, 0.5, 0.5];
         let kernel = generate_gaussian_weights(1.0, 3);
+        let r = generate_gaussian_weights(1.0, 3);
+        let g = generate_gaussian_weights(2.0, 3);
+        let b = generate_gaussian_weights(3.0, 3);
         match exercise {
             1 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
@@ -193,9 +195,56 @@ impl RenderState {
             }
 
             6 => {
-                frag = SourceContext::new(include_str!("shaders/fragment/test_uniform_array.glsl"));
-                let array = UniformContext::array_f32(&self.gl, &arr, "v");
-                self.gl.draw(&vertex, &frag, &[&array], None);
+                (frame_buffer, backing_texture) = self.gl.create_framebuffer();
+                let fb_texture = UniformContext::new_from_allocated(backing_texture, "rtt_sampler");
+                (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
+                let fb_texture2 =
+                    UniformContext::new_from_allocated(backing_texture2, "rtt_sampler");
+                let r_kernel_weights = UniformContext::array_f32(&gl, &r, "r");
+                let g_kernel_weights = UniformContext::array_f32(&gl, &g, "g");
+                let b_kernel_weights = UniformContext::array_f32(&gl, &b, "b");
+
+                frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
+                self.gl
+                    .draw(&vertex, &frag, &[], Some(&frame_buffer.frame_buffer));
+
+                for _ in 0..10 {
+                    frag = SourceContext::new(include_str!(
+                        "shaders/fragment/multi_gaussian_blur.glsl"
+                    ));
+                    frag.add_parameter("HORIZONTAL", "TRUE");
+                    frag.add_parameter("K", &kernel.len().to_string());
+                    self.gl.draw(
+                        &vertex,
+                        &frag,
+                        &[
+                            &fb_texture,
+                            &r_kernel_weights,
+                            &g_kernel_weights,
+                            &b_kernel_weights,
+                        ],
+                        Some(&frame_buffer2.frame_buffer),
+                    );
+
+                    frag = SourceContext::new(include_str!(
+                        "shaders/fragment/multi_gaussian_blur.glsl"
+                    ));
+                    frag.add_parameter("K", &kernel.len().to_string());
+                    frag.add_parameter("VERTICAL", "TRUE");
+                    self.gl.draw(
+                        &vertex,
+                        &frag,
+                        &[
+                            &fb_texture2,
+                            &r_kernel_weights,
+                            &g_kernel_weights,
+                            &b_kernel_weights,
+                        ],
+                        Some(&frame_buffer.frame_buffer),
+                    );
+                }
+                frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
+                self.gl.draw(&vertex, &frag, &[&fb_texture], None);
             }
             _ => {}
         }
