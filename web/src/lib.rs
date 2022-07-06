@@ -115,24 +115,25 @@ impl RenderState {
                 self.gl.draw(None, &frag, &[], None);
             }
             2 => {
-                let color_map_1 = colormap1();
                 frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-                let cm = generate_texture_from_u8(&gl.gl, &color_map_1, 256);
+                let cm = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
                 let cm_context = UniformContext::new_from_allocated_ref(&cm, "u_palette");
                 self.gl.draw(None, &frag, &[&cm_context], None);
             }
             3 => {
-                let color_map_1 = colormap1();
-                let color_map_2 = colormap2();
                 frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
-                let cm_1 = UniformContext::new_from_u8(gl, &color_map_1, 256, "u_palette_1");
-                let cm_2 = UniformContext::new_from_u8(gl, &color_map_2, 256, "u_palette_2");
-                self.gl.draw(None, &frag, &[&cm_1, &cm_2], None);
+                let cm1 = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
+                let cm_context1 = UniformContext::new_from_allocated_ref(&cm1, "u_palette_1");
+                let cm2 = generate_texture_from_u8(&gl.gl, &colormap2(), 256);
+                let cm_context2 = UniformContext::new_from_allocated_ref(&cm2, "u_palette_2");
+                self.gl
+                    .draw(None, &frag, &[&cm_context1, &cm_context2], None);
             }
             4 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 (frame_buffer, backing_texture) = self.gl.create_framebuffer();
-                let fb_texture = UniformContext::new_from_allocated(backing_texture, "rtt_sampler");
+                let fb_texture =
+                    UniformContext::new_from_allocated_ref(&backing_texture, "rtt_sampler");
                 self.gl
                     .draw(None, &frag, &[], Some(&frame_buffer.frame_buffer));
 
