@@ -21,17 +21,24 @@ fn initalize_position(gl: &WebGl2RenderingContext, program: &WebGlProgram) {
     gl.enable_vertex_attrib_array(position_attribute_location as u32);
 }
 
+const VERTEX_DEFAULT: &str = include_str!("../shaders/vertex/position.glsl");
+
 impl ProgramContext {
     pub fn new(
         gl: &WebGl2RenderingContext,
-        vertex_source: &SourceContext,
+        vertex_source: Option<&SourceContext>,
         fragment_source: &SourceContext,
     ) -> ProgramContext {
         let shader = gl
             .create_shader(WebGl2RenderingContext::VERTEX_SHADER)
             .ok_or_else(|| String::from("Unable to create shader object"))
             .unwrap();
-        gl.shader_source(&shader, &vertex_source.generate_source());
+        if vertex_source.is_some() {
+            let vertex_source = vertex_source.unwrap();
+            gl.shader_source(&shader, &vertex_source.generate_source());
+        } else {
+            gl.shader_source(&shader, VERTEX_DEFAULT);
+        }
         gl.compile_shader(&shader);
 
         let vert_shader = shader;

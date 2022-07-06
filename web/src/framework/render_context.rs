@@ -72,12 +72,13 @@ impl RenderContext {
 
     pub fn draw(
         &self,
-        vertex_source: &SourceContext,
+        vertex_source: Option<&SourceContext>,
         fragment_source: &SourceContext,
         textures: &[&UniformContext],
         out_buffer: Option<&WebGlFramebuffer>,
     ) {
         let gl = &self.gl;
+
         let mut program_context = ProgramContext::new(gl, vertex_source, fragment_source);
         gl.use_program(Some(&program_context.program));
 
