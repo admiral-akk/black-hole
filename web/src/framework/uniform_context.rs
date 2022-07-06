@@ -1,6 +1,9 @@
 use web_sys::{WebGl2RenderingContext, WebGlTexture};
 
-use super::{program_context::ProgramContext, render_context::RenderContext};
+use super::{
+    program_context::ProgramContext, render_context::RenderContext,
+    texture_utils::generate_texture_from_u8,
+};
 
 pub enum UniformStore<'a> {
     Texture2dRef(&'a WebGlTexture),
@@ -30,6 +33,12 @@ impl UniformContext<'_> {
     pub fn new_from_allocated(texture: WebGlTexture, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::Texture2d(texture),
+            name: name.to_string(),
+        }
+    }
+    pub fn new_from_allocated_ref<'a>(texture: &'a WebGlTexture, name: &str) -> UniformContext<'a> {
+        UniformContext {
+            store: UniformStore::Texture2dRef(texture),
             name: name.to_string(),
         }
     }
@@ -69,42 +78,4 @@ fn add_texture_to_program(
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
     let loc = gl.get_uniform_location(&program.program, name);
     gl.uniform1i(loc.as_ref(), texture_count as i32);
-}
-
-fn generate_texture_from_u8(gl: &WebGl2RenderingContext, arr: &[u8], width: i32) -> WebGlTexture {
-    let texture = gl.create_texture();
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
-    gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-        WebGl2RenderingContext::TEXTURE_2D,
-        0,
-        WebGl2RenderingContext::RGBA as i32,
-        width,
-        (arr.len() / (4 * width) as usize) as i32,
-        0,
-        WebGl2RenderingContext::RGBA,
-        WebGl2RenderingContext::UNSIGNED_BYTE,
-        Some(arr),
-    )
-    .unwrap();
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_S,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_T,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-    texture.unwrap()
 }

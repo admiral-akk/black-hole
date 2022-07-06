@@ -4,4 +4,4 @@ pub mod source_context;
 pub mod uniform_context;
 
 mod program_context;
-mod texture_utils;
+pub mod texture_utils;

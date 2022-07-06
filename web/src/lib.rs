@@ -24,6 +24,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
 
+use crate::framework::texture_utils::generate_texture_from_u8;
+
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
 // https://michaelerule.github.io/webgpgpu/examples/Example_1_hello_gpu.html
@@ -115,8 +117,9 @@ impl RenderState {
             2 => {
                 let color_map_1 = colormap1();
                 frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-                let cm = UniformContext::new_from_u8(gl, &color_map_1, 256, "u_palette");
-                self.gl.draw(None, &frag, &[&cm], None);
+                let cm = generate_texture_from_u8(&gl.gl, &color_map_1, 256);
+                let cm_context = UniformContext::new_from_allocated_ref(&cm, "u_palette");
+                self.gl.draw(None, &frag, &[&cm_context], None);
             }
             3 => {
                 let color_map_1 = colormap1();
