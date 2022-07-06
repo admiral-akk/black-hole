@@ -9,7 +9,6 @@ use wasm_timer::SystemTime;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Duration;
 
 use cfg_if::cfg_if;
 use framework::render_context::RenderContext;
@@ -21,7 +20,6 @@ use utils::gaussian::generate_gaussian_weights;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
-use web_sys::HtmlSelectElement;
 
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
@@ -80,26 +78,26 @@ extern "C" {
     fn cancelAnimationFrame(id: u32);
 }
 
-fn get_select() -> Result<HtmlSelectElement, JsValue> {
+fn get_selected_index() -> Result<u32, JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
     Ok(document
         .get_element_by_id("input")
         .unwrap()
-        .dyn_into::<web_sys::HtmlSelectElement>()?)
+        .dyn_into::<web_sys::HtmlSelectElement>()?
+        .selected_index() as u32)
 }
 
 pub struct RenderState {
     gl: RenderContext,
-    select: HtmlSelectElement,
 }
 
 const EXERCISE_COUNT: u32 = 7;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
-        console_log!("selected index: {}", self.select.selected_index());
+        console_log!("selected index: {}", params.select_index);
         console_log!("time since start: {:.2}s", params.seconds_since_start);
-        let exercise = params.exercise;
+        let exercise = params.select_index + 1;
         let gl = &self.gl;
         let mut frag;
         let frame_buffer;
@@ -249,7 +247,6 @@ impl RenderState {
     pub fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
         Ok(RenderState {
             gl: RenderContext::new(width, height),
-            select: get_select()?,
         })
     }
 }
@@ -276,14 +273,14 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 #[derive(Clone, Copy)]
 struct RenderParams {
     pub seconds_since_start: f32,
-    pub exercise: u32,
+    pub select_index: u32,
 }
 
 impl RenderParams {
     pub fn new(seconds_since_start: f32) -> RenderParams {
         RenderParams {
             seconds_since_start,
-            exercise: 1,
+            select_index: 0,
         }
     }
 
@@ -293,10 +290,10 @@ impl RenderParams {
         c
     }
 
-    pub fn update_exercise(&self, exercise: u32) -> RenderParams {
+    pub fn update_exercise(&self, select_index: u32) -> RenderParams {
         let mut c = self.clone();
         c.seconds_since_start = 0.0;
-        c.exercise = exercise;
+        c.select_index = select_index;
         c
     }
 }
@@ -322,7 +319,7 @@ pub fn start() -> Result<(), JsValue> {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
             start_time.set(SystemTime::now());
-            let exercise = get_select().unwrap().selected_index() as u32 + 1;
+            let exercise = get_selected_index().unwrap();
             params.set(params.get().update_exercise(exercise));
         }) as Box<dyn FnMut(_)>);
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
