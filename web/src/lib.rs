@@ -4,6 +4,7 @@ extern crate wasm_bindgen;
 mod framework;
 mod utils;
 
+use framework::frame_buffer_context::FrameBufferContext;
 use wasm_timer::SystemTime;
 
 use std::cell::Cell;
@@ -92,9 +93,10 @@ fn get_selected_index() -> Result<u32, JsValue> {
 pub struct RenderState {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
+    state: RefCell<Option<FrameBufferContext>>,
 }
 
-const EXERCISE_COUNT: u32 = 7;
+const EXERCISE_COUNT: u32 = 8;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
@@ -251,6 +253,33 @@ impl RenderState {
                 self.gl
                     .draw(None, &frag, &[&pos_seed_uniform, &color_seed_uniform], None);
             }
+            8 => {
+                if self.state.borrow().is_none() {
+                    *self.state.borrow_mut() = Some(gl.create_framebuffer());
+                }
+                let bor = self.state.borrow_mut();
+                let state_fb = bor.as_ref().unwrap();
+                frame_buffer = self.gl.create_framebuffer();
+                let state_texture = UniformContext::new_from_allocated_ref(
+                    &state_fb.backing_texture,
+                    "rtt_sampler",
+                );
+                frag = SourceContext::new(include_str!("shaders/fragment/add_white.glsl"));
+                self.gl.draw(
+                    None,
+                    &frag,
+                    &[&state_texture],
+                    Some(&frame_buffer.frame_buffer),
+                );
+
+                let fb_texture = UniformContext::new_from_allocated_ref(
+                    &frame_buffer.backing_texture,
+                    "rtt_sampler",
+                );
+                self.gl
+                    .draw(None, &frag, &[&fb_texture], Some(&state_fb.frame_buffer));
+                self.gl.draw(None, &frag, &[&fb_texture], None);
+            }
             _ => {}
         }
         self.prev_params.set(*params);
@@ -265,6 +294,7 @@ impl RenderState {
         Ok(RenderState {
             gl,
             prev_params: Cell::default(),
+            state: RefCell::default(),
         })
     }
 }
