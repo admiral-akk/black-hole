@@ -4,6 +4,10 @@ extern crate wasm_bindgen;
 mod framework;
 mod utils;
 
+use std::cell::Cell;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use cfg_if::cfg_if;
 use framework::render_context::RenderContext;
 use framework::source_context::SourceContext;
@@ -84,16 +88,6 @@ fn get_select() -> Result<HtmlSelectElement, JsValue> {
         .get_element_by_id("input")
         .unwrap()
         .dyn_into::<web_sys::HtmlSelectElement>()?)
-}
-
-pub fn init_select() -> Result<HtmlSelectElement, JsValue> {
-    let select = get_select()?;
-
-    for i in 1..=EXERCISE_COUNT {
-        let option = HtmlOptionElement::new_with_text(&format!("Exercise {}", i))?;
-        select.append_child(&option)?;
-    }
-    Ok(select)
 }
 
 #[wasm_bindgen]
@@ -265,6 +259,29 @@ impl RenderState {
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
-    init_select()?;
+    let document = web_sys::window().unwrap().document().unwrap();
+    let select = document
+        .get_element_by_id("input")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlSelectElement>()?;
+
+    for i in 1..=EXERCISE_COUNT {
+        let option = HtmlOptionElement::new_with_text(&format!("Exercise {}", i))?;
+        select.append_child(&option)?;
+    }
+
+    let renderer = RenderState::new(512, 512)?;
+    renderer.render()?;
+
+    let renderer = Rc::new(renderer);
+    {
+        let renderer = renderer.clone();
+        let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
+            renderer.render().unwrap();
+        }) as Box<dyn FnMut(_)>);
+        select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
     Ok(())
 }
