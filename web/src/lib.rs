@@ -95,8 +95,7 @@ const EXERCISE_COUNT: u32 = 7;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
-        console_log!("selected index: {}", params.select_index);
-        console_log!("time since start: {:.2}s", params.seconds_since_start);
+        console_log!("params: {:?}", params);
         let exercise = params.select_index + 1;
         let gl = &self.gl;
         let mut frag;
@@ -260,20 +259,17 @@ fn document() -> web_sys::Document {
         .expect("should have a document on window")
 }
 
-fn body() -> web_sys::HtmlElement {
-    document().body().expect("document should have a body")
-}
-
 fn request_animation_frame(f: &Closure<dyn FnMut()>) {
     window()
         .request_animation_frame(f.as_ref().unchecked_ref())
         .expect("should register `requestAnimationFrame` OK");
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct RenderParams {
     pub seconds_since_start: f32,
     pub select_index: u32,
+    pub mouse_pos: Option<(i32, i32)>,
 }
 
 impl RenderParams {
@@ -281,6 +277,7 @@ impl RenderParams {
         RenderParams {
             seconds_since_start,
             select_index: 0,
+            mouse_pos: None,
         }
     }
 
@@ -296,15 +293,25 @@ impl RenderParams {
         c.select_index = select_index;
         c
     }
+
+    pub fn update_mouse_pos(&self, mouse_pos: Option<(i32, i32)>) -> RenderParams {
+        let mut c = self.clone();
+        c.mouse_pos = mouse_pos;
+        c
+    }
 }
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
-    let document = web_sys::window().unwrap().document().unwrap();
+    let document = document();
     let select = document
         .get_element_by_id("input")
         .unwrap()
         .dyn_into::<web_sys::HtmlSelectElement>()?;
+    let canvas = document
+        .get_element_by_id("canvas")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlCanvasElement>()?;
 
     for i in 1..=EXERCISE_COUNT {
         let option = HtmlOptionElement::new_with_text(&format!("Exercise {}", i))?;
@@ -325,6 +332,27 @@ pub fn start() -> Result<(), JsValue> {
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            params.set(
+                params
+                    .get()
+                    .update_mouse_pos(Some((event.offset_x(), event.offset_y()))),
+            );
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
+            params.set(params.get().update_mouse_pos(None));
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("mouseleave", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
     let render_func = Rc::new(RefCell::new(None));
     let g = render_func.clone();
     {
