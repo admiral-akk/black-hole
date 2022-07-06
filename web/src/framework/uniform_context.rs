@@ -1,4 +1,4 @@
-use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlTexture};
+use web_sys::{WebGl2RenderingContext, WebGlTexture};
 
 use super::{program_context::ProgramContext, render_context::RenderContext};
 

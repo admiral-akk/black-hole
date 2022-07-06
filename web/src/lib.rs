@@ -1,25 +1,20 @@
 extern crate cfg_if;
 extern crate wasm_bindgen;
 
-mod color_map;
-mod gaussian;
+mod framework;
 mod utils;
 
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
-
 use cfg_if::cfg_if;
-use color_map::colormap1;
-use color_map::colormap2;
-use utils::render_context::RenderContext;
-use utils::source_context::SourceContext;
-use utils::uniform_context::UniformContext;
+use framework::render_context::RenderContext;
+use framework::source_context::SourceContext;
+use framework::uniform_context::UniformContext;
+use utils::color_map::colormap1;
+use utils::color_map::colormap2;
+use utils::gaussian::generate_gaussian_weights;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
 use web_sys::HtmlSelectElement;
-
-use crate::gaussian::generate_gaussian_weights;
 
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
