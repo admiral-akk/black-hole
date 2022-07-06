@@ -157,7 +157,7 @@ impl RenderState {
                 (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
                 let fb_texture2 =
                     UniformContext::new_from_allocated(backing_texture2, "rtt_sampler");
-                let kernel_weights = UniformContext::array_f32(&gl, &kernel, "w");
+                let kernel_weights = UniformContext::array_f32(&kernel, "w");
 
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 self.gl
@@ -193,9 +193,9 @@ impl RenderState {
                 (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
                 let fb_texture2 =
                     UniformContext::new_from_allocated(backing_texture2, "rtt_sampler");
-                let r_kernel_weights = UniformContext::array_f32(&gl, &r, "r");
-                let g_kernel_weights = UniformContext::array_f32(&gl, &g, "g");
-                let b_kernel_weights = UniformContext::array_f32(&gl, &b, "b");
+                let r_kernel_weights = UniformContext::array_f32(&r, "r");
+                let g_kernel_weights = UniformContext::array_f32(&g, "g");
+                let b_kernel_weights = UniformContext::array_f32(&b, "b");
 
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
                 self.gl
@@ -246,8 +246,8 @@ impl RenderState {
                 let color_seed = [10.5121 * time, 22.958 * time, 25.1 * time];
 
                 frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
-                let pos_seed_uniform = UniformContext::array_f32(gl, &pos_seed, "pos_seed");
-                let color_seed_uniform = UniformContext::array_f32(gl, &color_seed, "color_seed");
+                let pos_seed_uniform = UniformContext::array_f32(&pos_seed, "pos_seed");
+                let color_seed_uniform = UniformContext::array_f32(&color_seed, "color_seed");
                 self.gl.draw(
                     &vertex,
                     &frag,

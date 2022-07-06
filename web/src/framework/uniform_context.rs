@@ -28,7 +28,7 @@ impl UniformContext {
         }
     }
 
-    pub fn array_f32(gl: &RenderContext, arr: &[f32], name: &str) -> UniformContext {
+    pub fn array_f32(arr: &[f32], name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::ArrayF32(arr.to_vec()),
             name: name.to_string(),
