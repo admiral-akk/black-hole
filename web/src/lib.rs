@@ -83,8 +83,6 @@ extern "C" {
     fn cancelAnimationFrame(id: u32);
 }
 
-const EXERCISE_COUNT: u32 = 6;
-
 fn get_select() -> Result<HtmlSelectElement, JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
     Ok(document
@@ -112,6 +110,7 @@ pub struct RenderState {
 const VERTEX_DEFAULT: &str = include_str!("shaders/vertex/position.glsl");
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
+const EXERCISE_COUNT: u32 = 7;
 #[wasm_bindgen]
 impl RenderState {
     pub fn render(&self) -> Result<(), JsValue> {
@@ -245,6 +244,20 @@ impl RenderState {
                 }
                 frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
                 self.gl.draw(&vertex, &frag, &[&fb_texture], None);
+            }
+            7 => {
+                let pos_seed = [52.912, 11.30];
+                let color_seed = [10.5121, 22.958, 25.1];
+
+                frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
+                let pos_seed_uniform = UniformContext::array_f32(gl, &pos_seed, "pos_seed");
+                let color_seed_uniform = UniformContext::array_f32(gl, &color_seed, "color_seed");
+                self.gl.draw(
+                    &vertex,
+                    &frag,
+                    &[&pos_seed_uniform, &color_seed_uniform],
+                    None,
+                );
             }
             _ => {}
         }
