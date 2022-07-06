@@ -96,12 +96,9 @@ pub struct RenderState {
 const EXERCISE_COUNT: u32 = 7;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
-    pub fn render(&self, time_since_start: &Duration) -> Result<(), JsValue> {
+    fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("selected index: {}", self.select.selected_index());
-        console_log!(
-            "time since start: {:.2}s",
-            time_since_start.as_millis() as f32 / 1000.0
-        );
+        console_log!("time since start: {:.2}s", params.seconds_since_start);
         let exercise = self.select.selected_index() + 1;
         let gl = &self.gl;
         let mut frag;
@@ -276,6 +273,25 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .expect("should register `requestAnimationFrame` OK");
 }
 
+#[derive(Clone, Copy)]
+struct RenderParams {
+    pub seconds_since_start: f32,
+}
+
+impl RenderParams {
+    pub fn new(seconds_since_start: f32) -> RenderParams {
+        RenderParams {
+            seconds_since_start,
+        }
+    }
+
+    pub fn update_time(&self, seconds_since_start: f32) -> RenderParams {
+        let mut c = self.clone();
+        c.seconds_since_start = seconds_since_start;
+        c
+    }
+}
+
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -290,18 +306,17 @@ pub fn start() -> Result<(), JsValue> {
     }
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
-    let renderer = RenderState::new(512, 512)?;
-    renderer.render(&start_time.get().duration_since(start_time.get()).unwrap())?;
 
+    let params = Rc::new(Cell::new(RenderParams::new(0.0)));
+    let renderer = RenderState::new(512, 512)?;
     let renderer = Rc::new(renderer);
     {
         let renderer = renderer.clone();
         let start_time = start_time.clone();
+        let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
             start_time.set(SystemTime::now());
-            renderer
-                .render(&SystemTime::now().duration_since(start_time.get()).unwrap())
-                .unwrap();
+            renderer.render(&params.get()).unwrap();
         }) as Box<dyn FnMut(_)>);
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -311,11 +326,15 @@ pub fn start() -> Result<(), JsValue> {
     {
         let renderer = renderer.clone();
         let start_time = start_time.clone();
+        let params = params.clone();
 
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            renderer
-                .render(&SystemTime::now().duration_since(start_time.get()).unwrap())
-                .unwrap();
+            let seconds_since_start = SystemTime::now()
+                .duration_since(start_time.get())
+                .unwrap()
+                .as_secs_f32();
+            params.set(params.get().update_time(seconds_since_start));
+            renderer.render(&params.get()).unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
         request_animation_frame(g.borrow().as_ref().unwrap());
