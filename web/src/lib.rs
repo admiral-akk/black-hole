@@ -65,11 +65,6 @@ extern "C" {
     fn log_many(a: &str, b: &str);
 }
 
-#[wasm_bindgen]
-pub fn get_renderer() -> Result<RenderState, JsValue> {
-    RenderState::new(512, 512)
-}
-
 macro_rules! console_log {
     // Note that this is using the `log` function imported above during
     // `bare_bones`
@@ -92,7 +87,6 @@ fn get_select() -> Result<HtmlSelectElement, JsValue> {
         .dyn_into::<web_sys::HtmlSelectElement>()?)
 }
 
-#[wasm_bindgen]
 pub struct RenderState {
     gl: RenderContext,
     select: HtmlSelectElement,
