@@ -6,6 +6,7 @@ mod utils;
 
 use wasm_timer::SystemTime;
 
+use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
@@ -288,17 +289,18 @@ pub fn start() -> Result<(), JsValue> {
         select.append_child(&option)?;
     }
 
-    let start_time = Rc::new(wasm_timer::SystemTime::now());
+    let start_time = Rc::new(Cell::new(SystemTime::now()));
     let renderer = RenderState::new(512, 512)?;
-    renderer.render(&start_time.duration_since(*start_time).unwrap())?;
+    renderer.render(&start_time.get().duration_since(start_time.get()).unwrap())?;
 
     let renderer = Rc::new(renderer);
     {
         let renderer = renderer.clone();
         let start_time = start_time.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
+            start_time.set(SystemTime::now());
             renderer
-                .render(&SystemTime::now().duration_since(*start_time).unwrap())
+                .render(&SystemTime::now().duration_since(start_time.get()).unwrap())
                 .unwrap();
         }) as Box<dyn FnMut(_)>);
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
@@ -312,7 +314,7 @@ pub fn start() -> Result<(), JsValue> {
 
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             renderer
-                .render(&SystemTime::now().duration_since(*start_time).unwrap())
+                .render(&SystemTime::now().duration_since(start_time.get()).unwrap())
                 .unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
