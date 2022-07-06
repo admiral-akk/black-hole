@@ -4,8 +4,7 @@ var renderer = wasm.get_renderer();
 
 function render() {
     renderer.render();
+    requestAnimationFrame(render);
 }
 
 render();
-
-document.getElementById('input').onchange = render;

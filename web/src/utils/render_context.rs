@@ -2,10 +2,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 use super::{
-    frame_buffer_context::FrameBufferContext,
-    program_context::ProgramContext,
-    source_context::SourceContext,
-    uniform_context::{UniformContext, UniformStore},
+    frame_buffer_context::FrameBufferContext, program_context::ProgramContext,
+    source_context::SourceContext, uniform_context::UniformContext,
 };
 
 pub struct RenderContext {

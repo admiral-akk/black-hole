@@ -5,6 +5,9 @@ mod color_map;
 mod gaussian;
 mod utils;
 
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
+
 use cfg_if::cfg_if;
 use color_map::colormap1;
 use color_map::colormap2;
@@ -192,7 +195,6 @@ impl RenderState {
                 frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
                 self.gl.draw(&vertex, &frag, &[&fb_texture], None);
             }
-
             6 => {
                 (frame_buffer, backing_texture) = self.gl.create_framebuffer();
                 let fb_texture = UniformContext::new_from_allocated(backing_texture, "rtt_sampler");
@@ -246,8 +248,10 @@ impl RenderState {
                 self.gl.draw(&vertex, &frag, &[&fb_texture], None);
             }
             7 => {
-                let pos_seed = [52.912, 11.30];
-                let color_seed = [10.5121, 22.958, 25.1];
+                let time = 1.0;
+
+                let pos_seed = [52.912 * time, 11.30 * time];
+                let color_seed = [10.5121 * time, 22.958 * time, 25.1 * time];
 
                 frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
                 let pos_seed_uniform = UniformContext::array_f32(gl, &pos_seed, "pos_seed");
