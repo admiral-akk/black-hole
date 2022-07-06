@@ -4,7 +4,10 @@ extern crate wasm_bindgen;
 mod framework;
 mod utils;
 
+use framework::frame_buffer_context::FrameBufferContext;
 use wasm_timer::SystemTime;
+use web_sys::WebGlFramebuffer;
+use web_sys::WebGlTexture;
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -89,6 +92,7 @@ fn get_selected_index() -> Result<u32, JsValue> {
 
 pub struct RenderState {
     gl: RenderContext,
+    prev_params: Cell<RenderParams>,
 }
 
 const EXERCISE_COUNT: u32 = 7;
@@ -238,14 +242,18 @@ impl RenderState {
             }
             _ => {}
         }
+        self.prev_params.set(*params);
         Ok(())
     }
 }
 
 impl RenderState {
     pub fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
+        let gl = RenderContext::new(width, height);
+
         Ok(RenderState {
-            gl: RenderContext::new(width, height),
+            gl,
+            prev_params: Cell::default(),
         })
     }
 }
@@ -265,7 +273,7 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .expect("should register `requestAnimationFrame` OK");
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 struct RenderParams {
     pub seconds_since_start: f32,
     pub select_index: u32,
@@ -273,14 +281,6 @@ struct RenderParams {
 }
 
 impl RenderParams {
-    pub fn new(seconds_since_start: f32) -> RenderParams {
-        RenderParams {
-            seconds_since_start,
-            select_index: 0,
-            mouse_pos: None,
-        }
-    }
-
     pub fn update_time(&self, seconds_since_start: f32) -> RenderParams {
         let mut c = self.clone();
         c.seconds_since_start = seconds_since_start;
@@ -319,7 +319,7 @@ pub fn start() -> Result<(), JsValue> {
     }
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
-    let params = Rc::new(Cell::new(RenderParams::new(0.0)));
+    let params = Rc::new(Cell::new(RenderParams::default()));
     let renderer = Rc::new(RenderState::new(512, 512)?);
     {
         let start_time = start_time.clone();
