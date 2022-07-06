@@ -114,7 +114,7 @@ impl RenderState {
 
         let gl = &self.gl;
         let vertex = SourceContext::new(VERTEX_DEFAULT);
-        let mut frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
+        let mut frag;
         let frame_buffer;
         let backing_texture;
         let frame_buffer2;
@@ -272,6 +272,6 @@ impl RenderState {
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
-    init_select();
+    init_select()?;
     Ok(())
 }

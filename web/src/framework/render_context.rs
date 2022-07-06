@@ -59,11 +59,7 @@ impl RenderContext {
         RenderContext { gl, canvas }
     }
     pub fn create_framebuffer(&self) -> (FrameBufferContext, WebGlTexture) {
-        FrameBufferContext::new(
-            &self.gl,
-            self.canvas.width() as i32,
-            self.canvas.height() as i32,
-        )
+        self.create_framebuffer_with_size(self.canvas.width() as i32, self.canvas.height() as i32)
     }
 
     pub fn create_framebuffer_with_size(
