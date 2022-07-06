@@ -99,7 +99,7 @@ impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("selected index: {}", self.select.selected_index());
         console_log!("time since start: {:.2}s", params.seconds_since_start);
-        let exercise = self.select.selected_index() + 1;
+        let exercise = params.exercise;
         let gl = &self.gl;
         let mut frag;
         let frame_buffer;
@@ -276,18 +276,27 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 #[derive(Clone, Copy)]
 struct RenderParams {
     pub seconds_since_start: f32,
+    pub exercise: u32,
 }
 
 impl RenderParams {
     pub fn new(seconds_since_start: f32) -> RenderParams {
         RenderParams {
             seconds_since_start,
+            exercise: 1,
         }
     }
 
     pub fn update_time(&self, seconds_since_start: f32) -> RenderParams {
         let mut c = self.clone();
         c.seconds_since_start = seconds_since_start;
+        c
+    }
+
+    pub fn update_exercise(&self, exercise: u32) -> RenderParams {
+        let mut c = self.clone();
+        c.seconds_since_start = 0.0;
+        c.exercise = exercise;
         c
     }
 }
@@ -306,17 +315,15 @@ pub fn start() -> Result<(), JsValue> {
     }
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
-
     let params = Rc::new(Cell::new(RenderParams::new(0.0)));
-    let renderer = RenderState::new(512, 512)?;
-    let renderer = Rc::new(renderer);
+    let renderer = Rc::new(RenderState::new(512, 512)?);
     {
-        let renderer = renderer.clone();
         let start_time = start_time.clone();
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
             start_time.set(SystemTime::now());
-            renderer.render(&params.get()).unwrap();
+            let exercise = get_select().unwrap().selected_index() as u32 + 1;
+            params.set(params.get().update_exercise(exercise));
         }) as Box<dyn FnMut(_)>);
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
         closure.forget();
