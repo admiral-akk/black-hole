@@ -4,8 +4,11 @@ extern crate wasm_bindgen;
 mod framework;
 mod utils;
 
+use wasm_timer::SystemTime;
+
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Duration;
 
 use cfg_if::cfg_if;
 use framework::render_context::RenderContext;
@@ -97,10 +100,13 @@ pub struct RenderState {
 
 const EXERCISE_COUNT: u32 = 7;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
-#[wasm_bindgen]
 impl RenderState {
-    pub fn render(&self) -> Result<(), JsValue> {
+    pub fn render(&self, time_since_start: &Duration) -> Result<(), JsValue> {
         console_log!("selected index: {}", self.select.selected_index());
+        console_log!(
+            "time since start: {:.2}s",
+            time_since_start.as_millis() as f32 / 1000.0
+        );
         let exercise = self.select.selected_index() + 1;
         let gl = &self.gl;
         let mut frag;
@@ -288,14 +294,18 @@ pub fn start() -> Result<(), JsValue> {
         select.append_child(&option)?;
     }
 
+    let start_time = Rc::new(wasm_timer::SystemTime::now());
     let renderer = RenderState::new(512, 512)?;
-    renderer.render()?;
+    renderer.render(&start_time.duration_since(*start_time).unwrap())?;
 
     let renderer = Rc::new(renderer);
     {
         let renderer = renderer.clone();
+        let start_time = start_time.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
-            renderer.render().unwrap();
+            renderer
+                .render(&SystemTime::now().duration_since(*start_time).unwrap())
+                .unwrap();
         }) as Box<dyn FnMut(_)>);
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -304,9 +314,12 @@ pub fn start() -> Result<(), JsValue> {
     let g = render_func.clone();
     {
         let renderer = renderer.clone();
+        let start_time = start_time.clone();
 
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            renderer.render().unwrap();
+            renderer
+                .render(&SystemTime::now().duration_since(*start_time).unwrap())
+                .unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
         request_animation_frame(g.borrow().as_ref().unwrap());
