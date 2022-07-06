@@ -3,8 +3,8 @@ use web_sys::{WebGl2RenderingContext, WebGlTexture};
 use super::{program_context::ProgramContext, render_context::RenderContext};
 
 pub enum UniformStore {
-    TEXTURE_2D(WebGlTexture),
-    ARRAY_F32(Vec<f32>),
+    Texture2d(WebGlTexture),
+    ArrayF32(Vec<f32>),
 }
 
 pub struct UniformContext {
@@ -16,31 +16,31 @@ impl UniformContext {
     pub fn new_from_u8(gl: &RenderContext, arr: &[u8], width: i32, name: &str) -> UniformContext {
         let texture = generate_texture_from_u8(&gl.gl, arr, width);
         UniformContext {
-            store: UniformStore::TEXTURE_2D(texture),
+            store: UniformStore::Texture2d(texture),
             name: name.to_string(),
         }
     }
 
     pub fn new_from_allocated(texture: WebGlTexture, name: &str) -> UniformContext {
         UniformContext {
-            store: UniformStore::TEXTURE_2D(texture),
+            store: UniformStore::Texture2d(texture),
             name: name.to_string(),
         }
     }
 
     pub fn array_f32(gl: &RenderContext, arr: &[f32], name: &str) -> UniformContext {
         UniformContext {
-            store: UniformStore::ARRAY_F32(arr.to_vec()),
+            store: UniformStore::ArrayF32(arr.to_vec()),
             name: name.to_string(),
         }
     }
 
     pub fn add_to_program(&self, gl: &RenderContext, program: &mut ProgramContext) {
         match &self.store {
-            UniformStore::TEXTURE_2D(texture) => {
+            UniformStore::Texture2d(texture) => {
                 add_texture_to_program(&texture, gl, program, &self.name);
             }
-            UniformStore::ARRAY_F32(arr) => {
+            UniformStore::ArrayF32(arr) => {
                 let loc = gl.gl.get_uniform_location(&program.program, &self.name);
                 gl.gl.uniform1fv_with_f32_array(loc.as_ref(), arr);
             }

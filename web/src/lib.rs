@@ -60,9 +60,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet() {}
-
-#[wasm_bindgen]
 pub fn get_renderer() -> Result<RenderState, JsValue> {
     RenderState::new(512, 512)
 }
