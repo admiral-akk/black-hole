@@ -44,6 +44,11 @@ features = [
   'Node',
   'Window',
   'InputEvent',
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Window',
 
 ]
 

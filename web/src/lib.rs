@@ -4,8 +4,7 @@ extern crate wasm_bindgen;
 mod framework;
 mod utils;
 
-
-
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use cfg_if::cfg_if;
@@ -256,6 +255,25 @@ impl RenderState {
         })
     }
 }
+fn window() -> web_sys::Window {
+    web_sys::window().expect("no global `window` exists")
+}
+
+fn document() -> web_sys::Document {
+    window()
+        .document()
+        .expect("should have a document on window")
+}
+
+fn body() -> web_sys::HtmlElement {
+    document().body().expect("document should have a body")
+}
+
+fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+    window()
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .expect("should register `requestAnimationFrame` OK");
+}
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
@@ -281,6 +299,17 @@ pub fn start() -> Result<(), JsValue> {
         }) as Box<dyn FnMut(_)>);
         select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
         closure.forget();
+    }
+    let render_func = Rc::new(RefCell::new(None));
+    let g = render_func.clone();
+    {
+        let renderer = renderer.clone();
+
+        *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            renderer.render().unwrap();
+            requestAnimationFrame(render_func.borrow().as_ref().unwrap());
+        }) as Box<dyn FnMut()>));
+        request_animation_frame(g.borrow().as_ref().unwrap());
     }
 
     Ok(())
