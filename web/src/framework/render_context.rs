@@ -1,5 +1,5 @@
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer};
 
 use super::{
     frame_buffer_context::FrameBufferContext, program_context::ProgramContext,
@@ -58,15 +58,11 @@ impl RenderContext {
         initialize_raster_vertices(&gl);
         RenderContext { gl, canvas }
     }
-    pub fn create_framebuffer(&self) -> (FrameBufferContext, WebGlTexture) {
+    pub fn create_framebuffer(&self) -> FrameBufferContext {
         self.create_framebuffer_with_size(self.canvas.width() as i32, self.canvas.height() as i32)
     }
 
-    pub fn create_framebuffer_with_size(
-        &self,
-        width: i32,
-        height: i32,
-    ) -> (FrameBufferContext, WebGlTexture) {
+    pub fn create_framebuffer_with_size(&self, width: i32, height: i32) -> FrameBufferContext {
         FrameBufferContext::new(&self.gl, width, height)
     }
 

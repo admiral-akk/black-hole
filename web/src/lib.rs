@@ -4,10 +4,7 @@ extern crate wasm_bindgen;
 mod framework;
 mod utils;
 
-use framework::frame_buffer_context::FrameBufferContext;
 use wasm_timer::SystemTime;
-use web_sys::WebGlFramebuffer;
-use web_sys::WebGlTexture;
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -106,9 +103,7 @@ impl RenderState {
         let gl = &self.gl;
         let mut frag;
         let frame_buffer;
-        let backing_texture;
         let frame_buffer2;
-        let backing_texture2;
         match exercise {
             1 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
@@ -131,9 +126,11 @@ impl RenderState {
             }
             4 => {
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-                (frame_buffer, backing_texture) = self.gl.create_framebuffer();
-                let fb_texture =
-                    UniformContext::new_from_allocated_ref(&backing_texture, "rtt_sampler");
+                frame_buffer = self.gl.create_framebuffer();
+                let fb_texture = UniformContext::new_from_allocated_ref(
+                    &frame_buffer.backing_texture,
+                    "rtt_sampler",
+                );
                 self.gl
                     .draw(None, &frag, &[], Some(&frame_buffer.frame_buffer));
 
@@ -142,12 +139,16 @@ impl RenderState {
             }
             5 => {
                 let kernel = generate_gaussian_weights(1.0, 3);
-                (frame_buffer, backing_texture) = self.gl.create_framebuffer();
-                let fb_texture =
-                    UniformContext::new_from_allocated_ref(&backing_texture, "rtt_sampler");
-                (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
-                let fb_texture2 =
-                    UniformContext::new_from_allocated_ref(&backing_texture2, "rtt_sampler");
+                frame_buffer = self.gl.create_framebuffer();
+                let fb_texture = UniformContext::new_from_allocated_ref(
+                    &frame_buffer.backing_texture,
+                    "rtt_sampler",
+                );
+                frame_buffer2 = self.gl.create_framebuffer();
+                let fb_texture2 = UniformContext::new_from_allocated_ref(
+                    &frame_buffer2.backing_texture,
+                    "rtt_sampler",
+                );
                 let kernel_weights = UniformContext::array_f32(&kernel, "w");
 
                 frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
@@ -182,12 +183,16 @@ impl RenderState {
                 let r = generate_gaussian_weights(1.0, 3);
                 let g = generate_gaussian_weights(2.0, 3);
                 let b = generate_gaussian_weights(3.0, 3);
-                (frame_buffer, backing_texture) = self.gl.create_framebuffer();
-                let fb_texture =
-                    UniformContext::new_from_allocated_ref(&backing_texture, "rtt_sampler");
-                (frame_buffer2, backing_texture2) = self.gl.create_framebuffer();
-                let fb_texture2 =
-                    UniformContext::new_from_allocated_ref(&backing_texture2, "rtt_sampler");
+                frame_buffer = self.gl.create_framebuffer();
+                let fb_texture = UniformContext::new_from_allocated_ref(
+                    &frame_buffer.backing_texture,
+                    "rtt_sampler",
+                );
+                frame_buffer2 = self.gl.create_framebuffer();
+                let fb_texture2 = UniformContext::new_from_allocated_ref(
+                    &frame_buffer2.backing_texture,
+                    "rtt_sampler",
+                );
                 let r_kernel_weights = UniformContext::array_f32(&r, "r");
                 let g_kernel_weights = UniformContext::array_f32(&g, "g");
                 let b_kernel_weights = UniformContext::array_f32(&b, "b");
