@@ -112,7 +112,7 @@ enum ExerciseState {
         Vec<f32>,
     ),
     Exercise6,
-    Exercise7(FrameBufferContext),
+    Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8,
 }
 
@@ -150,8 +150,9 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.delete_framebuffer(&fb2);
         }
         ExerciseState::Exercise6 => {}
-        ExerciseState::Exercise7(fb) => {
-            gl.delete_framebuffer(&fb);
+        ExerciseState::Exercise7(fb1, fb2) => {
+            gl.delete_framebuffer(&fb1);
+            gl.delete_framebuffer(&fb2);
         }
         ExerciseState::Exercise8 => {}
         _ => {}
@@ -194,7 +195,8 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             *exercise_state = ExerciseState::Exercise6;
         }
         7 => {
-            *exercise_state = ExerciseState::Exercise7(gl.create_framebuffer());
+            *exercise_state =
+                ExerciseState::Exercise7(gl.create_framebuffer(), gl.create_framebuffer());
         }
         8 => {
             *exercise_state = ExerciseState::Exercise8;
@@ -233,7 +235,7 @@ fn update_exercise(
         ExerciseState::Exercise6 => {
             new_exercise = exercise_index != 6;
         }
-        ExerciseState::Exercise7(_) => {
+        ExerciseState::Exercise7(_, _) => {
             new_exercise = exercise_index != 7;
         }
         ExerciseState::Exercise8 => {
@@ -248,7 +250,6 @@ fn update_exercise(
 
 fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
     let mut frag;
-    let frame_buffer;
     match exercise_state {
         ExerciseState::Exercise0 => {
             frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
@@ -367,23 +368,15 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
             let color_seed_uniform = UniformContext::array_f32(&color_seed, "color_seed");
             gl.draw(None, &frag, &[&pos_seed_uniform, &color_seed_uniform], None);
         }
-        ExerciseState::Exercise7(state_fb) => {
-            frame_buffer = gl.create_framebuffer();
+        ExerciseState::Exercise7(fb1, fb2) => {
             let state_texture =
-                UniformContext::new_from_allocated_ref(&state_fb.backing_texture, "rtt_sampler");
+                UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler");
             frag = SourceContext::new(include_str!("shaders/fragment/add_white.glsl"));
-            gl.draw(
-                None,
-                &frag,
-                &[&state_texture],
-                Some(&frame_buffer.frame_buffer),
-            );
+            gl.draw(None, &frag, &[&state_texture], Some(&fb2.frame_buffer));
 
-            let fb_texture = UniformContext::new_from_allocated_ref(
-                &frame_buffer.backing_texture,
-                "rtt_sampler",
-            );
-            gl.draw(None, &frag, &[&fb_texture], Some(&state_fb.frame_buffer));
+            let fb_texture =
+                UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler");
+            gl.draw(None, &frag, &[&fb_texture], Some(&fb1.frame_buffer));
             gl.draw(None, &frag, &[&fb_texture], None);
         }
         ExerciseState::Exercise8 => {
