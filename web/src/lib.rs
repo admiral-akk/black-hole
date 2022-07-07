@@ -101,7 +101,7 @@ fn get_selected_index() -> Result<u32, JsValue> {
 enum ExerciseState {
     Exercise0,
     Exercise1(WebGlTexture),
-    Exercise2,
+    Exercise2(WebGlTexture, WebGlTexture),
     Exercise3,
     Exercise4,
     Exercise5,
@@ -143,7 +143,9 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             *exercise_state = ExerciseState::Exercise1(cm);
         }
         2 => {
-            *exercise_state = ExerciseState::Exercise2;
+            let cm1 = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
+            let cm2 = generate_texture_from_u8(&gl.gl, &colormap2(), 256);
+            *exercise_state = ExerciseState::Exercise2(cm1, cm2);
         }
         3 => {
             *exercise_state = ExerciseState::Exercise3;
@@ -182,7 +184,7 @@ fn update_exercise(
         ExerciseState::Exercise1(_) => {
             new_exercise = exercise_index != 1;
         }
-        ExerciseState::Exercise2 => {
+        ExerciseState::Exercise2(_, _) => {
             new_exercise = exercise_index != 2;
         }
         ExerciseState::Exercise3 => {
@@ -224,11 +226,9 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
             let cm_context = UniformContext::new_from_allocated_ref(&cm, "u_palette");
             gl.draw(None, &frag, &[&cm_context], None);
         }
-        ExerciseState::Exercise2 => {
+        ExerciseState::Exercise2(cm1, cm2) => {
             frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
-            let cm1 = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
             let cm_context1 = UniformContext::new_from_allocated_ref(&cm1, "u_palette_1");
-            let cm2 = generate_texture_from_u8(&gl.gl, &colormap2(), 256);
             let cm_context2 = UniformContext::new_from_allocated_ref(&cm2, "u_palette_2");
             gl.draw(None, &frag, &[&cm_context1, &cm_context2], None);
         }
