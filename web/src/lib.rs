@@ -5,6 +5,12 @@ mod framework;
 mod utils;
 
 use framework::frame_buffer_context::FrameBufferContext;
+use glam::Vec3;
+use rendering::render::render;
+use rendering::structs::image_data::ImageData;
+use rendering::structs::observer::Observer;
+use rendering::structs::ray_cache::RayCache;
+use rendering::structs::stars::Stars;
 use wasm_timer::SystemTime;
 
 use std::cell::Cell;
@@ -23,6 +29,7 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
 
 use crate::framework::texture_utils::generate_texture_from_u8;
+use image::io::Reader;
 
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
@@ -96,7 +103,7 @@ pub struct RenderState {
     state: RefCell<Option<FrameBufferContext>>,
 }
 
-const EXERCISE_COUNT: u32 = 8;
+const EXERCISE_COUNT: u32 = 9;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
@@ -282,6 +289,29 @@ impl RenderState {
                 self.gl
                     .draw(None, &frag, &[&fb_texture], Some(&state_fb.frame_buffer));
                 self.gl.draw(None, &frag, &[&fb_texture], None);
+            }
+            9 => {
+                let distance = 3.0;
+                let vertical_fov = 120.0;
+
+                let mut reader = Reader::open("starmap_2020_4k_gal.exr").unwrap();
+                reader.no_limits();
+                let background = reader.decode().unwrap().into_rgb8();
+                let radius = 1.5;
+
+                let mut image_data = ImageData::new(512, 512);
+                let mut stars = Stars::new(image::DynamicImage::ImageRgb8(background));
+                let ray_cache = RayCache::compute_new(1024, radius, distance);
+
+                let (pos, dir) = (Vec3::Z, -Vec3::Z);
+                let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
+                stars.update_position(&pos);
+                render(&mut image_data, &observer, &stars, &ray_cache);
+
+                let image = generate_texture_from_u8(&gl.gl, &image_data.get_image(), 512);
+                let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
+                frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
+                self.gl.draw(None, &frag, &[&image_context], None);
             }
             _ => {}
         }

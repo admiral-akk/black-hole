@@ -72,7 +72,7 @@ impl ImageData {
         self.image[index].z += c[2] as f32;
     }
 
-    fn get_image(&mut self) -> &[u8] {
+    pub fn get_image(&mut self) -> &[u8] {
         for i in 0..self.image.len() {
             let c = &self.image[i];
             let buffer_index = 4 * i;
