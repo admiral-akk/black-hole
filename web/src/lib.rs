@@ -122,6 +122,7 @@ impl Default for ExerciseState {
         ExerciseState::Exercise0
     }
 }
+
 impl ExerciseState {
     pub fn index(&self) -> u32 {
         match self {
@@ -240,10 +241,7 @@ fn update_exercise(
     exercise_state: &mut ExerciseState,
     new_params: &RenderParams,
 ) {
-    // Check clean up
-    let exercise_index = new_params.select_index;
-    let new_exercise = exercise_state.index() != new_params.select_index;
-    if new_exercise {
+    if exercise_state.index() != new_params.select_index {
         clean_up_exercise(gl, exercise_state);
         init_exercise(gl, exercise_state, exercise_index);
     }
