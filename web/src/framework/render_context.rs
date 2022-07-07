@@ -65,8 +65,8 @@ impl RenderContext {
     pub fn delete_texture(&self, uc: &WebGlTexture) {
         self.gl.delete_texture(Some(uc));
     }
-    pub fn delete_framebuffer(&self, fb: &WebGlFramebuffer) {
-        self.gl.delete_framebuffer(Some(fb));
+    pub fn delete_framebuffer(&self, fb: &FrameBufferContext) {
+        self.gl.delete_framebuffer(Some(&fb.frame_buffer));
     }
 
     pub fn create_framebuffer_with_size(&self, width: i32, height: i32) -> FrameBufferContext {
