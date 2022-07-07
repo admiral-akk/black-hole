@@ -116,6 +116,28 @@ enum ExerciseState {
     Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8(ImageData, Stars, RayCache, Observer),
 }
+
+impl Default for ExerciseState {
+    fn default() -> Self {
+        ExerciseState::Exercise0
+    }
+}
+impl ExerciseState {
+    pub fn index(&self) -> u32 {
+        match self {
+            ExerciseState::Exercise0 => 0,
+            ExerciseState::Exercise1(..) => 1,
+            ExerciseState::Exercise2(..) => 2,
+            ExerciseState::Exercise3(..) => 3,
+            ExerciseState::Exercise4(..) => 4,
+            ExerciseState::Exercise5(..) => 5,
+            ExerciseState::Exercise6 => 6,
+            ExerciseState::Exercise7(..) => 7,
+            ExerciseState::Exercise8(..) => 8,
+        }
+    }
+}
+
 fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercise_index: u32) {
     match exercise_index {
         0 => {
@@ -176,12 +198,6 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
     }
 }
 
-impl Default for ExerciseState {
-    fn default() -> Self {
-        ExerciseState::Exercise0
-    }
-}
-
 pub struct RenderState {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
@@ -226,36 +242,7 @@ fn update_exercise(
 ) {
     // Check clean up
     let exercise_index = new_params.select_index;
-    let mut new_exercise = false;
-    match exercise_state {
-        ExerciseState::Exercise0 => {
-            new_exercise = exercise_index != 0;
-        }
-        ExerciseState::Exercise1(..) => {
-            new_exercise = exercise_index != 1;
-        }
-        ExerciseState::Exercise2(..) => {
-            new_exercise = exercise_index != 2;
-        }
-        ExerciseState::Exercise3(..) => {
-            new_exercise = exercise_index != 3;
-        }
-        ExerciseState::Exercise4(..) => {
-            new_exercise = exercise_index != 4;
-        }
-        ExerciseState::Exercise5(..) => {
-            new_exercise = exercise_index != 5;
-        }
-        ExerciseState::Exercise6 => {
-            new_exercise = exercise_index != 6;
-        }
-        ExerciseState::Exercise7(..) => {
-            new_exercise = exercise_index != 7;
-        }
-        ExerciseState::Exercise8(..) => {
-            new_exercise = exercise_index != 8;
-        }
-    }
+    let new_exercise = exercise_state.index() != new_params.select_index;
     if new_exercise {
         clean_up_exercise(gl, exercise_state);
         init_exercise(gl, exercise_state, exercise_index);
