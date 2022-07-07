@@ -8,6 +8,7 @@ use framework::frame_buffer_context::FrameBufferContext;
 use glam::Vec3;
 use rendering::render::render;
 use rendering::structs::image_data::ImageData;
+use rendering::structs::observer;
 use rendering::structs::observer::Observer;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
@@ -113,50 +114,7 @@ enum ExerciseState {
     ),
     Exercise6,
     Exercise7(FrameBufferContext, FrameBufferContext),
-    Exercise8,
-}
-
-impl Default for ExerciseState {
-    fn default() -> Self {
-        ExerciseState::Exercise0
-    }
-}
-
-pub struct RenderState {
-    gl: RenderContext,
-    prev_params: Cell<RenderParams>,
-    exercise_state: RefCell<Box<ExerciseState>>,
-}
-
-fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
-    match exercise_state {
-        ExerciseState::Exercise0 => {}
-        ExerciseState::Exercise1(cm) => {
-            gl.delete_texture(&cm);
-        }
-        ExerciseState::Exercise2(cm1, cm2) => {
-            gl.delete_texture(&cm1);
-            gl.delete_texture(&cm2);
-        }
-        ExerciseState::Exercise3(fb) => {
-            gl.delete_framebuffer(&fb);
-        }
-        ExerciseState::Exercise4(fb1, fb2, _) => {
-            gl.delete_framebuffer(&fb1);
-            gl.delete_framebuffer(&fb2);
-        }
-        ExerciseState::Exercise5(fb1, fb2, _, _, _) => {
-            gl.delete_framebuffer(&fb1);
-            gl.delete_framebuffer(&fb2);
-        }
-        ExerciseState::Exercise6 => {}
-        ExerciseState::Exercise7(fb1, fb2) => {
-            gl.delete_framebuffer(&fb1);
-            gl.delete_framebuffer(&fb2);
-        }
-        ExerciseState::Exercise8 => {}
-        _ => {}
-    }
+    Exercise8(ImageData, Stars, RayCache, Observer),
 }
 fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercise_index: u32) {
     match exercise_index {
@@ -199,8 +157,64 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 ExerciseState::Exercise7(gl.create_framebuffer(), gl.create_framebuffer());
         }
         8 => {
-            *exercise_state = ExerciseState::Exercise8;
+            let uv = generate_uv(512, 512);
+
+            let distance = 3.0;
+            let vertical_fov = 120.0;
+            let radius = 1.5;
+
+            let mut stars = Stars::new_from_u8(uv, 512, 512);
+            let ray_cache = RayCache::compute_new(1024, radius, distance);
+
+            let (pos, dir) = (distance * Vec3::Z, -Vec3::Z);
+            let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
+            stars.update_position(&pos);
+            let image_data = ImageData::new(512, 512);
+            *exercise_state = ExerciseState::Exercise8(image_data, stars, ray_cache, observer);
         }
+        _ => {}
+    }
+}
+
+impl Default for ExerciseState {
+    fn default() -> Self {
+        ExerciseState::Exercise0
+    }
+}
+
+pub struct RenderState {
+    gl: RenderContext,
+    prev_params: Cell<RenderParams>,
+    exercise_state: RefCell<Box<ExerciseState>>,
+}
+
+fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
+    match exercise_state {
+        ExerciseState::Exercise0 => {}
+        ExerciseState::Exercise1(cm) => {
+            gl.delete_texture(&cm);
+        }
+        ExerciseState::Exercise2(cm1, cm2) => {
+            gl.delete_texture(&cm1);
+            gl.delete_texture(&cm2);
+        }
+        ExerciseState::Exercise3(fb) => {
+            gl.delete_framebuffer(&fb);
+        }
+        ExerciseState::Exercise4(fb1, fb2, _) => {
+            gl.delete_framebuffer(&fb1);
+            gl.delete_framebuffer(&fb2);
+        }
+        ExerciseState::Exercise5(fb1, fb2, _, _, _) => {
+            gl.delete_framebuffer(&fb1);
+            gl.delete_framebuffer(&fb2);
+        }
+        ExerciseState::Exercise6 => {}
+        ExerciseState::Exercise7(fb1, fb2) => {
+            gl.delete_framebuffer(&fb1);
+            gl.delete_framebuffer(&fb2);
+        }
+        ExerciseState::Exercise8(..) => {}
         _ => {}
     }
 }
@@ -217,28 +231,28 @@ fn update_exercise(
         ExerciseState::Exercise0 => {
             new_exercise = exercise_index != 0;
         }
-        ExerciseState::Exercise1(_) => {
+        ExerciseState::Exercise1(..) => {
             new_exercise = exercise_index != 1;
         }
-        ExerciseState::Exercise2(_, _) => {
+        ExerciseState::Exercise2(..) => {
             new_exercise = exercise_index != 2;
         }
-        ExerciseState::Exercise3(_) => {
+        ExerciseState::Exercise3(..) => {
             new_exercise = exercise_index != 3;
         }
-        ExerciseState::Exercise4(_, _, _) => {
+        ExerciseState::Exercise4(..) => {
             new_exercise = exercise_index != 4;
         }
-        ExerciseState::Exercise5(_, _, _, _, _) => {
+        ExerciseState::Exercise5(..) => {
             new_exercise = exercise_index != 5;
         }
         ExerciseState::Exercise6 => {
             new_exercise = exercise_index != 6;
         }
-        ExerciseState::Exercise7(_, _) => {
+        ExerciseState::Exercise7(..) => {
             new_exercise = exercise_index != 7;
         }
-        ExerciseState::Exercise8 => {
+        ExerciseState::Exercise8(..) => {
             new_exercise = exercise_index != 8;
         }
     }
@@ -248,7 +262,7 @@ fn update_exercise(
     }
 }
 
-fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
+fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
     let mut frag;
     match exercise_state {
         ExerciseState::Exercise0 => {
@@ -379,26 +393,14 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
             gl.draw(None, &frag, &[&fb_texture], Some(&fb1.frame_buffer));
             gl.draw(None, &frag, &[&fb_texture], None);
         }
-        ExerciseState::Exercise8 => {
-            let uv = generate_uv(512, 512);
-
-            let distance = 3.0;
-            let vertical_fov = 120.0;
-            let radius = 1.5;
-
-            let mut image_data = ImageData::new(512, 512);
-            let mut stars = Stars::new_from_u8(uv, 512, 512);
-            let ray_cache = RayCache::compute_new(1024, radius, distance);
-
-            let (pos, dir) = (distance * Vec3::Z, -Vec3::Z);
-            let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
-            stars.update_position(&pos);
-            render(&mut image_data, &observer, &stars, &ray_cache);
+        ExerciseState::Exercise8(image_data, stars, ray_cache, observer) => {
+            render(image_data, observer, stars, ray_cache);
 
             let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
             let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
             frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
             gl.draw(None, &frag, &[&image_context], None);
+            gl.delete_texture(&image);
         }
     }
 }
@@ -411,7 +413,7 @@ impl RenderState {
         let gl = &self.gl;
 
         update_exercise(gl, &mut *self.exercise_state.borrow_mut(), params);
-        render_exercise(gl, &*self.exercise_state.borrow());
+        render_exercise(gl, &mut *self.exercise_state.borrow_mut());
         self.prev_params.set(*params);
         Ok(())
     }
