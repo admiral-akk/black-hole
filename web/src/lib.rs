@@ -104,7 +104,13 @@ enum ExerciseState {
     Exercise2(WebGlTexture, WebGlTexture),
     Exercise3(FrameBufferContext),
     Exercise4(FrameBufferContext, FrameBufferContext, Vec<f32>),
-    Exercise5,
+    Exercise5(
+        FrameBufferContext,
+        FrameBufferContext,
+        Vec<f32>,
+        Vec<f32>,
+        Vec<f32>,
+    ),
     Exercise6,
     Exercise7(FrameBufferContext),
     Exercise8,
@@ -139,7 +145,10 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.delete_framebuffer(&fb1);
             gl.delete_framebuffer(&fb2);
         }
-        ExerciseState::Exercise5 => {}
+        ExerciseState::Exercise5(fb1, fb2, _, _, _) => {
+            gl.delete_framebuffer(&fb1);
+            gl.delete_framebuffer(&fb2);
+        }
         ExerciseState::Exercise6 => {}
         ExerciseState::Exercise7(fb) => {
             gl.delete_framebuffer(&fb);
@@ -173,7 +182,13 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             );
         }
         5 => {
-            *exercise_state = ExerciseState::Exercise5;
+            *exercise_state = ExerciseState::Exercise5(
+                gl.create_framebuffer(),
+                gl.create_framebuffer(),
+                generate_gaussian_weights(1.0, 3),
+                generate_gaussian_weights(2.0, 3),
+                generate_gaussian_weights(3.0, 3),
+            );
         }
         6 => {
             *exercise_state = ExerciseState::Exercise6;
@@ -212,7 +227,7 @@ fn update_exercise(
         ExerciseState::Exercise4(_, _, _) => {
             new_exercise = exercise_index != 4;
         }
-        ExerciseState::Exercise5 => {
+        ExerciseState::Exercise5(_, _, _, _, _) => {
             new_exercise = exercise_index != 5;
         }
         ExerciseState::Exercise6 => {
@@ -234,7 +249,6 @@ fn update_exercise(
 fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
     let mut frag;
     let frame_buffer;
-    let frame_buffer2;
     match exercise_state {
         ExerciseState::Exercise0 => {
             frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
@@ -294,26 +308,17 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
             frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
             gl.draw(None, &frag, &[&fb_texture], None);
         }
-        ExerciseState::Exercise5 => {
-            let r = generate_gaussian_weights(1.0, 3);
-            let g = generate_gaussian_weights(2.0, 3);
-            let b = generate_gaussian_weights(3.0, 3);
-            frame_buffer = gl.create_framebuffer();
-            let fb_texture = UniformContext::new_from_allocated_ref(
-                &frame_buffer.backing_texture,
-                "rtt_sampler",
-            );
-            frame_buffer2 = gl.create_framebuffer();
-            let fb_texture2 = UniformContext::new_from_allocated_ref(
-                &frame_buffer2.backing_texture,
-                "rtt_sampler",
-            );
+        ExerciseState::Exercise5(fb1, fb2, r, g, b) => {
+            let fb_texture =
+                UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler");
+            let fb_texture2 =
+                UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler");
             let r_kernel_weights = UniformContext::array_f32(&r, "r");
             let g_kernel_weights = UniformContext::array_f32(&g, "g");
             let b_kernel_weights = UniformContext::array_f32(&b, "b");
 
             frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-            gl.draw(None, &frag, &[], Some(&frame_buffer.frame_buffer));
+            gl.draw(None, &frag, &[], Some(&fb1.frame_buffer));
 
             for _ in 0..10 {
                 frag =
@@ -329,7 +334,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
                         &g_kernel_weights,
                         &b_kernel_weights,
                     ],
-                    Some(&frame_buffer2.frame_buffer),
+                    Some(&fb2.frame_buffer),
                 );
 
                 frag =
@@ -345,7 +350,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
                         &g_kernel_weights,
                         &b_kernel_weights,
                     ],
-                    Some(&frame_buffer.frame_buffer),
+                    Some(&fb1.frame_buffer),
                 );
             }
             frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
