@@ -118,7 +118,6 @@ impl Default for ExerciseState {
 pub struct RenderState {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
-    state: RefCell<Option<FrameBufferContext>>,
     exercise_state: RefCell<Box<ExerciseState>>,
 }
 
@@ -399,212 +398,9 @@ impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("params: {:?}", params);
         let gl = &self.gl;
-        // let mut frag;
-        // let frame_buffer;
-        // let frame_buffer2;
 
         update_exercise(gl, &mut *self.exercise_state.borrow_mut(), params);
         render_exercise(gl, &*self.exercise_state.borrow());
-        // match exercise {
-        //     1 => {
-        //         frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
-        //         self.gl.draw(None, &frag, &[], None);
-        //     }
-        //     2 => {
-        //         frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-        //         let cm = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
-        //         let cm_context = UniformContext::new_from_allocated_ref(&cm, "u_palette");
-        //         self.gl.draw(None, &frag, &[&cm_context], None);
-        //     }
-        //     3 => {
-        //         frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
-        //         let cm1 = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
-        //         let cm_context1 = UniformContext::new_from_allocated_ref(&cm1, "u_palette_1");
-        //         let cm2 = generate_texture_from_u8(&gl.gl, &colormap2(), 256);
-        //         let cm_context2 = UniformContext::new_from_allocated_ref(&cm2, "u_palette_2");
-        //         self.gl
-        //             .draw(None, &frag, &[&cm_context1, &cm_context2], None);
-        //     }
-        //     4 => {
-        //         frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-        //         frame_buffer = self.gl.create_framebuffer();
-        //         let fb_texture = UniformContext::new_from_allocated_ref(
-        //             &frame_buffer.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         self.gl
-        //             .draw(None, &frag, &[], Some(&frame_buffer.frame_buffer));
-
-        //         frag = SourceContext::new(include_str!("shaders/fragment/blur.glsl"));
-        //         self.gl.draw(None, &frag, &[&fb_texture], None);
-        //     }
-        //     5 => {
-        //         let kernel = generate_gaussian_weights(1.0, 3);
-        //         frame_buffer = self.gl.create_framebuffer();
-        //         let fb_texture = UniformContext::new_from_allocated_ref(
-        //             &frame_buffer.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         frame_buffer2 = self.gl.create_framebuffer();
-        //         let fb_texture2 = UniformContext::new_from_allocated_ref(
-        //             &frame_buffer2.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         let kernel_weights = UniformContext::array_f32(&kernel, "w");
-
-        //         frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-        //         self.gl
-        //             .draw(None, &frag, &[], Some(&frame_buffer.frame_buffer));
-
-        //         for _ in 0..10 {
-        //             frag = SourceContext::new(include_str!("shaders/fragment/gaussian_blur.glsl"));
-        //             frag.add_parameter("HORIZONTAL", "TRUE");
-        //             frag.add_parameter("K", &kernel.len().to_string());
-        //             self.gl.draw(
-        //                 None,
-        //                 &frag,
-        //                 &[&fb_texture, &kernel_weights],
-        //                 Some(&frame_buffer2.frame_buffer),
-        //             );
-
-        //             frag = SourceContext::new(include_str!("shaders/fragment/gaussian_blur.glsl"));
-        //             frag.add_parameter("K", &kernel.len().to_string());
-        //             frag.add_parameter("VERTICAL", "TRUE");
-        //             self.gl.draw(
-        //                 None,
-        //                 &frag,
-        //                 &[&fb_texture2, &kernel_weights],
-        //                 Some(&frame_buffer.frame_buffer),
-        //             );
-        //         }
-        //         frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-        //         self.gl.draw(None, &frag, &[&fb_texture], None);
-        //     }
-        //     6 => {
-        //         let r = generate_gaussian_weights(1.0, 3);
-        //         let g = generate_gaussian_weights(2.0, 3);
-        //         let b = generate_gaussian_weights(3.0, 3);
-        //         frame_buffer = self.gl.create_framebuffer();
-        //         let fb_texture = UniformContext::new_from_allocated_ref(
-        //             &frame_buffer.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         frame_buffer2 = self.gl.create_framebuffer();
-        //         let fb_texture2 = UniformContext::new_from_allocated_ref(
-        //             &frame_buffer2.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         let r_kernel_weights = UniformContext::array_f32(&r, "r");
-        //         let g_kernel_weights = UniformContext::array_f32(&g, "g");
-        //         let b_kernel_weights = UniformContext::array_f32(&b, "b");
-
-        //         frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-        //         self.gl
-        //             .draw(None, &frag, &[], Some(&frame_buffer.frame_buffer));
-
-        //         for _ in 0..10 {
-        //             frag = SourceContext::new(include_str!(
-        //                 "shaders/fragment/multi_gaussian_blur.glsl"
-        //             ));
-        //             frag.add_parameter("HORIZONTAL", "TRUE");
-        //             frag.add_parameter("K", &r.len().to_string());
-        //             self.gl.draw(
-        //                 None,
-        //                 &frag,
-        //                 &[
-        //                     &fb_texture,
-        //                     &r_kernel_weights,
-        //                     &g_kernel_weights,
-        //                     &b_kernel_weights,
-        //                 ],
-        //                 Some(&frame_buffer2.frame_buffer),
-        //             );
-
-        //             frag = SourceContext::new(include_str!(
-        //                 "shaders/fragment/multi_gaussian_blur.glsl"
-        //             ));
-        //             frag.add_parameter("K", &r.len().to_string());
-        //             frag.add_parameter("VERTICAL", "TRUE");
-        //             self.gl.draw(
-        //                 None,
-        //                 &frag,
-        //                 &[
-        //                     &fb_texture2,
-        //                     &r_kernel_weights,
-        //                     &g_kernel_weights,
-        //                     &b_kernel_weights,
-        //                 ],
-        //                 Some(&frame_buffer.frame_buffer),
-        //             );
-        //         }
-        //         frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-        //         self.gl.draw(None, &frag, &[&fb_texture], None);
-        //     }
-        //     7 => {
-        //         let time = 1.0;
-
-        //         let pos_seed = [52.912 * time, 11.30 * time];
-        //         let color_seed = [10.5121 * time, 22.958 * time, 25.1 * time];
-
-        //         frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
-        //         let pos_seed_uniform = UniformContext::array_f32(&pos_seed, "pos_seed");
-        //         let color_seed_uniform = UniformContext::array_f32(&color_seed, "color_seed");
-        //         self.gl
-        //             .draw(None, &frag, &[&pos_seed_uniform, &color_seed_uniform], None);
-        //     }
-        //     8 => {
-        //         if self.state.borrow().is_none() {
-        //             *self.state.borrow_mut() = Some(gl.create_framebuffer());
-        //         } else if self.prev_params.get().select_index != 7 {
-        //             gl.delete_framebuffer(&self.state.borrow().as_ref().unwrap().frame_buffer);
-        //             *self.state.borrow_mut() = Some(gl.create_framebuffer());
-        //         }
-        //         let bor = self.state.borrow_mut();
-        //         let state_fb = bor.as_ref().unwrap();
-        //         frame_buffer = self.gl.create_framebuffer();
-        //         let state_texture = UniformContext::new_from_allocated_ref(
-        //             &state_fb.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         frag = SourceContext::new(include_str!("shaders/fragment/add_white.glsl"));
-        //         self.gl.draw(
-        //             None,
-        //             &frag,
-        //             &[&state_texture],
-        //             Some(&frame_buffer.frame_buffer),
-        //         );
-
-        //         let fb_texture = UniformContext::new_from_allocated_ref(
-        //             &frame_buffer.backing_texture,
-        //             "rtt_sampler",
-        //         );
-        //         self.gl
-        //             .draw(None, &frag, &[&fb_texture], Some(&state_fb.frame_buffer));
-        //         self.gl.draw(None, &frag, &[&fb_texture], None);
-        //     }
-        //     9 => {
-        //         let uv = generate_uv(512, 512);
-
-        //         let distance = 3.0;
-        //         let vertical_fov = 120.0;
-        //         let radius = 1.5;
-
-        //         let mut image_data = ImageData::new(512, 512);
-        //         let mut stars = Stars::new_from_u8(uv, 512, 512);
-        //         let ray_cache = RayCache::compute_new(1024, radius, distance);
-
-        //         let (pos, dir) = (distance * Vec3::Z, -Vec3::Z);
-        //         let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
-        //         stars.update_position(&pos);
-        //         render(&mut image_data, &observer, &stars, &ray_cache);
-
-        //         let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
-        //         let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
-        //         frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-        //         self.gl.draw(None, &frag, &[&image_context], None);
-        //     }
-        //     _ => {}
-        // }
         self.prev_params.set(*params);
         Ok(())
     }
@@ -617,7 +413,6 @@ impl RenderState {
         Ok(RenderState {
             gl,
             prev_params: Cell::default(),
-            state: RefCell::default(),
             exercise_state: RefCell::default(),
         })
     }
