@@ -5,6 +5,7 @@ mod framework;
 mod utils;
 
 use framework::frame_buffer_context::FrameBufferContext;
+use glam::Vec2;
 use glam::Vec3;
 use rendering::render::render;
 use rendering::structs::image_data::ImageData;
@@ -243,7 +244,7 @@ fn update_exercise(
 ) {
     if exercise_state.index() != new_params.select_index {
         clean_up_exercise(gl, exercise_state);
-        init_exercise(gl, exercise_state, exercise_index);
+        init_exercise(gl, exercise_state, new_params.select_index);
     }
 }
 
@@ -359,12 +360,12 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         ExerciseState::Exercise6 => {
             let time = 1.0;
 
-            let pos_seed = [52.912 * time, 11.30 * time];
-            let color_seed = [10.5121 * time, 22.958 * time, 25.1 * time];
+            let pos_seed = Vec2::new(52.912 * time, 11.30 * time);
+            let color_seed = Vec3::new(10.5121 * time, 22.958 * time, 25.1 * time);
 
             frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
-            let pos_seed_uniform = UniformContext::array_f32(&pos_seed, "pos_seed");
-            let color_seed_uniform = UniformContext::array_f32(&color_seed, "color_seed");
+            let pos_seed_uniform = UniformContext::vec2(pos_seed, "pos_seed");
+            let color_seed_uniform = UniformContext::vec3(color_seed, "color_seed");
             gl.draw(None, &frag, &[&pos_seed_uniform, &color_seed_uniform], None);
         }
         ExerciseState::Exercise7(fb1, fb2) => {
@@ -380,6 +381,10 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         }
         ExerciseState::Exercise8(image_data, stars, ray_cache, observer) => {
             render(image_data, observer, stars, ray_cache);
+
+            // generate rays
+            // use ray_cache to calculate final ray hit
+            // map polar coordinates to colors
 
             let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
             let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
@@ -434,8 +439,6 @@ fn generate_uv(width: u32, height: u32) -> Vec<u8> {
     uv
 }
 
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, RequestMode, Response};
 fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
