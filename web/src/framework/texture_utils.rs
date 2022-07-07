@@ -10,12 +10,12 @@ pub fn create_texture(
     gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
         WebGl2RenderingContext::TEXTURE_2D,
         0,
-        WebGl2RenderingContext::RGBA as i32,
+        WebGl2RenderingContext::RGBA32F as i32,
         width,
         height,
         0,
         WebGl2RenderingContext::RGBA,
-        WebGl2RenderingContext::UNSIGNED_BYTE,
+        WebGl2RenderingContext::FLOAT,
         None,
     )
     .expect("Failed to generate texture for frame buffer");

@@ -50,6 +50,9 @@ impl RenderContext {
             .unwrap()
             .dyn_into::<WebGl2RenderingContext>()
             .unwrap();
+        gl.get_extension("EXT_color_buffer_float").unwrap();
+        gl.get_extension("OES_texture_float_linear").unwrap();
+        gl.get_extension("OES_texture_float").unwrap();
         canvas.set_width(width);
         canvas.set_height(height);
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
