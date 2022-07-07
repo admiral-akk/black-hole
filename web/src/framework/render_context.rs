@@ -62,6 +62,10 @@ impl RenderContext {
         self.create_framebuffer_with_size(self.canvas.width() as i32, self.canvas.height() as i32)
     }
 
+    pub fn delete_framebuffer(&self, fb: &WebGlFramebuffer) {
+        self.gl.delete_framebuffer(Some(fb));
+    }
+
     pub fn create_framebuffer_with_size(&self, width: i32, height: i32) -> FrameBufferContext {
         FrameBufferContext::new(&self.gl, width, height)
     }

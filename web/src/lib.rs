@@ -256,6 +256,9 @@ impl RenderState {
             8 => {
                 if self.state.borrow().is_none() {
                     *self.state.borrow_mut() = Some(gl.create_framebuffer());
+                } else if self.prev_params.get().select_index != 7 {
+                    gl.delete_framebuffer(&self.state.borrow().as_ref().unwrap().frame_buffer);
+                    *self.state.borrow_mut() = Some(gl.create_framebuffer());
                 }
                 let bor = self.state.borrow_mut();
                 let state_fb = bor.as_ref().unwrap();
