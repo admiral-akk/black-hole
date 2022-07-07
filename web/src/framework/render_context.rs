@@ -1,5 +1,5 @@
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 use super::{
     frame_buffer_context::FrameBufferContext, program_context::ProgramContext,
@@ -62,6 +62,9 @@ impl RenderContext {
         self.create_framebuffer_with_size(self.canvas.width() as i32, self.canvas.height() as i32)
     }
 
+    pub fn delete_texture(&self, uc: &WebGlTexture) {
+        self.gl.delete_texture(Some(uc));
+    }
     pub fn delete_framebuffer(&self, fb: &WebGlFramebuffer) {
         self.gl.delete_framebuffer(Some(fb));
     }

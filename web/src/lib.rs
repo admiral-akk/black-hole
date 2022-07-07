@@ -12,6 +12,7 @@ use rendering::structs::observer::Observer;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
 use wasm_timer::SystemTime;
+use web_sys::WebGlTexture;
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -99,7 +100,7 @@ fn get_selected_index() -> Result<u32, JsValue> {
 
 enum ExerciseState {
     Exercise0,
-    Exercise1,
+    Exercise1(WebGlTexture),
     Exercise2,
     Exercise3,
     Exercise4,
@@ -111,7 +112,7 @@ enum ExerciseState {
 
 impl Default for ExerciseState {
     fn default() -> Self {
-        ExerciseState::Exercise1
+        ExerciseState::Exercise0
     }
 }
 
@@ -123,6 +124,9 @@ pub struct RenderState {
 
 fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
     match exercise_state {
+        ExerciseState::Exercise1(cm) => {
+            gl.delete_texture(&cm);
+        }
         ExerciseState::Exercise7(fb) => {
             gl.delete_framebuffer(&fb.frame_buffer);
         }
@@ -135,7 +139,8 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             *exercise_state = ExerciseState::Exercise0;
         }
         1 => {
-            *exercise_state = ExerciseState::Exercise1;
+            let cm = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
+            *exercise_state = ExerciseState::Exercise1(cm);
         }
         2 => {
             *exercise_state = ExerciseState::Exercise2;
@@ -174,7 +179,7 @@ fn update_exercise(
         ExerciseState::Exercise0 => {
             new_exercise = exercise_index != 0;
         }
-        ExerciseState::Exercise1 => {
+        ExerciseState::Exercise1(_) => {
             new_exercise = exercise_index != 1;
         }
         ExerciseState::Exercise2 => {
@@ -214,9 +219,8 @@ fn render_exercise(gl: &RenderContext, exercise_state: &ExerciseState) {
             frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
             gl.draw(None, &frag, &[], None);
         }
-        ExerciseState::Exercise1 => {
+        ExerciseState::Exercise1(cm) => {
             frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-            let cm = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
             let cm_context = UniformContext::new_from_allocated_ref(&cm, "u_palette");
             gl.draw(None, &frag, &[&cm_context], None);
         }
