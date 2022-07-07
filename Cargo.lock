@@ -1469,6 +1469,7 @@ dependencies = [
  "js-sys",
  "rendering",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-timer",
  "web-sys",
 ]

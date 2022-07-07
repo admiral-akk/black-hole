@@ -1,7 +1,7 @@
 use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, TAU};
 
 use glam::Vec3;
-use image::{DynamicImage, GenericImageView};
+use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 
 use crate::utils::extensions::ToPolar;
 
@@ -34,6 +34,13 @@ impl Stars {
                 background_height_f32: (height as f32) * FRAC_1_PI,
             },
         }
+    }
+
+    pub fn new_from_u8(tex: Vec<u8>, width: u32, height: u32) -> Stars {
+        let buf: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            ImageBuffer::from_raw(width, height, tex).unwrap();
+        let background = DynamicImage::ImageRgba8(buf);
+        Stars::new(background)
     }
 
     pub fn update_position(&mut self, pos: &Vec3) {

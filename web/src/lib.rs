@@ -291,24 +291,22 @@ impl RenderState {
                 self.gl.draw(None, &frag, &[&fb_texture], None);
             }
             9 => {
+                let uv = generate_uv(512, 512);
+
                 let distance = 3.0;
                 let vertical_fov = 120.0;
-
-                let mut reader = Reader::open("starmap_2020_4k_gal.exr").unwrap();
-                reader.no_limits();
-                let background = reader.decode().unwrap().into_rgb8();
                 let radius = 1.5;
 
                 let mut image_data = ImageData::new(512, 512);
-                let mut stars = Stars::new(image::DynamicImage::ImageRgb8(background));
+                let mut stars = Stars::new_from_u8(uv, 512, 512);
                 let ray_cache = RayCache::compute_new(1024, radius, distance);
 
-                let (pos, dir) = (Vec3::Z, -Vec3::Z);
+                let (pos, dir) = (distance * Vec3::Z, -Vec3::Z);
                 let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
                 stars.update_position(&pos);
                 render(&mut image_data, &observer, &stars, &ray_cache);
 
-                let image = generate_texture_from_u8(&gl.gl, &image_data.get_image(), 512);
+                let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
                 let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
                 frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
                 self.gl.draw(None, &frag, &[&image_context], None);
@@ -331,6 +329,27 @@ impl RenderState {
         })
     }
 }
+
+fn generate_uv(width: u32, height: u32) -> Vec<u8> {
+    let mut uv = Vec::new();
+    for x in 0..width {
+        for y in 0..height {
+            let r = 255 * x / width;
+            let g = 255 * y / height;
+            let b = 0;
+            let a = 255;
+            uv.push(r as u8);
+            uv.push(g as u8);
+            uv.push(b as u8);
+            uv.push(a as u8);
+        }
+    }
+
+    uv
+}
+
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{Request, RequestInit, RequestMode, Response};
 fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
