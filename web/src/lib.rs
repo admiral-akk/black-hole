@@ -459,6 +459,8 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.draw(None, &frag, &[&fb_texture], None);
         }
         ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params) => {
+            let uniforms = params.uniform_context();
+            let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
             let mut data = vec![Data::None; image_data.get_sample_count()];
 
             // get the view_port -> start_dir
@@ -473,6 +475,8 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
 
             // apply the colors to image
             image_data.load_colors(&data);
+            let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
+            let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
 
             // need:
 
@@ -482,11 +486,9 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             // generate rays
             // use ray_cache to calculate final ray hit
             // map polar coordinates to colors
-
-            let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
-            let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
-            frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-            gl.draw(None, &frag, &[&image_context], None);
+            text.push(&image_context);
+            frag = SourceContext::new(include_str!("shaders/fragment/black_hole/observer.glsl"));
+            gl.draw(None, &frag, &text, None);
             gl.delete_texture(&image);
         }
     }
