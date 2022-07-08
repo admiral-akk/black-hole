@@ -9,7 +9,7 @@ pub struct ImageData {
     image: Vec<Vec3>,
     buf: Vec<u8>,
 }
-const SAMPLES_PER_DIMENSION: usize = 3;
+const SAMPLES_PER_DIMENSION: usize = 1;
 const SAMPLES_PER_PIXEL: usize = SAMPLES_PER_DIMENSION * SAMPLES_PER_DIMENSION;
 const PIXEL_AVERAGING: f32 = 255.0 * (SAMPLES_PER_PIXEL as f32);
 
@@ -34,6 +34,22 @@ fn set_samples_init(width: usize, half_sample_delta: f32, data: &mut Vec<Data>) 
             }
         }
     }
+
+    data.sort_by(|d1, d2| {
+        let i1 = match d1 {
+            Data::Sample(i, _, _) => i,
+            _ => {
+                panic!("data isn't sample");
+            }
+        };
+        let i2 = match d2 {
+            Data::Sample(i, _, _) => i,
+            _ => {
+                panic!("data isn't sample");
+            }
+        };
+        i1.cmp(i2)
+    });
 }
 
 fn to_index_init(x: usize, y: usize, width: usize) -> usize {

@@ -549,7 +549,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
                                     );
                                     panic!();
                                 }
-                                if (x1 - x2).abs() > 0.01 {
+                                if (x1 - x2).abs() > 0.0001 {
                                     console_log!(
                                         "\nX values differ! Expected: {:?}\nActual: {:?}\n",
                                         expected,
@@ -557,7 +557,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
                                     );
                                     panic!();
                                 }
-                                if (y1 - y2).abs() > 0.01 {
+                                if (y1 - y2).abs() > 0.0001 {
                                     console_log!(
                                         "\nY values differ! Expected: {:?}\nActual: {:?}\n",
                                         expected,

@@ -2,7 +2,7 @@ use glam::Vec3;
 
 use super::polar_coordinates::PolarCoordinates;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Data {
     None,
     Sample(usize, f32, f32),
