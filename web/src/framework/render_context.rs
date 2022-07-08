@@ -91,15 +91,17 @@ impl RenderContext {
         unsafe {
             // Safe as long as there's no memory allocation between this and buffering the data to webgl.
             let rays_view = js_sys::Float32Array::view(&vals);
-            self.gl.read_pixels_with_opt_array_buffer_view(
-                0,
-                0,
-                512,
-                512,
-                WebGlRenderingContext::RGBA,
-                WebGlRenderingContext::FLOAT,
-                Some(&rays_view),
-            );
+            self.gl
+                .read_pixels_with_opt_array_buffer_view(
+                    0,
+                    0,
+                    512,
+                    512,
+                    WebGlRenderingContext::RGBA,
+                    WebGlRenderingContext::FLOAT,
+                    Some(&rays_view),
+                )
+                .unwrap();
         }
         self.gl
             .bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);

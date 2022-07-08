@@ -640,6 +640,10 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
                 }
             }
 
+            for i in 0..start_dirs.len() {
+                data[i] = start_dirs[i].clone();
+            }
+
             // get the start_dir -> final_dir
             // get the final_dir -> polar coordinates
             ray_cache.calculate_final_dir(&mut data);
