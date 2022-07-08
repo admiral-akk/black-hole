@@ -5,9 +5,11 @@ mod framework;
 mod utils;
 
 use framework::frame_buffer_context::FrameBufferContext;
+use glam::IVec2;
 use glam::Vec2;
 use glam::Vec3;
 use rendering::render::render;
+use rendering::structs::data::Data;
 use rendering::structs::image_data::ImageData;
 use rendering::structs::observer;
 use rendering::structs::observer::Observer;
@@ -115,12 +117,66 @@ enum ExerciseState {
     ),
     Exercise6,
     Exercise7(FrameBufferContext, FrameBufferContext),
-    Exercise8(ImageData, Stars, RayCache, Observer),
+    Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
 }
 
 impl Default for ExerciseState {
     fn default() -> Self {
         ExerciseState::Exercise0
+    }
+}
+
+struct BlackHoleParams {
+    pub dimensions: IVec2,
+    pub distance: f32,
+    pub vertical_fov_degrees: f32,
+    pub black_hole_radius: f32,
+    pub cache_width: i32,
+    pub normalized_pos: Vec3,
+    pub normalized_dir: Vec3,
+    pub normalized_up: Vec3,
+}
+
+impl BlackHoleParams {
+    fn new(
+        dimensions: IVec2,
+        distance: f32,
+        vertical_fov_degrees: f32,
+        black_hole_radius: f32,
+        cache_width: i32,
+        pos: Vec3,
+        dir: Vec3,
+        up: Vec3,
+    ) -> Self {
+        Self {
+            dimensions,
+            distance,
+            vertical_fov_degrees,
+            black_hole_radius,
+            cache_width,
+            normalized_pos: pos.normalize(),
+            normalized_dir: dir.normalize(),
+            normalized_up: up.normalize(),
+        }
+    }
+
+    fn uniform_context(&self) -> Vec<UniformContext> {
+        let mut v = Vec::new();
+        v.push(UniformContext::ivec2(self.dimensions, "dimensions"));
+        v.push(UniformContext::f32(self.distance, "distance"));
+        v.push(UniformContext::f32(
+            self.vertical_fov_degrees,
+            "vertical_fov_degrees",
+        ));
+        v.push(UniformContext::f32(
+            self.black_hole_radius,
+            "black_hole_radius",
+        ));
+        v.push(UniformContext::i32(self.cache_width, "cache_width"));
+        v.push(UniformContext::vec3(self.normalized_pos, "normalized_pos"));
+        v.push(UniformContext::vec3(self.normalized_dir, "normalized_dir"));
+        v.push(UniformContext::vec3(self.normalized_up, "normalized_up"));
+        v
     }
 }
 
@@ -184,17 +240,40 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             let uv = generate_uv(512, 512);
 
             let distance = 3.0;
-            let vertical_fov = 120.0;
-            let radius = 1.5;
+            let vertical_fov_degrees = 120.0;
+            let black_hole_radius = 1.5;
+            let cache_width: i32 = 1024;
+            let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
+            let params = BlackHoleParams::new(
+                IVec2::new(512, 512),
+                distance,
+                vertical_fov_degrees,
+                black_hole_radius,
+                cache_width,
+                pos,
+                dir,
+                up,
+            );
 
-            let mut stars = Stars::new_from_u8(uv, 512, 512);
-            let ray_cache = RayCache::compute_new(1024, radius, distance);
+            let mut stars =
+                Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
+            let ray_cache = RayCache::compute_new(
+                params.cache_width as usize,
+                params.black_hole_radius,
+                params.distance,
+            );
 
-            let (pos, dir) = (distance * Vec3::Z, -Vec3::Z);
-            let observer = Observer::new(pos, dir, Vec3::Y, vertical_fov);
-            stars.update_position(&pos);
-            let image_data = ImageData::new(512, 512);
-            *exercise_state = ExerciseState::Exercise8(image_data, stars, ray_cache, observer);
+            let observer = Observer::new(
+                params.normalized_pos,
+                params.normalized_dir,
+                params.normalized_up,
+                params.vertical_fov_degrees,
+            );
+            stars.update_position(&&params.normalized_pos);
+            let image_data =
+                ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
+            *exercise_state =
+                ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params);
         }
         _ => {}
     }
@@ -379,9 +458,27 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.draw(None, &frag, &[&fb_texture], Some(&fb1.frame_buffer));
             gl.draw(None, &frag, &[&fb_texture], None);
         }
-        ExerciseState::Exercise8(image_data, stars, ray_cache, observer) => {
-            render(image_data, observer, stars, ray_cache);
+        ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params) => {
+            let mut data = vec![Data::None; image_data.get_sample_count()];
 
+            // get the view_port -> start_dir
+            observer.to_start_dir(&image_data.samples, &mut data);
+
+            // get the start_dir -> final_dir
+            // get the final_dir -> polar coordinates
+            ray_cache.calculate_final_dir(&mut data);
+
+            // get the polar_coordinates -> colors
+            stars.to_rgba(&mut data);
+
+            // apply the colors to image
+            image_data.load_colors(&data);
+
+            // need:
+
+            //
+
+            // Generate cache of rays texture
             // generate rays
             // use ray_cache to calculate final ray hit
             // map polar coordinates to colors

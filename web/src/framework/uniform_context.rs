@@ -1,11 +1,13 @@
-use glam::{Vec2, Vec3, Vec4};
+use glam::{IVec2, Vec2, Vec3, Vec4};
 use web_sys::{WebGl2RenderingContext, WebGlTexture};
 
 use super::{program_context::ProgramContext, render_context::RenderContext};
 
 pub enum UniformStore<'a> {
+    I32(i32),
     F32(f32),
     Vec2(Vec2),
+    IVec2(IVec2),
     Vec3(Vec3),
     Vec4(Vec4),
     ArrayF32(Vec<f32>),
@@ -31,6 +33,24 @@ impl UniformContext<'_> {
             name: name.to_string(),
         }
     }
+    pub fn i32<'a>(i: i32, name: &str) -> UniformContext<'a> {
+        UniformContext {
+            store: UniformStore::I32(i),
+            name: name.to_string(),
+        }
+    }
+    pub fn ivec2<'a>(vec: IVec2, name: &str) -> UniformContext<'a> {
+        UniformContext {
+            store: UniformStore::IVec2(vec),
+            name: name.to_string(),
+        }
+    }
+    pub fn f32<'a>(f: f32, name: &str) -> UniformContext<'a> {
+        UniformContext {
+            store: UniformStore::F32(f),
+            name: name.to_string(),
+        }
+    }
     pub fn vec2<'a>(vec: Vec2, name: &str) -> UniformContext<'a> {
         UniformContext {
             store: UniformStore::Vec2(vec),
@@ -47,6 +67,14 @@ impl UniformContext<'_> {
 
     pub fn add_to_program(&self, gl: &RenderContext, program: &mut ProgramContext) {
         match &self.store {
+            UniformStore::I32(i) => {
+                let loc = gl.gl.get_uniform_location(&program.program, &self.name);
+                gl.gl.uniform1i(loc.as_ref(), *i);
+            }
+            UniformStore::IVec2(v) => {
+                let loc = gl.gl.get_uniform_location(&program.program, &self.name);
+                gl.gl.uniform2i(loc.as_ref(), v.x, v.y);
+            }
             UniformStore::F32(f) => {
                 let loc = gl.gl.get_uniform_location(&program.program, &self.name);
                 gl.gl.uniform1f(loc.as_ref(), *f);
