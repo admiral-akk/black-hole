@@ -1,4 +1,6 @@
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use web_sys::{console, WebGl2RenderingContext, WebGlProgram};
+
+use crate::console_log;
 
 use super::source_context::SourceContext;
 
@@ -49,6 +51,8 @@ impl ProgramContext {
             .unwrap();
         gl.shader_source(&shader, &fragment_source.generate_source());
         gl.compile_shader(&shader);
+        let compilation_log = gl.get_shader_info_log(&shader);
+        console_log!("Shader log: {:?}", compilation_log);
 
         let frag_shader = shader;
         let program = gl

@@ -6,6 +6,8 @@ mod utils;
 
 use framework::frame_buffer_context::FrameBufferContext;
 use glam::IVec2;
+use glam::Mat3;
+use glam::Quat;
 use glam::Vec2;
 use glam::Vec3;
 use rendering::render::render;
@@ -80,10 +82,11 @@ extern "C" {
     fn log_many(a: &str, b: &str);
 }
 
+#[macro_export]
 macro_rules! console_log {
     // Note that this is using the `log` function imported above during
     // `bare_bones`
-    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+    ($($t:tt)*) => (crate::log(&format_args!($($t)*).to_string()))
 }
 
 #[wasm_bindgen]
@@ -137,6 +140,7 @@ struct BlackHoleParams {
     pub normalized_pos: Vec3,
     pub normalized_dir: Vec3,
     pub normalized_up: Vec3,
+    pub observer_mat: Mat3,
 }
 
 impl BlackHoleParams {
@@ -150,6 +154,10 @@ impl BlackHoleParams {
         dir: Vec3,
         up: Vec3,
     ) -> Self {
+        let observer_quat = Quat::from_rotation_arc(pos.normalize(), -Vec3::Z);
+        let euler = Quat::to_euler(observer_quat, glam::EulerRot::XYZ);
+        let observer_mat = Mat3::from_euler(glam::EulerRot::XYZ, euler.0, euler.1, euler.2);
+
         Self {
             dimensions,
             distance,
@@ -159,6 +167,7 @@ impl BlackHoleParams {
             normalized_pos: pos.normalize(),
             normalized_dir: dir.normalize(),
             normalized_up: up.normalize(),
+            observer_mat,
         }
     }
 
@@ -178,6 +187,7 @@ impl BlackHoleParams {
         v.push(UniformContext::vec3(self.normalized_pos, "normalized_pos"));
         v.push(UniformContext::vec3(self.normalized_dir, "normalized_dir"));
         v.push(UniformContext::vec3(self.normalized_up, "normalized_up"));
+        v.push(UniformContext::mat3x3(self.observer_mat, "observer_mat"));
         v
     }
 }
@@ -524,6 +534,9 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             let uniforms = params.uniform_context();
             let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
             let fb = gl.create_framebuffer();
+            let fb_context =
+                UniformContext::new_from_allocated_ref(&fb.backing_texture, "requested_samples");
+            let fb2 = gl.create_framebuffer();
             frag = SourceContext::new(include_str!("shaders/fragment/black_hole/samples.glsl"));
             gl.draw(None, &frag, &text, Some(&fb.frame_buffer));
             let frame_buf_data = gl.read_from_frame_buffer(&fb, 512, 512);
@@ -579,8 +592,53 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
 
             let mut data = vec![Data::None; image_data.get_sample_count()];
 
+            frag = SourceContext::new(include_str!("shaders/fragment/black_hole/observer.glsl"));
+
+            text.push(&fb_context);
+            gl.draw(None, &frag, &text, Some(&fb2.frame_buffer));
+            let frame_buf_data = gl.read_from_frame_buffer(&fb2, 512, 512);
             // get the view_port -> start_dir
             observer.to_start_dir(&samples, &mut data);
+            let mut start_dirs = Vec::new();
+            for i in 0..(frame_buf_data.len() / 4) {
+                let s = &frame_buf_data[(4 * i)..(4 * i + 4)];
+                start_dirs.push(Data::ObserverDir(i, Vec3::new(s[0], s[1], s[2])));
+            }
+
+            for i in 0..data.len() {
+                let expected = &data[i];
+                match expected {
+                    Data::ObserverDir(i1, v1) => {
+                        let actual = &start_dirs[i];
+                        match actual {
+                            Data::ObserverDir(i2, v2) => {
+                                if i1 != i2 {
+                                    console_log!(
+                                        "\nIndicies differ! Expected: {:?}\nActual: {:?}\n",
+                                        expected,
+                                        actual
+                                    );
+                                    panic!();
+                                }
+                                if (*v1 - *v2).length() > 0.0001 {
+                                    console_log!(
+                                        "\nVectors values differ! Expected: {:?}\nActual: {:?}\n",
+                                        expected,
+                                        actual
+                                    );
+                                    panic!();
+                                }
+                            }
+                            _ => {
+                                panic!("Non sample in webgl samples!")
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("Non sample in image samples!")
+                    }
+                }
+            }
 
             // get the start_dir -> final_dir
             // get the final_dir -> polar coordinates
