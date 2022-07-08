@@ -1,5 +1,8 @@
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
+use web_sys::{
+    HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, WebGlRenderingContext,
+    WebGlTexture,
+};
 
 use super::{
     frame_buffer_context::FrameBufferContext, program_context::ProgramContext,
@@ -74,6 +77,34 @@ impl RenderContext {
 
     pub fn create_framebuffer_with_size(&self, width: i32, height: i32) -> FrameBufferContext {
         FrameBufferContext::new(&self.gl, width, height)
+    }
+
+    pub fn read_from_frame_buffer(
+        &self,
+        fb: &FrameBufferContext,
+        width: i32,
+        height: i32,
+    ) -> Vec<f32> {
+        self.gl
+            .bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&fb.frame_buffer));
+        let vals = vec![0.0_f32; 4 * (width * height) as usize];
+        unsafe {
+            // Safe as long as there's no memory allocation between this and buffering the data to webgl.
+            let rays_view = js_sys::Float32Array::view(&vals);
+            self.gl.read_pixels_with_opt_array_buffer_view(
+                0,
+                0,
+                512,
+                512,
+                WebGlRenderingContext::RGBA,
+                WebGlRenderingContext::FLOAT,
+                Some(&rays_view),
+            );
+        }
+        self.gl
+            .bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+
+        vals
     }
 
     pub fn draw(

@@ -13,13 +13,7 @@ uniform vec3 normalized_dir;
 uniform vec3 normalized_up;
 
 void main(){
-    int x=dimensions.x;
-    float d=distance+float(x)+float(dimensions.y);
-    float f=d+vertical_fov_degrees;
-    float b=f+black_hole_radius;
-    float c=d+float(cache_width);
-    float p=c+normalized_pos.x;
-    float n=p+normalized_dir.x;
-    float u=n+normalized_up.x;
-    outColor=vec4(1.,u,0.,1.);
+    vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
+    vec2 coord=(gl_FragCoord.xy)*delta;
+    outColor=vec4(coord.x,coord.y,0.,1.);
 }

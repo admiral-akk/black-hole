@@ -16,6 +16,7 @@ use rendering::structs::observer::Observer;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
 use wasm_timer::SystemTime;
+use web_sys::WebGlRenderingContext;
 use web_sys::WebGlTexture;
 
 use std::cell::Cell;
@@ -118,6 +119,7 @@ enum ExerciseState {
     Exercise6,
     Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
+    Exercise9(BlackHoleParams),
 }
 
 impl Default for ExerciseState {
@@ -192,6 +194,7 @@ impl ExerciseState {
             ExerciseState::Exercise6 => 6,
             ExerciseState::Exercise7(..) => 7,
             ExerciseState::Exercise8(..) => 8,
+            ExerciseState::Exercise9(..) => 9,
         }
     }
 }
@@ -237,8 +240,6 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 ExerciseState::Exercise7(gl.create_framebuffer(), gl.create_framebuffer());
         }
         8 => {
-            let uv = generate_uv(512, 512);
-
             let distance = 3.0;
             let vertical_fov_degrees = 120.0;
             let black_hole_radius = 1.5;
@@ -254,6 +255,7 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 dir,
                 up,
             );
+            let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
 
             let mut stars =
                 Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
@@ -274,6 +276,24 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
             *exercise_state =
                 ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params);
+        }
+        9 => {
+            let distance = 3.0;
+            let vertical_fov_degrees = 120.0;
+            let black_hole_radius = 1.5;
+            let cache_width: i32 = 1024;
+            let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
+            let params = BlackHoleParams::new(
+                IVec2::new(512, 512),
+                distance,
+                vertical_fov_degrees,
+                black_hole_radius,
+                cache_width,
+                pos,
+                dir,
+                up,
+            );
+            *exercise_state = ExerciseState::Exercise9(params);
         }
         _ => {}
     }
@@ -312,6 +332,7 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.delete_framebuffer(&fb2);
         }
         ExerciseState::Exercise8(..) => {}
+        ExerciseState::Exercise9(..) => {}
         _ => {}
     }
 }
@@ -459,12 +480,107 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.draw(None, &frag, &[&fb_texture], None);
         }
         ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params) => {
+            let mut data = vec![Data::None; image_data.get_sample_count()];
+            // get the view_port -> start_dir
+            observer.to_start_dir(&image_data.samples, &mut data);
+
+            // get the start_dir -> final_dir
+            // get the final_dir -> polar coordinates
+            ray_cache.calculate_final_dir(&mut data);
+
+            // get the polar_coordinates -> colors
+            stars.to_rgba(&mut data);
+
+            // apply the colors to image
+            image_data.load_colors(&data);
+            let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
+            let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
+
+            frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
+            gl.draw(None, &frag, &[&image_context], None);
+            gl.delete_texture(&image);
+        }
+        ExerciseState::Exercise9(params) => {
+            let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
+
+            let mut stars =
+                Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
+            let ray_cache = RayCache::compute_new(
+                params.cache_width as usize,
+                params.black_hole_radius,
+                params.distance,
+            );
+
+            let observer = Observer::new(
+                params.normalized_pos,
+                params.normalized_dir,
+                params.normalized_up,
+                params.vertical_fov_degrees,
+            );
+            stars.update_position(&&params.normalized_pos);
+            let mut image_data =
+                ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
+
             let uniforms = params.uniform_context();
             let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
+            let fb = gl.create_framebuffer();
+            frag = SourceContext::new(include_str!("shaders/fragment/black_hole/samples.glsl"));
+            gl.draw(None, &frag, &text, Some(&fb.frame_buffer));
+            let frame_buf_data = gl.read_from_frame_buffer(&fb, 512, 512);
+
+            let mut samples = Vec::new();
+            for i in 0..(frame_buf_data.len() / 4) {
+                let s = &frame_buf_data[(4 * i)..(4 * i + 4)];
+                samples.push(Data::Sample(i, s[0], s[1]));
+            }
+
+            for i in 0..samples.len() {
+                let expected = &image_data.samples[i];
+                match expected {
+                    Data::Sample(i1, x1, y1) => {
+                        let actual = &samples[i];
+                        match actual {
+                            Data::Sample(i2, x2, y2) => {
+                                if i1 != i2 {
+                                    console_log!(
+                                        "\nIndicies differ! Expected: {:?}\nActual: {:?}\n",
+                                        expected,
+                                        actual
+                                    );
+                                    panic!();
+                                }
+                                if (x1 - x2).abs() > 0.01 {
+                                    console_log!(
+                                        "\nX values differ! Expected: {:?}\nActual: {:?}\n",
+                                        expected,
+                                        actual
+                                    );
+                                    panic!();
+                                }
+                                if (y1 - y2).abs() > 0.01 {
+                                    console_log!(
+                                        "\nY values differ! Expected: {:?}\nActual: {:?}\n",
+                                        expected,
+                                        actual
+                                    );
+                                    panic!();
+                                }
+                            }
+                            _ => {
+                                panic!("Non sample in webgl samples!")
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("Non sample in image samples!")
+                    }
+                }
+            }
+
             let mut data = vec![Data::None; image_data.get_sample_count()];
 
             // get the view_port -> start_dir
-            observer.to_start_dir(&image_data.samples, &mut data);
+            observer.to_start_dir(&samples, &mut data);
 
             // get the start_dir -> final_dir
             // get the final_dir -> polar coordinates
@@ -487,14 +603,14 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             // use ray_cache to calculate final ray hit
             // map polar coordinates to colors
             text.push(&image_context);
-            frag = SourceContext::new(include_str!("shaders/fragment/black_hole/observer.glsl"));
+            frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
             gl.draw(None, &frag, &text, None);
             gl.delete_texture(&image);
         }
     }
 }
 
-const EXERCISE_COUNT: u32 = 9;
+const EXERCISE_COUNT: u32 = 10;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
