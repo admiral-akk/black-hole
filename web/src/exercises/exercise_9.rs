@@ -19,21 +19,9 @@ use crate::{
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
+fn generate_samples() {}
+
 pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
-    let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
-
-    let ray_cache = RayCache::compute_new(
-        params.cache_width as usize,
-        params.black_hole_radius,
-        params.distance,
-    );
-
-    let observer = Observer::new(
-        params.normalized_pos,
-        params.normalized_dir,
-        params.normalized_up,
-        params.vertical_fov_degrees,
-    );
     let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
 
     let uniforms = params.uniform_context();
@@ -105,6 +93,12 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     gl.draw(None, &frag, &text, Some(&fb2.frame_buffer));
     let frame_buf_data = gl.read_from_frame_buffer(&fb2, 512, 512);
     // get the view_port -> start_dir
+    let observer = Observer::new(
+        params.normalized_pos,
+        params.normalized_dir,
+        params.normalized_up,
+        params.vertical_fov_degrees,
+    );
     observer.to_start_dir(&samples, &mut data);
     let mut start_dirs = Vec::new();
     for i in 0..(frame_buf_data.len() / 4) {
@@ -152,6 +146,11 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     for i in 0..start_dirs.len() {
         data[i] = start_dirs[i].clone();
     }
+    let ray_cache = RayCache::compute_new(
+        params.cache_width as usize,
+        params.black_hole_radius,
+        params.distance,
+    );
 
     let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
     let mut f32_vec: Vec<f32> = Vec::new();
@@ -254,6 +253,7 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     }
 
     // get the polar_coordinates -> colors
+    let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
     let mut stars = Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
 
     stars.update_position(&&params.normalized_pos);
