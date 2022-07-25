@@ -1,9 +1,11 @@
 extern crate cfg_if;
 extern crate wasm_bindgen;
 
+mod exercises;
 mod framework;
 mod utils;
 
+use exercises::exercise_1;
 use framework::frame_buffer_context::FrameBufferContext;
 use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
@@ -369,9 +371,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.draw(None, &frag, &[], None);
         }
         ExerciseState::Exercise1(cm) => {
-            frag = SourceContext::new(include_str!("shaders/fragment/1_color_map.glsl"));
-            let cm_context = UniformContext::new_from_allocated_ref(&cm, "u_palette");
-            gl.draw(None, &frag, &[&cm_context], None);
+            exercise_1::exercise_1(gl, cm);
         }
         ExerciseState::Exercise2(cm1, cm2) => {
             frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
