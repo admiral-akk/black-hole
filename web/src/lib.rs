@@ -5,6 +5,7 @@ mod framework;
 mod utils;
 
 use framework::frame_buffer_context::FrameBufferContext;
+use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
@@ -17,7 +18,9 @@ use rendering::structs::observer;
 use rendering::structs::observer::Observer;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
+use rendering::utils::extensions::ToPolar;
 use wasm_timer::SystemTime;
+use web_sys::console;
 use web_sys::WebGlRenderingContext;
 use web_sys::WebGlTexture;
 
@@ -580,11 +583,13 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
                                 }
                             }
                             _ => {
+                                console_log!("\nNon sample in webgl samples!");
                                 panic!("Non sample in webgl samples!")
                             }
                         }
                     }
                     _ => {
+                        console_log!("\nNon sample in webgl samples!");
                         panic!("Non sample in image samples!")
                     }
                 }
@@ -630,12 +635,14 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
                                 }
                             }
                             _ => {
-                                panic!("Non sample in webgl samples!")
+                                console_log!("\nNon ObserverDir in webgl samples!");
+                                panic!("Non ObserverDir in webgl samples!")
                             }
                         }
                     }
                     _ => {
-                        panic!("Non sample in image samples!")
+                        console_log!("\nNon ObserverDir in image samples!");
+                        panic!("Non ObserverDir in image samples!")
                     }
                 }
             }
@@ -644,9 +651,108 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
                 data[i] = start_dirs[i].clone();
             }
 
+            let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
+            let mut f32_vec: Vec<f32> = Vec::new();
+            for i in 0..final_dirs.len() {
+                let final_dir = final_dirs[i];
+                f32_vec.push(final_dir.x);
+                f32_vec.push(final_dir.y);
+                f32_vec.push(final_dir.z);
+                f32_vec.push(1.0);
+            }
+
+            console_log!("Ray cache len: {}", final_dirs.len());
+            let ray_cache_tex =
+                generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
+            let ray_context =
+                UniformContext::new_from_allocated_ref(&ray_cache_tex, "ray_cache_tex");
+            let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
+            let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
+            let fb_context2 =
+                UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
+            text.push(&ray_context);
+            text.push(&ray_length);
+
+            console_log!("Max z: {}", ray_cache.max_z);
+
+            text.push(&max_z);
+            text.push(&fb_context2);
+            let fb3 = gl.create_framebuffer();
+
+            frag = SourceContext::new(include_str!("shaders/fragment/black_hole/final_dir.glsl"));
+            gl.draw(None, &frag, &text, Some(&fb3.frame_buffer));
+
+            let frame_buf_data = gl.read_from_frame_buffer(&fb3, 512, 512);
+
+            let mut final_dirs = Vec::new();
+            for i in 0..(frame_buf_data.len() / 4) {
+                let s = &frame_buf_data[(4 * i)..(4 * i + 4)];
+                if s[3] < 0.5 {
+                    continue;
+                }
+                let v = Vec3::new(s[0], s[1], s[2]);
+                final_dirs.push(Data::Polar(i, v.to_polar()));
+            }
             // get the start_dir -> final_dir
             // get the final_dir -> polar coordinates
             ray_cache.calculate_final_dir(&mut data);
+
+            if (data.len() != final_dirs.len()) {
+                console_log!(
+                    "\nLengths differ! Expected: {}\nActual: {}\n",
+                    data.len(),
+                    final_dirs.len()
+                );
+                panic!("Non Polar in image samples!")
+            }
+
+            for i in 0..final_dirs.len() {
+                let expected = &data[i];
+                match expected {
+                    Data::Polar(i1, polar1) => {
+                        let actual = &final_dirs[i];
+                        match actual {
+                            Data::Polar(i2, polar2) => {
+                                if i1 != i2 {
+                                    console_log!(
+                                        "\nIndicies differ! \nExpected: {:?}\nActual: {:?}\nStart dir {:?}\n",
+                                        expected,
+                                        actual, start_dirs[i]
+                                    );
+                                    panic!();
+                                }
+                                if (polar1.phi - polar2.phi).abs() > 0.05 {
+                                    console_log!(
+                                            "\n phi values differ! \nExpected: {:?}\nActual: {:?}\n Start dir {:?}\n",
+                                            expected,
+                                            actual, start_dirs[i]
+                                        );
+                                    panic!();
+                                }
+                                if (polar1.theta - polar2.theta).abs() > 0.05 {
+                                    console_log!(
+                                            "\n theta values differ! \nExpected: {:?}\nActual: {:?}\n Start dir {:?}\n",
+                                            expected,
+                                            actual, start_dirs[i]
+                                        );
+                                    panic!();
+                                }
+                            }
+                            _ => {
+                                console_log!("\nNon Polar in webgl samples!");
+                                panic!("Non Polar in webgl samples!")
+                            }
+                        }
+                    }
+                    _ => {
+                        console_log!("\nNon Polar in image samples!");
+                        panic!("Non Polar in image samples!")
+                    }
+                }
+            }
+            for i in 0..final_dirs.len() {
+                data[i] = final_dirs[i].clone();
+            }
 
             // get the polar_coordinates -> colors
             stars.to_rgba(&mut data);
