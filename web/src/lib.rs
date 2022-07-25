@@ -9,6 +9,7 @@ use exercises::exercise_1;
 use exercises::exercise_2;
 use exercises::exercise_3;
 use exercises::exercise_4;
+use exercises::exercise_8;
 use framework::frame_buffer_context::FrameBufferContext;
 use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
@@ -139,7 +140,7 @@ impl Default for ExerciseState {
     }
 }
 
-struct BlackHoleParams {
+pub struct BlackHoleParams {
     pub dimensions: IVec2,
     pub distance: f32,
     pub vertical_fov_degrees: f32,
@@ -456,25 +457,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.draw(None, &frag, &[&fb_texture], None);
         }
         ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params) => {
-            let mut data = vec![Data::None; image_data.get_sample_count()];
-            // get the view_port -> start_dir
-            observer.to_start_dir(&image_data.samples, &mut data);
-
-            // get the start_dir -> final_dir
-            // get the final_dir -> polar coordinates
-            ray_cache.calculate_final_dir(&mut data);
-
-            // get the polar_coordinates -> colors
-            stars.to_rgba(&mut data);
-
-            // apply the colors to image
-            image_data.load_colors(&data);
-            let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
-            let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
-
-            frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-            gl.draw(None, &frag, &[&image_context], None);
-            gl.delete_texture(&image);
+            exercise_8::exercise_8(gl, image_data, stars, ray_cache, observer, params);
         }
         ExerciseState::Exercise9(params) => {
             let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
