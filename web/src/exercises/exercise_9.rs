@@ -5,12 +5,10 @@ use rendering::{
     },
     utils::extensions::ToPolar,
 };
-use web_sys::WebGlTexture;
 
 use crate::{
     console_log,
     framework::{
-        frame_buffer_context::FrameBufferContext,
         render_context::RenderContext,
         source_context::SourceContext,
         texture_utils::{generate_texture_from_f32, generate_texture_from_u8},

@@ -7,7 +7,7 @@ pub enum Data {
     None,
     Sample(usize, f32, f32),
     ObserverDir(usize, Vec3),
-    FinalDir(usize, PolarCoordinates),
+    FinalDir(usize, Vec3),
     Polar(usize, PolarCoordinates),
     RGBA(usize, [u8; 4]),
 }

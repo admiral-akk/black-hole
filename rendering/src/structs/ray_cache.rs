@@ -6,16 +6,16 @@ use crate::utils::extensions::ToPolar;
 use super::data::Data;
 
 pub struct RayCache {
-    cache: Vec<RayCachedAnswer>,
-    max_z: f32,
-    z_to_index_multiple: f32,
+    pub cache: Vec<RayCachedAnswer>,
+    pub max_z: f32,
+    pub z_to_index_multiple: f32,
 }
 
 // We're always projecting from (0.0, 0.0, -Z)
 pub const RAY_START_DIR: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 
 #[derive(Debug)]
-struct RayCachedAnswer {
+pub struct RayCachedAnswer {
     pub z: f32,
     pub final_dir: Vec3,
 }
@@ -56,9 +56,10 @@ fn rotate_about_z(angle: f32, vec: &mut Vec3) {
 }
 
 impl RayCache {
-    fn z_to_index(&self, z: f32) -> usize {
-        (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z)) as usize
+    fn z_to_index(&self, z: f32) -> f32 {
+        (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z))
     }
+
     pub fn compute_new(size: usize, black_hole_radius: f32, camera_distance: f32) -> Self {
         let mut cache = Vec::new();
         let field = Field::new(black_hole_radius as f64, camera_distance as f64);
@@ -101,10 +102,20 @@ impl RayCache {
                     let fetch = self.fetch_final_dir(z);
                     if fetch.is_some() {
                         let mut fetch = fetch.unwrap();
-                        rotate_about_z(fast_math::atan2(start_dir.y, start_dir.x), &mut fetch);
+                        let angle = fast_math::atan2(start_dir.y, start_dir.x);
+                        let index1 = self.z_to_index(z);
+                        let index2 = index1 as usize;
+
+                        let left = self.cache[index2].final_dir;
+                        let right = self.cache[index2 + 1].final_dir;
+                        let r_w = index1 - (index2 as f32);
+                        let l_w = 1.0 - r_w;
+
+                        let mut v = r_w * right + l_w * left;
+                        rotate_about_z(fast_math::atan2(start_dir.y, start_dir.x), &mut v);
 
                         // rotate final_dir to match start_dir
-                        data[empty_index] = Data::Polar(index, fetch.to_polar());
+                        data[empty_index] = Data::Polar(index, v.to_polar());
                         empty_index += 1;
                     }
                 }
@@ -128,7 +139,7 @@ impl RayCache {
         if z > self.max_z {
             return None;
         }
-        let closest_index = self.z_to_index(z);
+        let closest_index = self.z_to_index(z) as usize;
         let left = &self.cache[closest_index];
         if closest_index == self.cache.len() - 1 {
             return Some(left.final_dir);

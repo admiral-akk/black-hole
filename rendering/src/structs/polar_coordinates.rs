@@ -1,4 +1,4 @@
-use std::f32::consts::TAU;
+use std::{f32::consts::TAU, ops::Sub};
 
 use glam::Vec3;
 
@@ -18,6 +18,17 @@ impl PolarCoordinates {
         PolarCoordinates {
             phi,
             theta: fast_math::atan2(vec.y, horizontal_len),
+        }
+    }
+}
+
+impl Sub for PolarCoordinates {
+    type Output = PolarCoordinates;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        PolarCoordinates {
+            phi: self.phi - rhs.phi,
+            theta: self.theta - rhs.theta,
         }
     }
 }
