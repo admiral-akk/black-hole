@@ -8,6 +8,7 @@ mod utils;
 use exercises::exercise_1;
 use exercises::exercise_2;
 use exercises::exercise_3;
+use exercises::exercise_4;
 use framework::frame_buffer_context::FrameBufferContext;
 use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
@@ -382,38 +383,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             exercise_3::exercise_3(gl, fb);
         }
         ExerciseState::Exercise4(fb1, fb2, kernel) => {
-            let fb_texture =
-                UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler");
-            let fb_texture2 =
-                UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler");
-            let kernel_weights = UniformContext::array_f32(&kernel, "w");
-
-            frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-            gl.draw(None, &frag, &[], Some(&fb1.frame_buffer));
-
-            for _ in 0..10 {
-                frag = SourceContext::new(include_str!("shaders/fragment/gaussian_blur.glsl"));
-                frag.add_parameter("HORIZONTAL", "TRUE");
-                frag.add_parameter("K", &kernel.len().to_string());
-                gl.draw(
-                    None,
-                    &frag,
-                    &[&fb_texture, &kernel_weights],
-                    Some(&fb2.frame_buffer),
-                );
-
-                frag = SourceContext::new(include_str!("shaders/fragment/gaussian_blur.glsl"));
-                frag.add_parameter("K", &kernel.len().to_string());
-                frag.add_parameter("VERTICAL", "TRUE");
-                gl.draw(
-                    None,
-                    &frag,
-                    &[&fb_texture2, &kernel_weights],
-                    Some(&fb1.frame_buffer),
-                );
-            }
-            frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-            gl.draw(None, &frag, &[&fb_texture], None);
+            exercise_4::exercise_4(gl, fb1, fb2, kernel);
         }
         ExerciseState::Exercise5(fb1, fb2, r, g, b) => {
             let fb_texture =
