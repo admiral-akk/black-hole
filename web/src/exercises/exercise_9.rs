@@ -22,7 +22,6 @@ const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_textu
 pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
 
-    let mut stars = Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
     let ray_cache = RayCache::compute_new(
         params.cache_width as usize,
         params.black_hole_radius,
@@ -35,7 +34,6 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
         params.normalized_up,
         params.vertical_fov_degrees,
     );
-    stars.update_position(&&params.normalized_pos);
     let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
 
     let uniforms = params.uniform_context();
@@ -256,6 +254,9 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     }
 
     // get the polar_coordinates -> colors
+    let mut stars = Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
+
+    stars.update_position(&&params.normalized_pos);
     stars.to_rgba(&mut data);
 
     // apply the colors to image
