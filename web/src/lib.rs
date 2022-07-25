@@ -6,6 +6,8 @@ mod framework;
 mod utils;
 
 use exercises::exercise_1;
+use exercises::exercise_2;
+use exercises::exercise_3;
 use framework::frame_buffer_context::FrameBufferContext;
 use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
@@ -374,19 +376,10 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             exercise_1::exercise_1(gl, cm);
         }
         ExerciseState::Exercise2(cm1, cm2) => {
-            frag = SourceContext::new(include_str!("shaders/fragment/2_color_map.glsl"));
-            let cm_context1 = UniformContext::new_from_allocated_ref(&cm1, "u_palette_1");
-            let cm_context2 = UniformContext::new_from_allocated_ref(&cm2, "u_palette_2");
-            gl.draw(None, &frag, &[&cm_context1, &cm_context2], None);
+            exercise_2::exercise_2(gl, cm1, cm2);
         }
         ExerciseState::Exercise3(fb) => {
-            frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-            let fb_texture =
-                UniformContext::new_from_allocated_ref(&fb.backing_texture, "rtt_sampler");
-            gl.draw(None, &frag, &[], Some(&fb.frame_buffer));
-
-            frag = SourceContext::new(include_str!("shaders/fragment/blur.glsl"));
-            gl.draw(None, &frag, &[&fb_texture], None);
+            exercise_3::exercise_3(gl, fb);
         }
         ExerciseState::Exercise4(fb1, fb2, kernel) => {
             let fb_texture =
