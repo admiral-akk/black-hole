@@ -6,6 +6,7 @@ mod framework;
 mod utils;
 
 use exercises::exercise_1;
+use exercises::exercise_10;
 use exercises::exercise_2;
 use exercises::exercise_3;
 use exercises::exercise_4;
@@ -485,7 +486,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             exercise_9::exercise_9(gl, params);
         }
         ExerciseState::Exercise10(params) => {
-            exercise_9::exercise_9(gl, params);
+            exercise_10::exercise_10(gl, params);
         }
     }
 }
