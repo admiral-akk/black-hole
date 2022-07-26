@@ -6,15 +6,7 @@ uniform sampler2D ray_cache_tex;
 out vec4 outColor;
 
 uniform ivec2 dimensions;
-uniform float distance;
-uniform float vertical_fov_degrees;
-uniform float black_hole_radius;
-uniform int cache_width;
 uniform float max_z;
-uniform vec3 normalized_pos;
-uniform vec3 normalized_dir;
-uniform vec3 normalized_up;
-uniform mat3x3 observer_mat;
 uniform float ray_cache_length;
 #define PI 3.1415926538
 
