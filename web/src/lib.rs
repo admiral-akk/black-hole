@@ -20,7 +20,6 @@ use glam::Quat;
 use glam::Vec2;
 use glam::Vec3;
 
-
 use rendering::structs::image_data::ImageData;
 
 use rendering::structs::observer::Observer;
@@ -28,7 +27,6 @@ use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
 
 use wasm_timer::SystemTime;
-
 
 use web_sys::WebGlTexture;
 
@@ -48,7 +46,6 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
 
 use crate::framework::texture_utils::generate_texture_from_u8;
-
 
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html

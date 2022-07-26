@@ -1,17 +1,12 @@
 use glam::Vec3;
-use rendering::{
-    structs::{
-        ray_cache::RayCache,
-    },
-};
+use rendering::structs::ray_cache::RayCache;
 
 use crate::{
     framework::{
-        render_context::RenderContext,
-        source_context::SourceContext,
-        texture_utils::{generate_texture_from_f32},
-        uniform_context::UniformContext,
-    }, BlackHoleParams,
+        render_context::RenderContext, source_context::SourceContext,
+        texture_utils::generate_texture_from_f32, uniform_context::UniformContext,
+    },
+    BlackHoleParams,
 };
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
@@ -50,7 +45,8 @@ fn complete(gl: &RenderContext, params: &BlackHoleParams) {
     text.push(&fb_context2);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
-    gl.draw(None, &frag, &text, None);
+    let program = gl.get_program(None, &frag, &text);
+    gl.run_program(&program, None);
 }
 
 pub fn exercise_10(gl: &RenderContext, params: &BlackHoleParams) {

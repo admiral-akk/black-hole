@@ -128,6 +128,44 @@ impl RenderContext {
         self.draw_program(out_buffer);
     }
 
+    pub fn get_program(
+        &self,
+        vertex_source: Option<&SourceContext>,
+        fragment_source: &SourceContext,
+        textures: &[&UniformContext],
+    ) -> ProgramContext {
+        let gl = &self.gl;
+
+        let mut program_context = ProgramContext::new(gl, vertex_source, fragment_source);
+        gl.use_program(Some(&program_context.program));
+
+        for i in 0..textures.len() {
+            textures[i].add_to_program(self, &mut program_context);
+        }
+        gl.use_program(None);
+
+        program_context
+    }
+
+    pub fn run_program(&self, program: &ProgramContext, out_buffer: Option<&WebGlFramebuffer>) {
+        let gl = &self.gl;
+        gl.use_program(Some(&program.program));
+
+        gl.clear_color(0.0, 0.0, 0.0, 1.0);
+        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
+        if out_buffer.is_some() {
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer);
+        }
+
+        gl.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
+
+        if out_buffer.is_some() {
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+        }
+        gl.use_program(None);
+    }
+
     fn draw_program(&self, out_buffer: Option<&WebGlFramebuffer>) {
         let gl = &self.gl;
 
