@@ -21,6 +21,7 @@ impl FrameBufferContext {
             Some(&backing_texture),
             0,
         );
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
         FrameBufferContext {
             frame_buffer,
             backing_texture,

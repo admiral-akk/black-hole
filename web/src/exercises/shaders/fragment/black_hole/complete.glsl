@@ -57,5 +57,22 @@ void main(){
     float y=final_dir.y;
     final_dir.x=x*cos_val-y*sin_val;
     final_dir.y=x*sin_val+y*cos_val;
-    outColor=vec4(final_dir.xyz,1.);
+    
+    float lat=0.;
+    float lon=0.;
+    
+    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
+    float phi=atan(final_dir.z,final_dir.x);
+    if(phi<0.){
+        phi=4.*PI+phi;
+    }
+    float theta=atan(final_dir.y,horizontal_len)+PI;
+    
+    phi=mod(180.*phi/PI,10.);
+    theta=mod(180.*theta/PI,10.);
+    
+    float r=smoothstep(0.,1.,phi)-smoothstep(9.,10.,phi);
+    float g=smoothstep(0.,1.,theta)-smoothstep(9.,10.,theta);
+    
+    outColor=vec4(r,g,0.,1.);
 }

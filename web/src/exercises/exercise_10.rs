@@ -20,7 +20,7 @@ use crate::{
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
-fn complete(gl: &RenderContext, params: &BlackHoleParams) -> Vec<Data> {
+fn complete(gl: &RenderContext, params: &BlackHoleParams) {
     let uniforms = params.uniform_context();
     let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
 
@@ -52,42 +52,13 @@ fn complete(gl: &RenderContext, params: &BlackHoleParams) -> Vec<Data> {
     text.push(&ray_length);
     text.push(&max_z);
     text.push(&fb_context2);
-    let fb3 = gl.create_framebuffer();
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
-    gl.draw(None, &frag, &text, Some(&fb3.frame_buffer));
-
-    let frame_buf_data = gl.read_from_frame_buffer(&fb3, 512, 512);
-
-    let mut final_dirs = Vec::new();
-    for i in 0..(frame_buf_data.len() / 4) {
-        let s = &frame_buf_data[(4 * i)..(4 * i + 4)];
-        if s[3] < 0.5 {
-            continue;
-        }
-        let v = Vec3::new(s[0], s[1], s[2]);
-        final_dirs.push(Data::Polar(i, v.to_polar()));
-    }
-    console_log!("New code!");
-    final_dirs
+    gl.draw(None, &frag, &text, None);
 }
 
 pub fn exercise_10(gl: &RenderContext, params: &BlackHoleParams) {
-    let mut data = complete(gl, params);
-
-    // get the polar_coordinates -> colors
-    let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
-    let mut stars = Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
-    stars.update_position(&&params.normalized_pos);
-    stars.to_rgba(&mut data);
-
-    // apply the colors to image
-
-    let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
-    image_data.load_colors(&data);
-    let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
-    let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
-
+    complete(gl, params);
     // need:
 
     //
@@ -98,7 +69,4 @@ pub fn exercise_10(gl: &RenderContext, params: &BlackHoleParams) {
     // generate rays
     // use ray_cache to calculate final ray hit
     // map polar coordinates to colors
-    let frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-    gl.draw(None, &frag, &[&image_context], None);
-    gl.delete_texture(&image);
 }
