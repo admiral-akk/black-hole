@@ -13,8 +13,7 @@ use crate::{
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
 pub fn get_program(gl: &RenderContext, params: &BlackHoleParams) -> ProgramContext {
-    let uniforms = params.uniform_context();
-    let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
+    let mut text: Vec<&UniformContext> = Vec::new();
 
     let fb2 = gl.create_framebuffer();
     // get the view_port -> start_dir

@@ -125,7 +125,7 @@ impl RenderContext {
             textures[i].add_to_program(self, &mut program_context);
         }
 
-        self.draw_program(out_buffer);
+        self.run_program(&program_context, out_buffer);
     }
 
     pub fn get_program(
@@ -164,22 +164,5 @@ impl RenderContext {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
         }
         gl.use_program(None);
-    }
-
-    fn draw_program(&self, out_buffer: Option<&WebGlFramebuffer>) {
-        let gl = &self.gl;
-
-        gl.clear_color(0.0, 0.0, 0.0, 1.0);
-        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-
-        if out_buffer.is_some() {
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer);
-        }
-
-        gl.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
-
-        if out_buffer.is_some() {
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
-        }
     }
 }

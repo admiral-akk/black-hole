@@ -74,6 +74,8 @@ impl UniformContext<'_> {
     }
 
     pub fn add_to_program(&self, gl: &RenderContext, program: &mut ProgramContext) {
+        gl.gl.use_program(Some(&program.program));
+
         match &self.store {
             UniformStore::I32(i) => {
                 let loc = gl.gl.get_uniform_location(&program.program, &self.name);
@@ -112,6 +114,7 @@ impl UniformContext<'_> {
                 add_texture_to_program(&texture, gl, program, &self.name);
             }
         }
+        gl.gl.use_program(None);
     }
 }
 

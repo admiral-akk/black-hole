@@ -321,7 +321,9 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             let vertical_fov_degrees = 120.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
-            let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
+            let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
+
+            let (dir, up) = (-pos.normalize(), Vec3::Y);
             let params = BlackHoleParams::new(
                 IVec2::new(512, 512),
                 distance,
@@ -380,6 +382,36 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
     }
 }
 
+fn update_exercise_state(
+    gl: &RenderContext,
+    exercise_state: &mut ExerciseState,
+    new_params: &RenderParams,
+) {
+    match exercise_state {
+        ExerciseState::Exercise10(params, _program) => {
+            let distance = 3.0;
+            let vertical_fov_degrees = 120.0;
+            let black_hole_radius = 1.5;
+            let cache_width: i32 = 1024;
+            let angle = std::f32::consts::PI * new_params.seconds_since_start / 2.0;
+            let pos = distance * (angle.cos() * Vec3::Z + angle.sin() * Vec3::X);
+
+            let (dir, up) = (-pos.normalize(), Vec3::Y);
+            *params = BlackHoleParams::new(
+                IVec2::new(512, 512),
+                distance,
+                vertical_fov_degrees,
+                black_hole_radius,
+                cache_width,
+                pos,
+                dir,
+                up,
+            );
+        }
+        _ => {}
+    }
+}
+
 fn update_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
@@ -389,6 +421,7 @@ fn update_exercise(
         clean_up_exercise(gl, exercise_state);
         init_exercise(gl, exercise_state, new_params.select_index);
     }
+    update_exercise_state(gl, exercise_state, new_params);
 }
 
 fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
@@ -487,6 +520,10 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             exercise_9::exercise_9(gl, params);
         }
         ExerciseState::Exercise10(params, program) => {
+            console_log!("Normalized pos: {}", params.normalized_pos);
+            for ele in params.uniform_context() {
+                ele.add_to_program(gl, program);
+            }
             gl.run_program(program, None);
         }
     }

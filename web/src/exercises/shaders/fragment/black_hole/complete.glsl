@@ -9,6 +9,7 @@ uniform ivec2 dimensions;
 uniform float vertical_fov_degrees;
 uniform vec3 normalized_dir;
 uniform vec3 normalized_up;
+uniform vec3 normalized_pos;
 uniform mat3x3 observer_mat;
 uniform float max_z;
 uniform float ray_cache_length;
@@ -57,16 +58,23 @@ void main(){
     float y=final_dir.y;
     final_dir.x=x*cos_val-y*sin_val;
     final_dir.y=x*sin_val+y*cos_val;
+    mat3x3 inv=inverse(observer_mat);
+    final_dir=inv*final_dir;
     
     float lat=0.;
     float lon=0.;
     
+    float offset_len=sqrt(normalized_pos.x*normalized_pos.x+normalized_pos.z*normalized_pos.z);
+    float offset_phi=atan(normalized_pos.z,normalized_pos.x);
+    float offset_theta=atan(normalized_pos.y,offset_len);
+    
     float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
     float phi=atan(final_dir.z,final_dir.x);
     if(phi<0.){
-        phi=4.*PI+phi;
+        phi=4.*PI+phi+offset_phi;
     }
-    float theta=atan(final_dir.y,horizontal_len)+PI;
+    
+    float theta=atan(final_dir.y,horizontal_len)+PI+offset_theta;
     
     phi=mod(180.*phi/PI,10.);
     theta=mod(180.*theta/PI,10.);

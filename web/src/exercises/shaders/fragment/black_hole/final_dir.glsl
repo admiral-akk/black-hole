@@ -38,8 +38,5 @@ void main(){
     final_dir.x=x*cos_val-y*sin_val;
     final_dir.y=x*sin_val+y*cos_val;
     
-    float lat=0.;
-    float lon=0.;
-    
     outColor=vec4(final_dir.xyz,1.);
 }
