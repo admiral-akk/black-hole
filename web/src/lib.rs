@@ -14,6 +14,7 @@ use exercises::exercise_8;
 use exercises::exercise_9;
 use framework::frame_buffer_context::FrameBufferContext;
 
+use framework::program_context::ProgramContext;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
@@ -131,7 +132,7 @@ enum ExerciseState {
     Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
     Exercise9(BlackHoleParams),
-    Exercise10(BlackHoleParams),
+    Exercise10(BlackHoleParams, ProgramContext),
 }
 
 impl Default for ExerciseState {
@@ -331,7 +332,10 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 dir,
                 up,
             );
-            *exercise_state = ExerciseState::Exercise10(params);
+
+            let program = exercise_10::get_program(gl, &params);
+
+            *exercise_state = ExerciseState::Exercise10(params, program);
         }
         _ => {}
     }
@@ -482,8 +486,8 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         ExerciseState::Exercise9(params) => {
             exercise_9::exercise_9(gl, params);
         }
-        ExerciseState::Exercise10(params) => {
-            exercise_10::exercise_10(gl, params);
+        ExerciseState::Exercise10(params, program) => {
+            gl.run_program(program, None);
         }
     }
 }

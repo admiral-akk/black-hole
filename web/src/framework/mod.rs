@@ -3,5 +3,5 @@ pub mod render_context;
 pub mod source_context;
 pub mod uniform_context;
 
-mod program_context;
+pub mod program_context;
 pub mod texture_utils;
