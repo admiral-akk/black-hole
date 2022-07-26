@@ -13,23 +13,23 @@ use exercises::exercise_4;
 use exercises::exercise_8;
 use exercises::exercise_9;
 use framework::frame_buffer_context::FrameBufferContext;
-use framework::texture_utils::generate_texture_from_f32;
+
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
 use glam::Vec2;
 use glam::Vec3;
-use rendering::render::render;
-use rendering::structs::data::Data;
+
+
 use rendering::structs::image_data::ImageData;
-use rendering::structs::observer;
+
 use rendering::structs::observer::Observer;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
-use rendering::utils::extensions::ToPolar;
+
 use wasm_timer::SystemTime;
-use web_sys::console;
-use web_sys::WebGlRenderingContext;
+
+
 use web_sys::WebGlTexture;
 
 use std::cell::Cell;
@@ -48,7 +48,7 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
 
 use crate::framework::texture_utils::generate_texture_from_u8;
-use image::io::Reader;
+
 
 // https://rustwasm.github.io/wasm-bindgen/exbuild/webgl/
 // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html

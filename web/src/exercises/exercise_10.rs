@@ -1,21 +1,17 @@
 use glam::Vec3;
 use rendering::{
     structs::{
-        data::Data, image_data::ImageData, observer::Observer, ray_cache::RayCache, stars::Stars,
+        ray_cache::RayCache,
     },
-    utils::extensions::ToPolar,
 };
 
 use crate::{
-    console_log,
     framework::{
-        frame_buffer_context::FrameBufferContext,
         render_context::RenderContext,
         source_context::SourceContext,
-        texture_utils::{generate_texture_from_f32, generate_texture_from_u8},
+        texture_utils::{generate_texture_from_f32},
         uniform_context::UniformContext,
-    },
-    generate_uv, BlackHoleParams,
+    }, BlackHoleParams,
 };
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");

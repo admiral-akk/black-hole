@@ -22,7 +22,7 @@ const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_textu
 
 fn gpu_samples(
     gl: &RenderContext,
-    params: &BlackHoleParams,
+    _params: &BlackHoleParams,
     text: &Vec<&UniformContext>,
     fb: &FrameBufferContext,
     image_data: &ImageData,
@@ -153,14 +153,14 @@ fn observer(
 
 fn final_dir(
     gl: &RenderContext,
-    params: &BlackHoleParams,
+    _params: &BlackHoleParams,
     text: &Vec<&UniformContext>,
-    samples: &Vec<Data>,
-    fb: &FrameBufferContext,
-    fb2: &FrameBufferContext,
-    fb3: &FrameBufferContext,
+    _samples: &Vec<Data>,
+    _fb: &FrameBufferContext,
+    _fb2: &FrameBufferContext,
+    _fb3: &FrameBufferContext,
     ray_cache: &RayCache,
-    image_data: &ImageData,
+    _image_data: &ImageData,
     data: &mut Vec<Data>,
 ) -> Vec<Data> {
     let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();

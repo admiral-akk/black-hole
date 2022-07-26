@@ -1,4 +1,4 @@
-use web_sys::{console, WebGl2RenderingContext, WebGlProgram};
+use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 use crate::console_log;
 

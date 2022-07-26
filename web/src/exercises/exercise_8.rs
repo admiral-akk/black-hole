@@ -1,11 +1,11 @@
 use rendering::structs::{
     data::Data, image_data::ImageData, observer::Observer, ray_cache::RayCache, stars::Stars,
 };
-use web_sys::WebGlTexture;
+
 
 use crate::{
     framework::{
-        frame_buffer_context::FrameBufferContext, render_context::RenderContext,
+        render_context::RenderContext,
         source_context::SourceContext, texture_utils::generate_texture_from_u8,
         uniform_context::UniformContext,
     },
@@ -20,7 +20,7 @@ pub fn exercise_8(
     stars: &Stars,
     ray_cache: &RayCache,
     observer: &Observer,
-    params: &BlackHoleParams,
+    _params: &BlackHoleParams,
 ) {
     let mut data = vec![Data::None; image_data.get_sample_count()];
     // get the view_port -> start_dir
