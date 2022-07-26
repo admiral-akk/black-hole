@@ -19,8 +19,6 @@ use crate::{
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
-fn generate_samples() {}
-
 pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
 
@@ -268,6 +266,8 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
 
     //
 
+    // Try this to load imagE: https://stackoverflow.com/questions/70309403/updating-html-canvas-imagedata-using-rust-webassembly
+    // or this: https://users.rust-lang.org/t/a-future-for-loading-images-via-web-sys/42370/2
     // Generate cache of rays texture
     // generate rays
     // use ray_cache to calculate final ray hit
