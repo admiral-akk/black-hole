@@ -36,7 +36,7 @@ void main(){
     float z=start_ray.z/length(start_ray);
     
     if(z>=max_z){
-        outColor=vec4(start_ray.xyz,0.);
+        outColor=vec4(0.,0.,0.,1.);
         return;
     }
     float z_to_index_multiple=((ray_cache_length-1.)/((max_z+1.)*(max_z+1.)));
@@ -71,8 +71,8 @@ void main(){
     phi=mod(180.*phi/PI,10.);
     theta=mod(180.*theta/PI,10.);
     
-    float r=smoothstep(0.,1.,phi)-smoothstep(9.,10.,phi);
-    float g=smoothstep(0.,1.,theta)-smoothstep(9.,10.,theta);
+    float r=1.-(smoothstep(0.,1.,phi)-smoothstep(9.,10.,phi));
+    float g=1.-(smoothstep(0.,1.,theta)-smoothstep(9.,10.,theta));
     
-    outColor=vec4(r,g,0.,1.);
+    outColor=vec4(r,g,1.,1.);
 }
