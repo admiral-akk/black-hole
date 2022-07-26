@@ -133,6 +133,7 @@ enum ExerciseState {
     Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
     Exercise9(BlackHoleParams),
+    Exercise10(BlackHoleParams),
 }
 
 impl Default for ExerciseState {
@@ -215,6 +216,7 @@ impl ExerciseState {
             ExerciseState::Exercise7(..) => 7,
             ExerciseState::Exercise8(..) => 8,
             ExerciseState::Exercise9(..) => 9,
+            ExerciseState::Exercise10(..) => 10,
         }
     }
 }
@@ -315,6 +317,24 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             );
             *exercise_state = ExerciseState::Exercise9(params);
         }
+        10 => {
+            let distance = 3.0;
+            let vertical_fov_degrees = 120.0;
+            let black_hole_radius = 1.5;
+            let cache_width: i32 = 1024;
+            let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
+            let params = BlackHoleParams::new(
+                IVec2::new(512, 512),
+                distance,
+                vertical_fov_degrees,
+                black_hole_radius,
+                cache_width,
+                pos,
+                dir,
+                up,
+            );
+            *exercise_state = ExerciseState::Exercise9(params);
+        }
         _ => {}
     }
 }
@@ -353,6 +373,7 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         }
         ExerciseState::Exercise8(..) => {}
         ExerciseState::Exercise9(..) => {}
+        ExerciseState::Exercise10(..) => {}
         _ => {}
     }
 }
@@ -463,10 +484,13 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         ExerciseState::Exercise9(params) => {
             exercise_9::exercise_9(gl, params);
         }
+        ExerciseState::Exercise10(params) => {
+            exercise_9::exercise_9(gl, params);
+        }
     }
 }
 
-const EXERCISE_COUNT: u32 = 10;
+const EXERCISE_COUNT: u32 = 11;
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
