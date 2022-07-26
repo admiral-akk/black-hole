@@ -10,7 +10,6 @@ uniform float vertical_fov_degrees;
 uniform vec3 normalized_dir;
 uniform vec3 normalized_up;
 uniform mat3x3 observer_mat;
-uniform ivec2 dimensions;
 uniform float max_z;
 uniform float ray_cache_length;
 #define PI 3.1415926538

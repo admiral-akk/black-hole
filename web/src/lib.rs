@@ -334,7 +334,7 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 dir,
                 up,
             );
-            *exercise_state = ExerciseState::Exercise9(params);
+            *exercise_state = ExerciseState::Exercise10(params);
         }
         _ => {}
     }
