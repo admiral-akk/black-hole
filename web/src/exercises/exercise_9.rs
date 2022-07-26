@@ -9,6 +9,7 @@ use rendering::{
 use crate::{
     console_log,
     framework::{
+        frame_buffer_context::FrameBufferContext,
         render_context::RenderContext,
         source_context::SourceContext,
         texture_utils::{generate_texture_from_f32, generate_texture_from_u8},
@@ -19,16 +20,14 @@ use crate::{
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
-pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
-    let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
-
-    let uniforms = params.uniform_context();
-    let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
-    let fb = gl.create_framebuffer();
-    let fb_context =
-        UniformContext::new_from_allocated_ref(&fb.backing_texture, "requested_samples");
-    let fb2 = gl.create_framebuffer();
-    let mut frag = SourceContext::new(include_str!("shaders/fragment/black_hole/samples.glsl"));
+fn gpu_samples(
+    gl: &RenderContext,
+    params: &BlackHoleParams,
+    text: &mut Vec<&UniformContext>,
+    fb: &FrameBufferContext,
+    image_data: &ImageData,
+) -> Vec<Data> {
+    let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/samples.glsl"));
     gl.draw(None, &frag, &text, Some(&fb.frame_buffer));
     let frame_buf_data = gl.read_from_frame_buffer(&fb, 512, 512);
 
@@ -82,14 +81,22 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
             }
         }
     }
+    samples
+}
+
+fn observer(
+    gl: &RenderContext,
+    params: &BlackHoleParams,
+    text: &mut Vec<&UniformContext>,
+    samples: &Vec<Data>,
+    fb: &FrameBufferContext,
+    image_data: &ImageData,
+) -> Vec<Data> {
+    let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/observer.glsl"));
 
     let mut data = vec![Data::None; image_data.get_sample_count()];
-
-    frag = SourceContext::new(include_str!("shaders/fragment/black_hole/observer.glsl"));
-
-    text.push(&fb_context);
-    gl.draw(None, &frag, &text, Some(&fb2.frame_buffer));
-    let frame_buf_data = gl.read_from_frame_buffer(&fb2, 512, 512);
+    gl.draw(None, &frag, &text, Some(&fb.frame_buffer));
+    let frame_buf_data = gl.read_from_frame_buffer(&fb, 512, 512);
     // get the view_port -> start_dir
     let observer = Observer::new(
         params.normalized_pos,
@@ -141,9 +148,26 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
         }
     }
 
-    for i in 0..start_dirs.len() {
-        data[i] = start_dirs[i].clone();
-    }
+    start_dirs
+}
+
+fn final_dir() {}
+
+pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
+    let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
+
+    let uniforms = params.uniform_context();
+    let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
+    let fb = gl.create_framebuffer();
+    let fb_context =
+        UniformContext::new_from_allocated_ref(&fb.backing_texture, "requested_samples");
+    let samples = gpu_samples(gl, params, &mut text, &fb, &image_data);
+    text.push(&fb_context);
+
+    let fb2 = gl.create_framebuffer();
+    let mut data = observer(gl, params, &mut text, &samples, &fb2, &image_data);
+    // get the view_port -> start_dir
+
     let ray_cache = RayCache::compute_new(
         params.cache_width as usize,
         params.black_hole_radius,
@@ -175,7 +199,7 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     text.push(&fb_context2);
     let fb3 = gl.create_framebuffer();
 
-    frag = SourceContext::new(include_str!("shaders/fragment/black_hole/final_dir.glsl"));
+    let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/final_dir.glsl"));
     gl.draw(None, &frag, &text, Some(&fb3.frame_buffer));
 
     let frame_buf_data = gl.read_from_frame_buffer(&fb3, 512, 512);
@@ -211,26 +235,26 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
                     Data::Polar(i2, polar2) => {
                         if i1 != i2 {
                             console_log!(
-                                "\nIndicies differ! \nExpected: {:?}\nActual: {:?}\nStart dir {:?}\n",
+                                "\nIndicies differ! \nExpected: {:?}\nActual: {:?}\n",
                                 expected,
-                                actual, start_dirs[i]
+                                actual
                             );
                             panic!();
                         }
                         if (polar1.phi - polar2.phi).abs() > 0.05 {
                             console_log!(
-                                    "\n phi values differ! \nExpected: {:?}\nActual: {:?}\n Start dir {:?}\n",
-                                    expected,
-                                    actual, start_dirs[i]
-                                );
+                                "\n phi values differ! \nExpected: {:?}\nActual: {:?}\n ",
+                                expected,
+                                actual
+                            );
                             panic!();
                         }
                         if (polar1.theta - polar2.theta).abs() > 0.05 {
                             console_log!(
-                                    "\n theta values differ! \nExpected: {:?}\nActual: {:?}\n Start dir {:?}\n",
-                                    expected,
-                                    actual, start_dirs[i]
-                                );
+                                "\n theta values differ! \nExpected: {:?}\nActual: {:?}\n",
+                                expected,
+                                actual
+                            );
                             panic!();
                         }
                     }
@@ -273,7 +297,7 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     // use ray_cache to calculate final ray hit
     // map polar coordinates to colors
     text.push(&image_context);
-    frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
+    let frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
     gl.draw(None, &frag, &text, None);
     gl.delete_texture(&image);
 }
