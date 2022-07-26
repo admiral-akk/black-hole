@@ -249,9 +249,8 @@ fn final_dir(
     final_dirs
 }
 
-pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
+fn step_by_step(gl: &RenderContext, params: &BlackHoleParams) {
     let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
-
     let uniforms = params.uniform_context();
     let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
     let fb = gl.create_framebuffer();
@@ -330,4 +329,8 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     let frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
     gl.draw(None, &frag, &text, None);
     gl.delete_texture(&image);
+}
+
+pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
+    step_by_step(gl, params);
 }
