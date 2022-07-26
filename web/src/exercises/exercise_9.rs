@@ -23,7 +23,7 @@ const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_textu
 fn gpu_samples(
     gl: &RenderContext,
     params: &BlackHoleParams,
-    text: &mut Vec<&UniformContext>,
+    text: &Vec<&UniformContext>,
     fb: &FrameBufferContext,
     image_data: &ImageData,
 ) -> Vec<Data> {
@@ -87,7 +87,7 @@ fn gpu_samples(
 fn observer(
     gl: &RenderContext,
     params: &BlackHoleParams,
-    text: &mut Vec<&UniformContext>,
+    text: &Vec<&UniformContext>,
     samples: &Vec<Data>,
     fb: &FrameBufferContext,
     image_data: &ImageData,
@@ -151,29 +151,18 @@ fn observer(
     start_dirs
 }
 
-fn final_dir() {}
-
-pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
-    let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
-
-    let uniforms = params.uniform_context();
-    let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
-    let fb = gl.create_framebuffer();
-    let fb_context =
-        UniformContext::new_from_allocated_ref(&fb.backing_texture, "requested_samples");
-    let samples = gpu_samples(gl, params, &mut text, &fb, &image_data);
-    text.push(&fb_context);
-
-    let fb2 = gl.create_framebuffer();
-    let mut data = observer(gl, params, &mut text, &samples, &fb2, &image_data);
-    // get the view_port -> start_dir
-
-    let ray_cache = RayCache::compute_new(
-        params.cache_width as usize,
-        params.black_hole_radius,
-        params.distance,
-    );
-
+fn final_dir(
+    gl: &RenderContext,
+    params: &BlackHoleParams,
+    text: &Vec<&UniformContext>,
+    samples: &Vec<Data>,
+    fb: &FrameBufferContext,
+    fb2: &FrameBufferContext,
+    fb3: &FrameBufferContext,
+    ray_cache: &RayCache,
+    image_data: &ImageData,
+    data: &mut Vec<Data>,
+) -> Vec<Data> {
     let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
     let mut f32_vec: Vec<f32> = Vec::new();
     for i in 0..final_dirs.len() {
@@ -184,19 +173,6 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
         f32_vec.push(1.0);
     }
 
-    console_log!("Ray cache len: {}", final_dirs.len());
-    let ray_cache_tex = generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
-    let ray_context = UniformContext::new_from_allocated_ref(&ray_cache_tex, "ray_cache_tex");
-    let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
-    let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
-    let fb_context2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
-    text.push(&ray_context);
-    text.push(&ray_length);
-
-    console_log!("Max z: {}", ray_cache.max_z);
-
-    text.push(&max_z);
-    text.push(&fb_context2);
     let fb3 = gl.create_framebuffer();
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/final_dir.glsl"));
@@ -215,9 +191,9 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
     }
     // get the start_dir -> final_dir
     // get the final_dir -> polar coordinates
-    ray_cache.calculate_final_dir(&mut data);
+    ray_cache.calculate_final_dir(data);
 
-    if (data.len() != final_dirs.len()) {
+    if data.len() != final_dirs.len() {
         console_log!(
             "\nLengths differ! Expected: {}\nActual: {}\n",
             data.len(),
@@ -270,9 +246,63 @@ pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
             }
         }
     }
+    final_dirs
+}
+
+pub fn exercise_9(gl: &RenderContext, params: &BlackHoleParams) {
+    let mut image_data = ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
+
+    let uniforms = params.uniform_context();
+    let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
+    let fb = gl.create_framebuffer();
+    let fb_context =
+        UniformContext::new_from_allocated_ref(&fb.backing_texture, "requested_samples");
+    let samples = gpu_samples(gl, params, &text, &fb, &image_data);
+    text.push(&fb_context);
+
+    let fb2 = gl.create_framebuffer();
+    let mut data = observer(gl, params, &text, &samples, &fb2, &image_data);
+    // get the view_port -> start_dir
+
+    let ray_cache = RayCache::compute_new(
+        params.cache_width as usize,
+        params.black_hole_radius,
+        params.distance,
+    );
+
+    let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
+    let mut f32_vec: Vec<f32> = Vec::new();
     for i in 0..final_dirs.len() {
-        data[i] = final_dirs[i].clone();
+        let final_dir = final_dirs[i];
+        f32_vec.push(final_dir.x);
+        f32_vec.push(final_dir.y);
+        f32_vec.push(final_dir.z);
+        f32_vec.push(1.0);
     }
+
+    let ray_cache_tex = generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
+    let ray_context = UniformContext::new_from_allocated_ref(&ray_cache_tex, "ray_cache_tex");
+    let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
+    let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
+    let fb_context2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
+    text.push(&ray_context);
+    text.push(&ray_length);
+    text.push(&max_z);
+    text.push(&fb_context2);
+    let fb3 = gl.create_framebuffer();
+
+    data = final_dir(
+        gl,
+        params,
+        &mut text,
+        &samples,
+        &fb,
+        &fb2,
+        &fb3,
+        &ray_cache,
+        &image_data,
+        &mut data,
+    );
 
     // get the polar_coordinates -> colors
     let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
