@@ -36,6 +36,38 @@ vec3 uv_grid(vec3 final_dir){
     return vec3(r,g,b);
 }
 
+float rand(vec2 xy,vec2 seed){
+    return fract(4123.12*sin(dot(xy+seed,seed)));
+}
+
+vec3 voronoi(vec2 final_dir_2d,vec2 seed){
+    vec2 delta=vec2(.1,.1);
+    vec2 node=delta*floor(final_dir_2d/delta);
+    float best=10.;
+    vec2 best_node=node;
+    for(int x=-1;x<=1;x++){
+        for(int y=-1;y<=1;y++){
+            vec2 test_node=node+delta*vec2(float(x),float(y));
+            test_node=test_node+delta*(rand(test_node,seed)-.5);
+            float len=length(test_node-final_dir_2d);
+            if(len<best){
+                best_node=test_node;
+                best=len;
+            }
+        }
+    }
+    float dist=pow(clamp(1.-best/delta.x,0.,1.),10.);
+    return vec3(dist,dist,dist);
+}
+
+vec3 triplanar_voronoi(vec3 final_dir){
+    vec3 up=voronoi(final_dir.xz,vec2(12.2,4.3));
+    vec3 right=voronoi(final_dir.yz,vec2(2.2,10.3));
+    vec3 forward=voronoi(final_dir.xy,vec2(22.2,40.3));
+    vec3 normalized=normalize(pow(normalize(final_dir),vec3(3.,3.,3.)));
+    return up*abs(normalized.y)+right*abs(normalized.x)+forward*abs(normalized.z);
+}
+
 void main(){
     
     // Sample
@@ -81,7 +113,7 @@ void main(){
     final_dir.y=x*sin_val+y*cos_val;
     mat3x3 inv=inverse(observer_mat);
     final_dir=inv*final_dir;
-    vec3 rgb=uv_grid(final_dir);
+    vec3 rgb=triplanar_voronoi(final_dir);
     
     outColor=vec4(rgb.xyz,1.);
 }
