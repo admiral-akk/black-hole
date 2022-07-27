@@ -95,8 +95,8 @@ impl RenderContext {
                 .read_pixels_with_opt_array_buffer_view(
                     0,
                     0,
-                    512,
-                    512,
+                    1024,
+                    1024,
                     WebGlRenderingContext::RGBA,
                     WebGlRenderingContext::FLOAT,
                     Some(&rays_view),

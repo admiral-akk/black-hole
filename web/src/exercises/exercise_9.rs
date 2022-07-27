@@ -29,7 +29,7 @@ fn gpu_samples(
 ) -> Vec<Data> {
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/samples.glsl"));
     gl.draw(None, &frag, &text, Some(&fb.frame_buffer));
-    let frame_buf_data = gl.read_from_frame_buffer(&fb, 512, 512);
+    let frame_buf_data = gl.read_from_frame_buffer(&fb, 1024, 1024);
 
     let mut samples = Vec::new();
     for i in 0..(frame_buf_data.len() / 4) {
@@ -96,7 +96,7 @@ fn observer(
 
     let mut data = vec![Data::None; image_data.get_sample_count()];
     gl.draw(None, &frag, &text, Some(&fb.frame_buffer));
-    let frame_buf_data = gl.read_from_frame_buffer(&fb, 512, 512);
+    let frame_buf_data = gl.read_from_frame_buffer(&fb, 1024, 1024);
     // get the view_port -> start_dir
     let observer = Observer::new(
         params.normalized_pos,
@@ -178,7 +178,7 @@ fn final_dir(
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/final_dir.glsl"));
     gl.draw(None, &frag, &text, Some(&fb3.frame_buffer));
 
-    let frame_buf_data = gl.read_from_frame_buffer(&fb3, 512, 512);
+    let frame_buf_data = gl.read_from_frame_buffer(&fb3, 1024, 1024);
 
     let mut final_dirs = Vec::new();
     for i in 0..(frame_buf_data.len() / 4) {
@@ -312,7 +312,7 @@ fn step_by_step(gl: &RenderContext, params: &BlackHoleParams) {
 
     // apply the colors to image
     image_data.load_colors(&data);
-    let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
+    let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 1024);
     let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
 
     // need:

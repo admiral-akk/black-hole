@@ -14,6 +14,6 @@ vec3 rand_xy(vec2 xy){
 }
 
 void main(){
-    vec3 r=rand_xy(gl_FragCoord.xy/512.);
+    vec3 r=rand_xy(gl_FragCoord.xy/1024.);
     outColor=vec4(r.xyz,1.);
 }

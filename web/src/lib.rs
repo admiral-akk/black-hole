@@ -267,7 +267,7 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             let cache_width: i32 = 1024;
             let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
             let params = BlackHoleParams::new(
-                IVec2::new(512, 512),
+                IVec2::new(1024, 1024),
                 distance,
                 vertical_fov_degrees,
                 black_hole_radius,
@@ -305,7 +305,7 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
             let cache_width: i32 = 1024;
             let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
             let params = BlackHoleParams::new(
-                IVec2::new(512, 512),
+                IVec2::new(1024, 1024),
                 distance,
                 vertical_fov_degrees,
                 black_hole_radius,
@@ -325,7 +325,7 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
 
             let (dir, up) = (-pos.normalize(), Vec3::Y);
             let params = BlackHoleParams::new(
-                IVec2::new(512, 512),
+                IVec2::new(1024, 1024),
                 distance,
                 vertical_fov_degrees,
                 black_hole_radius,
@@ -397,9 +397,9 @@ fn update_exercise_state(
             let mut pos = params.normalized_pos;
             if new_params.mouse_pos.is_some() {
                 let x_angle =
-                    std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 512.;
+                    std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 1024.;
                 let y_angle =
-                    std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 256.) / 512.;
+                    std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 512.) / 1024.;
 
                 pos = distance
                     * (y_angle.cos() * x_angle.cos() * Vec3::Z
@@ -413,7 +413,7 @@ fn update_exercise_state(
             let up = Vec3::cross(right, dir);
 
             *params = BlackHoleParams::new(
-                IVec2::new(512, 512),
+                IVec2::new(1024, 1024),
                 distance,
                 vertical_fov_degrees,
                 black_hole_radius,
@@ -510,7 +510,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             let time = 1.0;
 
             let pos_seed = Vec2::new(52.912 * time, 11.30 * time);
-            let color_seed = Vec3::new(10.5121 * time, 22.958 * time, 25.1 * time);
+            let color_seed = Vec3::new(10.10241 * time, 22.958 * time, 25.1 * time);
 
             frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
             let pos_seed_uniform = UniformContext::vec2(pos_seed, "pos_seed");
@@ -651,7 +651,7 @@ pub fn start() -> Result<(), JsValue> {
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
     let params = Rc::new(Cell::new(RenderParams::default()));
-    let renderer = Rc::new(RenderState::new(512, 512)?);
+    let renderer = Rc::new(RenderState::new(1024, 1024)?);
     {
         let start_time = start_time.clone();
         let params = params.clone();

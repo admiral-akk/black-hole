@@ -2,12 +2,10 @@ use rendering::structs::{
     data::Data, image_data::ImageData, observer::Observer, ray_cache::RayCache, stars::Stars,
 };
 
-
 use crate::{
     framework::{
-        render_context::RenderContext,
-        source_context::SourceContext, texture_utils::generate_texture_from_u8,
-        uniform_context::UniformContext,
+        render_context::RenderContext, source_context::SourceContext,
+        texture_utils::generate_texture_from_u8, uniform_context::UniformContext,
     },
     BlackHoleParams,
 };
@@ -35,7 +33,7 @@ pub fn exercise_8(
 
     // apply the colors to image
     image_data.load_colors(&data);
-    let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 512);
+    let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 1024);
     let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
 
     let frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
