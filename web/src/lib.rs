@@ -396,11 +396,22 @@ fn update_exercise_state(
 
             let mut pos = params.normalized_pos;
             if new_params.mouse_pos.is_some() {
-                let angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 512.;
-                pos = distance * (angle.cos() * Vec3::Z + angle.sin() * Vec3::X);
+                let x_angle =
+                    std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 512.;
+                let y_angle =
+                    std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 256.) / 512.;
+
+                pos = distance
+                    * (y_angle.cos() * x_angle.cos() * Vec3::Z
+                        + y_angle.cos() * x_angle.sin() * Vec3::X
+                        + y_angle.sin() * Vec3::Y);
             }
 
-            let (dir, up) = (-pos.normalize(), Vec3::Y);
+            pos = pos.normalize();
+            let dir = -pos;
+            let right = Vec3::cross(Vec3::Y, dir).normalize();
+            let up = Vec3::cross(right, dir);
+
             *params = BlackHoleParams::new(
                 IVec2::new(512, 512),
                 distance,
