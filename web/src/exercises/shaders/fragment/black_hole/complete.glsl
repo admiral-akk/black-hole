@@ -15,6 +15,27 @@ uniform float max_z;
 uniform float ray_cache_length;
 #define PI 3.1415926538
 
+vec3 uv_grid(vec3 final_dir){
+    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
+    float phi=atan(final_dir.z,final_dir.x);
+    if(phi<0.){
+        phi=4.*PI+phi;
+    }
+    
+    float theta=atan(final_dir.y,horizontal_len)+PI;
+    
+    phi=mod(phi,2.*PI);
+    theta=mod(theta,PI);
+    
+    float phi_d=mod(180.*phi/PI,10.);
+    float theta_d=mod(180.*theta/PI,10.);
+    
+    float r=(1.-(smoothstep(0.,1.,phi_d)-smoothstep(9.,10.,phi_d)))*(.5+phi/(4.*PI));
+    float g=(1.-(smoothstep(0.,1.,theta_d)-smoothstep(9.,10.,theta_d)))*(.5+theta/(2.*PI));
+    float b=.25+r+g;
+    return vec3(r,g,b);
+}
+
 void main(){
     
     // Sample
@@ -60,31 +81,7 @@ void main(){
     final_dir.y=x*sin_val+y*cos_val;
     mat3x3 inv=inverse(observer_mat);
     final_dir=inv*final_dir;
+    vec3 rgb=uv_grid(final_dir);
     
-    float lat=0.;
-    float lon=0.;
-    
-    float offset_len=sqrt(normalized_pos.x*normalized_pos.x+normalized_pos.z*normalized_pos.z);
-    float offset_phi=atan(normalized_pos.z,normalized_pos.x);
-    float offset_theta=atan(normalized_pos.y,offset_len);
-    
-    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
-    float phi=atan(final_dir.z,final_dir.x);
-    if(phi<0.){
-        phi=4.*PI+phi+offset_phi;
-    }
-    
-    float theta=atan(final_dir.y,horizontal_len)+PI+offset_theta;
-    
-    phi=mod(phi,2.*PI);
-    theta=mod(theta,PI);
-    
-    float phi_d=mod(180.*phi/PI,10.);
-    float theta_d=mod(180.*theta/PI,10.);
-    
-    float r=(1.-(smoothstep(0.,1.,phi_d)-smoothstep(9.,10.,phi_d)))*(.5+phi/(4.*PI));
-    float g=(1.-(smoothstep(0.,1.,theta_d)-smoothstep(9.,10.,theta_d)))*(.5+theta/(2.*PI));
-    float b=.25+r+g;
-    
-    outColor=vec4(r,g,b,1.);
+    outColor=vec4(rgb.xyz,1.);
 }
