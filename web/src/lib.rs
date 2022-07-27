@@ -21,12 +21,15 @@ use glam::Quat;
 use glam::Vec2;
 use glam::Vec3;
 
+use image::DynamicImage;
+use js_sys::Uint8Array;
 use rendering::structs::image_data::ImageData;
 
 use rendering::structs::observer::Observer;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
 
+use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
 
 use web_sys::WebGlTexture;
@@ -132,7 +135,7 @@ enum ExerciseState {
     Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
     Exercise9(BlackHoleParams),
-    Exercise10(BlackHoleParams, ProgramContext),
+    Exercise10(BlackHoleParams, ProgramContext, WebGlTexture),
 }
 
 impl Default for ExerciseState {
@@ -220,7 +223,12 @@ impl ExerciseState {
     }
 }
 
-fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercise_index: u32) {
+fn init_exercise(
+    gl: &RenderContext,
+    exercise_state: &mut ExerciseState,
+    exercise_index: u32,
+    im: &DynamicImage,
+) {
     match exercise_index {
         0 => {
             *exercise_state = ExerciseState::Exercise0;
@@ -334,10 +342,20 @@ fn init_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState, exercis
                 dir,
                 up,
             );
+            let stars = im.as_rgb8().unwrap().as_raw().clone();
 
-            let program = exercise_10::get_program(gl, &params);
+            let mut s2 = Vec::new();
+            for i in 0..stars.len() / 3 {
+                s2.push(stars[3 * i]);
+                s2.push(stars[3 * i + 1]);
+                s2.push(stars[3 * i + 2]);
+                s2.push(255);
+            }
+            console_log!("Stars len: {}", stars.len());
 
-            *exercise_state = ExerciseState::Exercise10(params, program);
+            let tex = generate_texture_from_u8(&gl.gl, &s2, 1024);
+            let program = exercise_10::get_program(gl, &params, &tex);
+            *exercise_state = ExerciseState::Exercise10(params, program, tex);
         }
         _ => {}
     }
@@ -347,6 +365,7 @@ pub struct RenderState {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
     exercise_state: RefCell<Box<ExerciseState>>,
+    im: DynamicImage,
 }
 
 fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
@@ -377,7 +396,9 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         }
         ExerciseState::Exercise8(..) => {}
         ExerciseState::Exercise9(..) => {}
-        ExerciseState::Exercise10(..) => {}
+        ExerciseState::Exercise10(params, program, tex) => {
+            gl.delete_texture(&tex);
+        }
         _ => {}
     }
 }
@@ -388,7 +409,7 @@ fn update_exercise_state(
     new_params: &RenderParams,
 ) {
     match exercise_state {
-        ExerciseState::Exercise10(params, _program) => {
+        ExerciseState::Exercise10(params, _program, stars) => {
             let distance = 3.0;
             let vertical_fov_degrees = 120.0;
             let black_hole_radius = 1.5;
@@ -431,10 +452,11 @@ fn update_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
     new_params: &RenderParams,
+    im: &DynamicImage,
 ) {
     if exercise_state.index() != new_params.select_index {
         clean_up_exercise(gl, exercise_state);
-        init_exercise(gl, exercise_state, new_params.select_index);
+        init_exercise(gl, exercise_state, new_params.select_index, im);
     }
     update_exercise_state(gl, exercise_state, new_params);
 }
@@ -534,7 +556,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         ExerciseState::Exercise9(params) => {
             exercise_9::exercise_9(gl, params);
         }
-        ExerciseState::Exercise10(params, program) => {
+        ExerciseState::Exercise10(params, program, stars) => {
             console_log!("Normalized pos: {}", params.normalized_pos);
             for ele in params.uniform_context() {
                 ele.add_to_program(gl, program);
@@ -551,7 +573,7 @@ impl RenderState {
         console_log!("params: {:?}", params);
         let gl = &self.gl;
 
-        update_exercise(gl, &mut *self.exercise_state.borrow_mut(), params);
+        update_exercise(gl, &mut *self.exercise_state.borrow_mut(), params, &self.im);
         render_exercise(gl, &mut *self.exercise_state.borrow_mut());
         self.prev_params.set(*params);
         Ok(())
@@ -559,13 +581,14 @@ impl RenderState {
 }
 
 impl RenderState {
-    pub fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
+    pub fn new(width: u32, height: u32, im: DynamicImage) -> Result<RenderState, JsValue> {
         let gl = RenderContext::new(width, height);
 
         Ok(RenderState {
             gl,
             prev_params: Cell::default(),
             exercise_state: RefCell::default(),
+            im,
         })
     }
 }
@@ -632,8 +655,26 @@ impl RenderParams {
     }
 }
 
+#[wasm_bindgen]
+pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
+    let window = web_sys::window().unwrap(); // Browser window
+    let promise = JsFuture::from(window.fetch_with_str(&url)); // File fetch promise
+    let result = promise.await?; // Await fulfillment of fetch
+    let response: web_sys::Response = result.dyn_into().unwrap(); // Type casting
+    let image_data = JsFuture::from(response.array_buffer()?).await?; // Get text
+    Ok(Uint8Array::new(&image_data))
+}
+
+const image_url: &str = "http://localhost:8080/starmap_2020_4k_gal_print.jpg";
+
+fn to_image(u8: Uint8Array) -> DynamicImage {
+    image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
+}
+
 #[wasm_bindgen(start)]
-pub fn start() -> Result<(), JsValue> {
+pub async fn start() -> Result<(), JsValue> {
+    let x = fetch_url_binary(image_url.to_string()).await?;
+    let im = to_image(x);
     let document = document();
     let select = document
         .get_element_by_id("input")
@@ -651,7 +692,7 @@ pub fn start() -> Result<(), JsValue> {
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
     let params = Rc::new(Cell::new(RenderParams::default()));
-    let renderer = Rc::new(RenderState::new(1024, 1024)?);
+    let renderer = Rc::new(RenderState::new(1024, 1024, im)?);
     {
         let start_time = start_time.clone();
         let params = params.clone();

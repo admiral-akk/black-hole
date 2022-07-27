@@ -1,5 +1,6 @@
 use glam::Vec3;
 use rendering::structs::ray_cache::RayCache;
+use web_sys::WebGlTexture;
 
 use crate::{
     framework::{
@@ -12,7 +13,11 @@ use crate::{
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 
-pub fn get_program(gl: &RenderContext, params: &BlackHoleParams) -> ProgramContext {
+pub fn get_program(
+    gl: &RenderContext,
+    params: &BlackHoleParams,
+    im: &WebGlTexture,
+) -> ProgramContext {
     let mut text: Vec<&UniformContext> = Vec::new();
 
     let fb2 = gl.create_framebuffer();
@@ -39,10 +44,12 @@ pub fn get_program(gl: &RenderContext, params: &BlackHoleParams) -> ProgramConte
     let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
     let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
     let fb_context2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
+    let stars = UniformContext::new_from_allocated_ref(im, "stars");
     text.push(&ray_context);
     text.push(&ray_length);
     text.push(&max_z);
     text.push(&fb_context2);
+    text.push(&stars);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
     gl.get_program(None, &frag, &text)

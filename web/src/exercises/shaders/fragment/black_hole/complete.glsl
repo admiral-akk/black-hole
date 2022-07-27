@@ -3,6 +3,7 @@
 precision mediump float;
 uniform sampler2D start_ray_tex;
 uniform sampler2D ray_cache_tex;
+uniform sampler2D stars;
 out vec4 outColor;
 
 uniform ivec2 dimensions;
@@ -108,6 +109,17 @@ vec3 uv_grid(vec3 final_dir){
     return vec3(r,g,b);
 }
 
+vec3 star_sample(vec3 final_dir){
+    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
+    float phi=4.*PI+atan(final_dir.z,final_dir.x);
+    
+    float theta=atan(final_dir.y,horizontal_len)+3.*PI/2.;
+    
+    phi=mod(phi,2.*PI);
+    theta=mod(theta,PI);
+    return texture(stars,vec2(phi/(2.*PI),theta/PI)).xyz;
+}
+
 float rand(vec2 xy,vec2 seed){
     return fbm(xy+seed);
 }
@@ -141,11 +153,9 @@ vec3 triplanar_voronoi(vec3 final_dir){
 }
 
 void main(){
-    
     // Sample
     vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
     vec2 coord=(gl_FragCoord.xy)*delta;
-    
     // Start dir
     
     vec3 forward=observer_mat*normalized_dir;
@@ -185,7 +195,7 @@ void main(){
     final_dir.y=x*sin_val+y*cos_val;
     mat3x3 inv=inverse(observer_mat);
     final_dir=inv*final_dir;
-    vec3 rgb=uv_grid(final_dir);
+    vec3 rgb=star_sample(final_dir);
     
     outColor=vec4(rgb.xyz,1.);
 }
