@@ -152,10 +152,7 @@ vec3 triplanar_voronoi(vec3 final_dir){
     return up*abs(normalized.y)+right*abs(normalized.x)+forward*abs(normalized.z);
 }
 
-void main(){
-    // Sample
-    vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
-    vec2 coord=(gl_FragCoord.xy)*delta;
+vec3 get_color(vec2 coord){
     // Start dir
     
     vec3 forward=observer_mat*normalized_dir;
@@ -172,8 +169,7 @@ void main(){
     float z=start_ray.z/length(start_ray);
     
     if(z>=max_z){
-        outColor=vec4(0.,0.,0.,1.);
-        return;
+        return vec3(0.,0.,0.);
     }
     float z_to_index_multiple=((ray_cache_length-1.)/((max_z+1.)*(max_z+1.)));
     float index=(z_to_index_multiple*(z+1.)*(z+1.));
@@ -195,7 +191,18 @@ void main(){
     final_dir.y=x*sin_val+y*cos_val;
     mat3x3 inv=inverse(observer_mat);
     final_dir=inv*final_dir;
-    vec3 rgb=star_sample(final_dir);
+    return star_sample(final_dir);
+}
+
+void main(){
+    // Sample
+    vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
+    vec2 coord=(gl_FragCoord.xy+.5)*delta;
+    vec2 aa_delta=vec2(1./(3.*float(dimensions.x)),1./(3.*float(dimensions.y)));
+    vec3 rgb=(get_color(coord+vec2(aa_delta.x,aa_delta.y))+
+    get_color(coord+vec2(-aa_delta.x,aa_delta.y))+
+    get_color(coord+vec2(aa_delta.x,-aa_delta.y))+
+    get_color(coord+vec2(-aa_delta.x,-aa_delta.y)))/4.;
     
     outColor=vec4(rgb.xyz,1.);
 }
