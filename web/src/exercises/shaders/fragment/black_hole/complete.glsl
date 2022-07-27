@@ -76,11 +76,15 @@ void main(){
     
     float theta=atan(final_dir.y,horizontal_len)+PI+offset_theta;
     
-    phi=mod(180.*phi/PI,10.);
-    theta=mod(180.*theta/PI,10.);
+    phi=mod(phi,2.*PI);
+    theta=mod(theta,PI);
     
-    float r=1.-(smoothstep(0.,1.,phi)-smoothstep(9.,10.,phi));
-    float g=1.-(smoothstep(0.,1.,theta)-smoothstep(9.,10.,theta));
+    float phi_d=mod(180.*phi/PI,10.);
+    float theta_d=mod(180.*theta/PI,10.);
     
-    outColor=vec4(r,g,1.,1.);
+    float r=(1.-(smoothstep(0.,1.,phi_d)-smoothstep(9.,10.,phi_d)))*(.5+phi/(4.*PI));
+    float g=(1.-(smoothstep(0.,1.,theta_d)-smoothstep(9.,10.,theta_d)))*(.5+theta/(2.*PI));
+    float b=.25+r+g;
+    
+    outColor=vec4(r,g,b,1.);
 }

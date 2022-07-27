@@ -393,8 +393,12 @@ fn update_exercise_state(
             let vertical_fov_degrees = 120.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
-            let angle = std::f32::consts::PI * new_params.seconds_since_start / 2.0;
-            let pos = distance * (angle.cos() * Vec3::Z + angle.sin() * Vec3::X);
+
+            let mut pos = params.normalized_pos;
+            if new_params.mouse_pos.is_some() {
+                let angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 512.;
+                pos = distance * (angle.cos() * Vec3::Z + angle.sin() * Vec3::X);
+            }
 
             let (dir, up) = (-pos.normalize(), Vec3::Y);
             *params = BlackHoleParams::new(
