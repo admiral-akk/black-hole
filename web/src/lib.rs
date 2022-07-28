@@ -270,7 +270,7 @@ fn init_exercise(
         }
         8 => {
             let distance = 3.0;
-            let vertical_fov_degrees = 120.0;
+            let vertical_fov_degrees = 20.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
             let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
@@ -308,7 +308,7 @@ fn init_exercise(
         }
         9 => {
             let distance = 3.0;
-            let vertical_fov_degrees = 120.0;
+            let vertical_fov_degrees = 20.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
             let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
@@ -325,8 +325,8 @@ fn init_exercise(
             *exercise_state = ExerciseState::Exercise9(params);
         }
         10 => {
-            let distance = 4.0;
-            let vertical_fov_degrees = 120.0;
+            let distance = 17.0;
+            let vertical_fov_degrees = 50.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
             let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
@@ -397,8 +397,8 @@ fn update_exercise_state(
 ) {
     match exercise_state {
         ExerciseState::Exercise10(params, _program) => {
-            let distance = 3.0;
-            let vertical_fov_degrees = 120.0;
+            let distance = 17.0;
+            let vertical_fov_degrees = 50.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
 
