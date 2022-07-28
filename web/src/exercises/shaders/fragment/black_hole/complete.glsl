@@ -20,6 +20,7 @@ uniform mat3x3 observer_mat;
 uniform float max_z;
 uniform float ray_cache_length;
 #define PI 3.1415926538
+#define AA_LEVEL 4.
 
 vec3 uv_grid(vec3 final_dir){
     float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
@@ -135,12 +136,16 @@ vec3 get_color(vec2 coord){
 void main(){
     // Sample
     vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
-    vec2 coord=(gl_FragCoord.xy+.5)*delta;
-    vec2 aa_delta=vec2(1./(3.*float(dimensions.x)),1./(3.*float(dimensions.y)));
-    vec3 rgb=(get_color(coord+vec2(aa_delta.x,aa_delta.y))+
-    get_color(coord+vec2(-aa_delta.x,aa_delta.y))+
-    get_color(coord+vec2(aa_delta.x,-aa_delta.y))+
-    get_color(coord+vec2(-aa_delta.x,-aa_delta.y)))/4.;
+    vec2 coord=gl_FragCoord.xy*delta;
     
-    outColor=vec4(rgb.xyz,1.);
+    float aa_half_delta=delta.x/(2.*AA_LEVEL);
+    vec3 color=vec3(0.,0.,0.);
+    for(float x=0.;x<AA_LEVEL;x=x+1.){
+        for(float y=0.;y<AA_LEVEL;y=y+1.){
+            color+=get_color(coord+aa_half_delta*vec2(1.+2.*x,1.+2.*y));
+        }
+    }
+    color/=AA_LEVEL*AA_LEVEL;
+    
+    outColor=vec4(color.xyz,1.);
 }
