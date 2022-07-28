@@ -641,6 +641,7 @@ struct RenderParams {
     pub seconds_since_start: f32,
     pub select_index: u32,
     pub mouse_pos: Option<(i32, i32)>,
+    pub mouse_scroll: f64,
 }
 
 impl RenderParams {
@@ -660,6 +661,12 @@ impl RenderParams {
     pub fn update_mouse_pos(&self, mouse_pos: Option<(i32, i32)>) -> RenderParams {
         let mut c = self.clone();
         c.mouse_pos = mouse_pos;
+        c
+    }
+
+    pub fn update_mouse_scroll(&self, delta: f64) -> RenderParams {
+        let mut c = self.clone();
+        c.mouse_scroll += delta;
         c
     }
 }
@@ -790,8 +797,16 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.add_event_listener_with_callback("mouseleave", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
+            params.set(params.get().update_mouse_scroll(_event.delta_y()));
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("wheel", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
 
-    let render_func = Rc::new(RefCell::new(None));
+    let render_func: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
     let g = render_func.clone();
     {
         let renderer = renderer.clone();
