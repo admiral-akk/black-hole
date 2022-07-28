@@ -75,11 +75,13 @@ vec3 galaxy_sample(vec3 final_dir){
 }
 
 vec3 get_start_dir(vec2 coord){
-    
+    // todo(CPU pre-compute)
     vec3 forward=observer_mat*normalized_dir;
+    // todo(CPU pre-compute)
     vec3 up=observer_mat*normalized_up;
+    // todo(CPU pre-compute)
     vec3 right=cross(forward,up);
-    
+    // todo(CPU pre-compute)
     float view_width=2.*tan(PI*vertical_fov_degrees/360.);
     
     return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
@@ -90,7 +92,9 @@ bool black_hole_hit(vec3 start_dir){
 }
 
 vec3 get_cached_dir(vec3 start_dir){
+    // todo(CPU pre-compute)
     float z_to_index_multiple=((ray_cache_length-1.)/((max_z+1.)*(max_z+1.)));
+    
     float index=(z_to_index_multiple*(start_dir.z+1.)*(start_dir.z+1.));
     return texture(ray_cache_tex,vec2((index+.5)/ray_cache_length,.5)).xyz;
 }
@@ -106,11 +110,11 @@ vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
     float sin_val=sin(angle);
     float cos_val=cos(angle);
     
-    float x=cached_dir.x;
+    // todo(figure out more idiomatic representation of rotation)
+    mat3x3 rot=mat3x3(vec2(cos_val,sin_val),0.,vec2(-sin_val,cos_val),0.,vec2(0.,0.),1.);
+    cached_dir=rot*cached_dir;
     
-    float y=cached_dir.y;
-    cached_dir.x=x*cos_val-y*sin_val;
-    cached_dir.y=x*sin_val+y*cos_val;
+    // todo(CPU pre-compute)
     mat3x3 inv=inverse(observer_mat);
     return inv*cached_dir;
 }
@@ -120,14 +124,10 @@ vec3 get_final_color(vec3 final_dir){
 }
 
 vec3 get_color(vec2 coord){
-    // Start dir
-    
     vec3 start_dir=get_start_dir(coord);
-    
     if(black_hole_hit(start_dir)){
         return vec3(0.,0.,0.);
     }
-    
     vec3 cached_dir=get_cached_dir(start_dir);
     vec3 final_dir=get_final_dir(start_dir,cached_dir);
     return get_final_color(final_dir);
