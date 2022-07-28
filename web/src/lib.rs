@@ -353,7 +353,7 @@ fn init_exercise(
             }
             console_log!("Stars len: {}", stars.len());
 
-            let tex = generate_texture_from_u8(&gl.gl, &s2, 1024);
+            let tex = generate_texture_from_u8(&gl.gl, &s2, 4096);
             let program = exercise_10::get_program(gl, &params, &tex);
             *exercise_state = ExerciseState::Exercise10(params, program, tex);
         }
@@ -666,6 +666,7 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
 }
 
 const image_url: &str = "http://localhost:8080/starmap_2020_4k_gal_print.jpg";
+const image_url2: &str = "http://localhost:8080/test.jpg";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -673,7 +674,7 @@ fn to_image(u8: Uint8Array) -> DynamicImage {
 
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
-    let x = fetch_url_binary(image_url.to_string()).await?;
+    let x = fetch_url_binary(image_url2.to_string()).await?;
     let im = to_image(x);
     let document = document();
     let select = document
