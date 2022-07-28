@@ -107,10 +107,9 @@ vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
     }else if(start_dir.y<0.){
         angle=-PI/2.;
     }
+    
     float sin_val=sin(angle);
     float cos_val=cos(angle);
-    
-    // todo(figure out more idiomatic representation of rotation)
     mat3x3 rot=mat3x3(vec2(cos_val,sin_val),0.,vec2(-sin_val,cos_val),0.,vec2(0.,0.),1.);
     cached_dir=rot*cached_dir;
     
