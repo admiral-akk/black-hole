@@ -121,37 +121,15 @@ vec3 get_final_color(vec3 final_dir){
 vec3 get_color(vec2 coord){
     // Start dir
     
-    vec3 v=get_start_dir(coord);
+    vec3 start_dir=get_start_dir(coord);
     
-    // Final dir
-    
-    vec3 start_ray=v;
-    float z=start_ray.z/length(start_ray);
-    
-    if(z>=max_z){
+    if(black_hole_hit(start_dir)){
         return vec3(0.,0.,0.);
     }
-    float z_to_index_multiple=((ray_cache_length-1.)/((max_z+1.)*(max_z+1.)));
-    float index=(z_to_index_multiple*(z+1.)*(z+1.));
-    vec3 final_dir=texture(ray_cache_tex,vec2((index+.5)/ray_cache_length,.5)).xyz;
     
-    float angle=PI/2.;
-    if(start_ray.x!=0.){
-        angle=atan(start_ray.y,start_ray.x);
-    }else if(start_ray.y<0.){
-        angle=-PI/2.;
-    }
-    float sin_val=sin(angle);
-    float cos_val=cos(angle);
-    
-    float x=final_dir.x;
-    
-    float y=final_dir.y;
-    final_dir.x=x*cos_val-y*sin_val;
-    final_dir.y=x*sin_val+y*cos_val;
-    mat3x3 inv=inverse(observer_mat);
-    final_dir=inv*final_dir;
-    return clamp(star_sample(final_dir)+constellation_sample(final_dir)+galaxy_sample(final_dir),0.,1.);
+    vec3 cached_dir=get_cached_dir(start_dir);
+    vec3 final_dir=get_final_dir(start_dir,cached_dir);
+    return get_final_color(final_dir);
 }
 
 void main(){
