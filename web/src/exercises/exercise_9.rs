@@ -254,8 +254,12 @@ fn step_by_step(gl: &RenderContext, params: &BlackHoleParams) {
     let uniforms = params.uniform_context();
     let mut text: Vec<&UniformContext> = uniforms.iter().map(|u| u).collect();
     let fb = gl.create_framebuffer();
-    let fb_context =
-        UniformContext::new_from_allocated_ref(&fb.backing_texture, "requested_samples");
+    let fb_context = UniformContext::new_from_allocated_ref(
+        &fb.backing_texture,
+        "requested_samples",
+        1024,
+        1024,
+    );
     let samples = gpu_samples(gl, params, &text, &fb, &image_data);
     text.push(&fb_context);
 
@@ -280,10 +284,16 @@ fn step_by_step(gl: &RenderContext, params: &BlackHoleParams) {
     }
 
     let ray_cache_tex = generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
-    let ray_context = UniformContext::new_from_allocated_ref(&ray_cache_tex, "ray_cache_tex");
+    let ray_context = UniformContext::new_from_allocated_ref(
+        &ray_cache_tex,
+        "ray_cache_tex",
+        final_dirs.len() as i32,
+        1,
+    );
     let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
     let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
-    let fb_context2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
+    let fb_context2 =
+        UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex", 1024, 1024);
     text.push(&ray_context);
     text.push(&ray_length);
     text.push(&max_z);
@@ -313,7 +323,7 @@ fn step_by_step(gl: &RenderContext, params: &BlackHoleParams) {
     // apply the colors to image
     image_data.load_colors(&data);
     let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 1024);
-    let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
+    let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler", 1024, 1024);
 
     // need:
 

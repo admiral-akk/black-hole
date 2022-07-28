@@ -34,7 +34,7 @@ pub fn exercise_8(
     // apply the colors to image
     image_data.load_colors(&data);
     let image = generate_texture_from_u8(&gl.gl, image_data.get_image(), 1024);
-    let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler");
+    let image_context = UniformContext::new_from_allocated_ref(&image, "rtt_sampler", 1024, 1024);
 
     let frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
     gl.draw(None, &frag, &[&image_context], None);

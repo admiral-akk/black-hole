@@ -1,5 +1,3 @@
-
-
 use crate::framework::{
     frame_buffer_context::FrameBufferContext, render_context::RenderContext,
     source_context::SourceContext, uniform_context::UniformContext,
@@ -13,8 +11,10 @@ pub fn exercise_4(
     fb2: &mut FrameBufferContext,
     kernel: &mut Vec<f32>,
 ) {
-    let fb_texture = UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler");
-    let fb_texture2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler");
+    let fb_texture =
+        UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler", 1024, 1024);
+    let fb_texture2 =
+        UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler", 1024, 1024);
     let kernel_weights = UniformContext::array_f32(&kernel, "w");
 
     let mut frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));

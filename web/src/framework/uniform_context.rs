@@ -12,7 +12,7 @@ pub enum UniformStore<'a> {
     Vec4(Vec4),
     Mat3x3(Mat3),
     ArrayF32(Vec<f32>),
-    Texture2dRef(&'a WebGlTexture),
+    Texture2dRef(&'a WebGlTexture, i32, i32),
 }
 
 pub struct UniformContext<'a> {
@@ -21,9 +21,14 @@ pub struct UniformContext<'a> {
 }
 
 impl UniformContext<'_> {
-    pub fn new_from_allocated_ref<'a>(texture: &'a WebGlTexture, name: &str) -> UniformContext<'a> {
+    pub fn new_from_allocated_ref<'a>(
+        texture: &'a WebGlTexture,
+        name: &str,
+        width: i32,
+        height: i32,
+    ) -> UniformContext<'a> {
         UniformContext {
-            store: UniformStore::Texture2dRef(texture),
+            store: UniformStore::Texture2dRef(texture, width, height),
             name: name.to_string(),
         }
     }
@@ -110,8 +115,8 @@ impl UniformContext<'_> {
                 let loc = gl.gl.get_uniform_location(&program.program, &self.name);
                 gl.gl.uniform1fv_with_f32_array(loc.as_ref(), arr);
             }
-            UniformStore::Texture2dRef(texture) => {
-                add_texture_to_program(&texture, gl, program, &self.name);
+            UniformStore::Texture2dRef(texture, width, height) => {
+                add_texture_to_program(&texture, gl, program, &self.name, *width, *height);
             }
         }
         gl.gl.use_program(None);
@@ -123,6 +128,8 @@ fn add_texture_to_program(
     gl: &RenderContext,
     program: &mut ProgramContext,
     name: &str,
+    width: i32,
+    height: i32,
 ) {
     let gl = &gl.gl;
     let texture_count = program.get_and_increment_texture_count();
@@ -130,4 +137,7 @@ fn add_texture_to_program(
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
     let loc = gl.get_uniform_location(&program.program, name);
     gl.uniform1i(loc.as_ref(), texture_count as i32);
+
+    let loc = gl.get_uniform_location(&program.program, &(name.to_string() + "_dim"));
+    gl.uniform2i(loc.as_ref(), width, height);
 }

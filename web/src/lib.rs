@@ -135,7 +135,7 @@ enum ExerciseState {
     Exercise7(FrameBufferContext, FrameBufferContext),
     Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
     Exercise9(BlackHoleParams),
-    Exercise10(BlackHoleParams, ProgramContext, WebGlTexture),
+    Exercise10(BlackHoleParams, ProgramContext),
 }
 
 impl Default for ExerciseState {
@@ -227,7 +227,7 @@ fn init_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
     exercise_index: u32,
-    im: &DynamicImage,
+    images: &ImageCache,
 ) {
     match exercise_index {
         0 => {
@@ -342,20 +342,9 @@ fn init_exercise(
                 dir,
                 up,
             );
-            let stars = im.as_rgb8().unwrap().as_raw().clone();
 
-            let mut s2 = Vec::new();
-            for i in 0..stars.len() / 3 {
-                s2.push(stars[3 * i]);
-                s2.push(stars[3 * i + 1]);
-                s2.push(stars[3 * i + 2]);
-                s2.push(255);
-            }
-            console_log!("Stars len: {}", stars.len());
-
-            let tex = generate_texture_from_u8(&gl.gl, &s2, 4096);
-            let program = exercise_10::get_program(gl, &params, &tex);
-            *exercise_state = ExerciseState::Exercise10(params, program, tex);
+            let program = exercise_10::get_program(gl, &params, images);
+            *exercise_state = ExerciseState::Exercise10(params, program);
         }
         _ => {}
     }
@@ -365,7 +354,7 @@ pub struct RenderState {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
     exercise_state: RefCell<Box<ExerciseState>>,
-    im: DynamicImage,
+    images: ImageCache,
 }
 
 fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
@@ -396,9 +385,7 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         }
         ExerciseState::Exercise8(..) => {}
         ExerciseState::Exercise9(..) => {}
-        ExerciseState::Exercise10(params, program, tex) => {
-            gl.delete_texture(&tex);
-        }
+        ExerciseState::Exercise10(params, program) => {}
         _ => {}
     }
 }
@@ -409,7 +396,7 @@ fn update_exercise_state(
     new_params: &RenderParams,
 ) {
     match exercise_state {
-        ExerciseState::Exercise10(params, _program, stars) => {
+        ExerciseState::Exercise10(params, _program) => {
             let distance = 3.0;
             let vertical_fov_degrees = 120.0;
             let black_hole_radius = 1.5;
@@ -452,11 +439,11 @@ fn update_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
     new_params: &RenderParams,
-    im: &DynamicImage,
+    images: &ImageCache,
 ) {
     if exercise_state.index() != new_params.select_index {
         clean_up_exercise(gl, exercise_state);
-        init_exercise(gl, exercise_state, new_params.select_index, im);
+        init_exercise(gl, exercise_state, new_params.select_index, images);
     }
     update_exercise_state(gl, exercise_state, new_params);
 }
@@ -481,10 +468,18 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             exercise_4::exercise_4(gl, fb1, fb2, kernel);
         }
         ExerciseState::Exercise5(fb1, fb2, r, g, b) => {
-            let fb_texture =
-                UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler");
-            let fb_texture2 =
-                UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler");
+            let fb_texture = UniformContext::new_from_allocated_ref(
+                &fb1.backing_texture,
+                "rtt_sampler",
+                1024,
+                1024,
+            );
+            let fb_texture2 = UniformContext::new_from_allocated_ref(
+                &fb2.backing_texture,
+                "rtt_sampler",
+                1024,
+                1024,
+            );
             let r_kernel_weights = UniformContext::array_f32(&r, "r");
             let g_kernel_weights = UniformContext::array_f32(&g, "g");
             let b_kernel_weights = UniformContext::array_f32(&b, "b");
@@ -540,13 +535,21 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
             gl.draw(None, &frag, &[&pos_seed_uniform, &color_seed_uniform], None);
         }
         ExerciseState::Exercise7(fb1, fb2) => {
-            let state_texture =
-                UniformContext::new_from_allocated_ref(&fb1.backing_texture, "rtt_sampler");
+            let state_texture = UniformContext::new_from_allocated_ref(
+                &fb1.backing_texture,
+                "rtt_sampler",
+                1024,
+                1024,
+            );
             frag = SourceContext::new(include_str!("shaders/fragment/add_white.glsl"));
             gl.draw(None, &frag, &[&state_texture], Some(&fb2.frame_buffer));
 
-            let fb_texture =
-                UniformContext::new_from_allocated_ref(&fb2.backing_texture, "rtt_sampler");
+            let fb_texture = UniformContext::new_from_allocated_ref(
+                &fb2.backing_texture,
+                "rtt_sampler",
+                1024,
+                1024,
+            );
             gl.draw(None, &frag, &[&fb_texture], Some(&fb1.frame_buffer));
             gl.draw(None, &frag, &[&fb_texture], None);
         }
@@ -556,7 +559,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         ExerciseState::Exercise9(params) => {
             exercise_9::exercise_9(gl, params);
         }
-        ExerciseState::Exercise10(params, program, stars) => {
+        ExerciseState::Exercise10(params, program) => {
             console_log!("Normalized pos: {}", params.normalized_pos);
             for ele in params.uniform_context() {
                 ele.add_to_program(gl, program);
@@ -573,7 +576,12 @@ impl RenderState {
         console_log!("params: {:?}", params);
         let gl = &self.gl;
 
-        update_exercise(gl, &mut *self.exercise_state.borrow_mut(), params, &self.im);
+        update_exercise(
+            gl,
+            &mut *self.exercise_state.borrow_mut(),
+            params,
+            &self.images,
+        );
         render_exercise(gl, &mut *self.exercise_state.borrow_mut());
         self.prev_params.set(*params);
         Ok(())
@@ -581,14 +589,15 @@ impl RenderState {
 }
 
 impl RenderState {
-    pub fn new(width: u32, height: u32, im: DynamicImage) -> Result<RenderState, JsValue> {
+    pub async fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
         let gl = RenderContext::new(width, height);
 
+        let images = ImageCache::new(&gl).await?;
         Ok(RenderState {
             gl,
             prev_params: Cell::default(),
             exercise_state: RefCell::default(),
-            im,
+            images,
         })
     }
 }
@@ -665,17 +674,73 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
     Ok(Uint8Array::new(&image_data))
 }
 
-const image_url: &str = "http://localhost:8080/starmap_2020_4k_gal_print.jpg";
-const image_url2: &str = "http://localhost:8080/test.jpg";
+const GALAXY_URL: &str = "http://localhost:8080/galaxy.jpg";
+const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
+const STARS_URL: &str = "http://localhost:8080/stars.jpg";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
 
+pub struct ImageCache {
+    galaxy_tex: WebGlTexture,
+    galaxy_dim: (i32, i32),
+    stars_tex: WebGlTexture,
+    stars_dim: (i32, i32),
+    constellations_tex: WebGlTexture,
+    constellations_dim: (i32, i32),
+}
+
+impl ImageCache {
+    fn to_rgba(rgb: &Vec<u8>) -> Vec<u8> {
+        let mut rgba = Vec::new();
+        for i in 0..rgb.len() / 3 {
+            rgba.push(rgb[3 * i]);
+            rgba.push(rgb[3 * i + 1]);
+            rgba.push(rgb[3 * i + 2]);
+            rgba.push(255);
+        }
+        rgba
+    }
+
+    pub async fn new(gl: &RenderContext) -> Result<ImageCache, JsValue> {
+        let galaxy = fetch_url_binary(GALAXY_URL.to_string()).await?;
+        let galaxy = to_image(galaxy);
+        let galaxy_tex = generate_texture_from_u8(
+            &gl.gl,
+            &ImageCache::to_rgba(galaxy.as_rgb8().unwrap().as_raw()),
+            galaxy.width() as i32,
+        );
+        let stars = fetch_url_binary(STARS_URL.to_string()).await?;
+        let stars = to_image(stars);
+        let stars_tex = generate_texture_from_u8(
+            &gl.gl,
+            &ImageCache::to_rgba(stars.as_rgb8().unwrap().as_raw()),
+            stars.width() as i32,
+        );
+        let constellations = fetch_url_binary(CONSTELLATIONS_URL.to_string()).await?;
+        let constellations = to_image(constellations);
+        let constellations_tex = generate_texture_from_u8(
+            &gl.gl,
+            &ImageCache::to_rgba(constellations.as_rgb8().unwrap().as_raw()),
+            constellations.width() as i32,
+        );
+        Ok(ImageCache {
+            galaxy_tex,
+            galaxy_dim: (galaxy.width() as i32, galaxy.height() as i32),
+            stars_tex,
+            stars_dim: (stars.width() as i32, stars.height() as i32),
+            constellations_tex,
+            constellations_dim: (
+                constellations.width() as i32,
+                constellations.height() as i32,
+            ),
+        })
+    }
+}
+
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
-    let x = fetch_url_binary(image_url2.to_string()).await?;
-    let im = to_image(x);
     let document = document();
     let select = document
         .get_element_by_id("input")
@@ -693,7 +758,7 @@ pub async fn start() -> Result<(), JsValue> {
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
     let params = Rc::new(Cell::new(RenderParams::default()));
-    let renderer = Rc::new(RenderState::new(1024, 1024, im)?);
+    let renderer = Rc::new(RenderState::new(1024, 1024).await?);
     {
         let start_time = start_time.clone();
         let params = params.clone();

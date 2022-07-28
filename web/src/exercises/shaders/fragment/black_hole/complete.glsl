@@ -4,6 +4,11 @@ precision mediump float;
 uniform sampler2D start_ray_tex;
 uniform sampler2D ray_cache_tex;
 uniform sampler2D stars;
+uniform ivec2 stars_dim;
+uniform sampler2D constellations;
+uniform ivec2 constellations_dim;
+uniform sampler2D galaxy;
+uniform ivec2 galaxy_dim;
 out vec4 outColor;
 
 uniform ivec2 dimensions;
@@ -119,6 +124,26 @@ vec3 star_sample(vec3 final_dir){
     theta=mod(theta,PI);
     return texture(stars,vec2(phi/(2.*PI),theta/PI)).xyz;
 }
+vec3 constellation_sample(vec3 final_dir){
+    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
+    float phi=4.*PI+atan(final_dir.z,final_dir.x);
+    
+    float theta=atan(final_dir.y,horizontal_len)+3.*PI/2.;
+    
+    phi=mod(phi,2.*PI);
+    theta=mod(theta,PI);
+    return texture(constellations,vec2(phi/(2.*PI),theta/PI)).xyz;
+}
+vec3 galaxy_sample(vec3 final_dir){
+    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
+    float phi=4.*PI+atan(final_dir.z,final_dir.x);
+    
+    float theta=atan(final_dir.y,horizontal_len)+3.*PI/2.;
+    
+    phi=mod(phi,2.*PI);
+    theta=mod(theta,PI);
+    return texture(galaxy,vec2(phi/(2.*PI),theta/PI)).xyz;
+}
 
 float rand(vec2 xy,vec2 seed){
     return fbm(xy+seed);
@@ -191,7 +216,7 @@ vec3 get_color(vec2 coord){
     final_dir.y=x*sin_val+y*cos_val;
     mat3x3 inv=inverse(observer_mat);
     final_dir=inv*final_dir;
-    return star_sample(final_dir);
+    return clamp(star_sample(final_dir)+constellation_sample(final_dir)+galaxy_sample(final_dir),0.,1.);
 }
 
 void main(){

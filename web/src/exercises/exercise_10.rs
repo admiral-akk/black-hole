@@ -8,7 +8,7 @@ use crate::{
         source_context::SourceContext, texture_utils::generate_texture_from_f32,
         uniform_context::UniformContext,
     },
-    BlackHoleParams,
+    BlackHoleParams, ImageCache,
 };
 
 const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
@@ -16,7 +16,7 @@ const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_textu
 pub fn get_program(
     gl: &RenderContext,
     params: &BlackHoleParams,
-    im: &WebGlTexture,
+    images: &ImageCache,
 ) -> ProgramContext {
     let mut text: Vec<&UniformContext> = Vec::new();
 
@@ -40,16 +40,41 @@ pub fn get_program(
     }
 
     let ray_cache_tex = generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
-    let ray_context = UniformContext::new_from_allocated_ref(&ray_cache_tex, "ray_cache_tex");
+    let ray_context = UniformContext::new_from_allocated_ref(
+        &ray_cache_tex,
+        "ray_cache_tex",
+        final_dirs.len() as i32,
+        1,
+    );
     let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
     let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
-    let fb_context2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
-    let stars = UniformContext::new_from_allocated_ref(im, "stars");
+    let fb_context2 =
+        UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex", 1024, 1024);
+    let stars = UniformContext::new_from_allocated_ref(
+        &images.stars_tex,
+        "stars",
+        images.stars_dim.0,
+        images.stars_dim.1,
+    );
+    let constellations = UniformContext::new_from_allocated_ref(
+        &images.constellations_tex,
+        "constellations",
+        images.constellations_dim.0,
+        images.constellations_dim.1,
+    );
+    let galaxy = UniformContext::new_from_allocated_ref(
+        &images.galaxy_tex,
+        "galaxy",
+        images.galaxy_dim.0,
+        images.galaxy_dim.1,
+    );
     text.push(&ray_context);
     text.push(&ray_length);
     text.push(&max_z);
     text.push(&fb_context2);
     text.push(&stars);
+    text.push(&galaxy);
+    text.push(&constellations);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
     gl.get_program(None, &frag, &text)
@@ -79,10 +104,16 @@ fn complete(gl: &RenderContext, params: &BlackHoleParams) {
     }
 
     let ray_cache_tex = generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
-    let ray_context = UniformContext::new_from_allocated_ref(&ray_cache_tex, "ray_cache_tex");
+    let ray_context = UniformContext::new_from_allocated_ref(
+        &ray_cache_tex,
+        "ray_cache_tex",
+        final_dirs.len() as i32,
+        1,
+    );
     let ray_length = UniformContext::f32(final_dirs.len() as f32, "ray_cache_length");
     let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
-    let fb_context2 = UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex");
+    let fb_context2 =
+        UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex", 1024, 1024);
     text.push(&ray_context);
     text.push(&ray_length);
     text.push(&max_z);
