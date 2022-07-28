@@ -325,7 +325,7 @@ fn init_exercise(
             *exercise_state = ExerciseState::Exercise9(params);
         }
         10 => {
-            let distance = 3.0;
+            let distance = 4.0;
             let vertical_fov_degrees = 120.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
