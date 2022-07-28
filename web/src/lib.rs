@@ -15,6 +15,7 @@ use exercises::exercise_9;
 use framework::frame_buffer_context::FrameBufferContext;
 
 use framework::program_context::ProgramContext;
+use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
@@ -393,11 +394,41 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
 fn update_exercise_state(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
+    old_params: &RenderParams,
     new_params: &RenderParams,
 ) {
     match exercise_state {
-        ExerciseState::Exercise10(params, _program) => {
-            let distance = 17.0;
+        ExerciseState::Exercise10(params, program) => {
+            if old_params.mouse_scroll != new_params.mouse_scroll {
+                // recompute ray cache
+                let ray_cache = RayCache::compute_new(
+                    params.cache_width as usize,
+                    params.black_hole_radius,
+                    params.distance,
+                );
+
+                let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
+                let mut f32_vec: Vec<f32> = Vec::new();
+                for i in 0..final_dirs.len() {
+                    let final_dir = final_dirs[i];
+                    f32_vec.push(final_dir.x);
+                    f32_vec.push(final_dir.y);
+                    f32_vec.push(final_dir.z);
+                    f32_vec.push(1.0);
+                }
+                let ray_cache_tex =
+                    generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
+                let ray_context = UniformContext::new_from_allocated_ref(
+                    &ray_cache_tex,
+                    "ray_cache_tex",
+                    final_dirs.len() as i32,
+                    1,
+                );
+                ray_context.add_to_program(gl, program);
+                let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
+                max_z.add_to_program(gl, program);
+            }
+            let distance = (17.0 + new_params.mouse_scroll / 100.0) as f32;
             let vertical_fov_degrees = 50.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
@@ -438,6 +469,7 @@ fn update_exercise_state(
 fn update_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
+    old_params: &RenderParams,
     new_params: &RenderParams,
     images: &ImageCache,
 ) {
@@ -445,7 +477,7 @@ fn update_exercise(
         clean_up_exercise(gl, exercise_state);
         init_exercise(gl, exercise_state, new_params.select_index, images);
     }
-    update_exercise_state(gl, exercise_state, new_params);
+    update_exercise_state(gl, exercise_state, old_params, new_params);
 }
 
 fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
@@ -579,6 +611,7 @@ impl RenderState {
         update_exercise(
             gl,
             &mut *self.exercise_state.borrow_mut(),
+            &self.prev_params.get(),
             params,
             &self.images,
         );

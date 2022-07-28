@@ -68,13 +68,13 @@ pub fn get_program(
         images.galaxy_dim.0,
         images.galaxy_dim.1,
     );
+    text.push(&stars);
+    text.push(&galaxy);
+    text.push(&constellations);
     text.push(&ray_context);
     text.push(&ray_length);
     text.push(&max_z);
     text.push(&fb_context2);
-    text.push(&stars);
-    text.push(&galaxy);
-    text.push(&constellations);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
     gl.get_program(None, &frag, &text)
