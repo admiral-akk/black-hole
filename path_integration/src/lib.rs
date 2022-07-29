@@ -27,7 +27,7 @@ pub fn cast_ray_steps(
         step_particle(&mut particle, field);
         distance += (particle.p - prev).length();
     }
-    if (distance >= max_distance) {
+    if distance >= max_distance {
         return (steps, None);
     }
     steps.push(particle.p);
