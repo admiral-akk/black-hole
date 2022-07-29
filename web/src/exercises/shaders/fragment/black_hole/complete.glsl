@@ -3,6 +3,8 @@
 precision mediump float;
 uniform sampler2D start_ray_tex;
 uniform sampler2D ray_cache_tex;
+uniform sampler2D angle_cache_tex;
+uniform ivec2 angle_cache_tex_dim;
 uniform sampler2D stars;
 uniform ivec2 stars_dim;
 uniform sampler2D constellations;
@@ -91,16 +93,31 @@ bool black_hole_hit(vec3 start_dir){
     return start_dir.z>=max_z;
 }
 
-vec3 get_cached_dir(vec3 start_dir){
+float get_cache_index(vec3 start_dir){
     // todo(CPU pre-compute)
     float z_to_index_multiple=((ray_cache_length-1.)/((max_z+1.)*(max_z+1.)));
     
-    float index=(z_to_index_multiple*(start_dir.z+1.)*(start_dir.z+1.));
+    return z_to_index_multiple*(start_dir.z+1.)*(start_dir.z+1.);
+}
+
+vec3 get_cached_dir(vec3 start_dir){
+    float index=get_cache_index(start_dir);
     return texture(ray_cache_tex,vec2((index+.5)/ray_cache_length,.5)).xyz;
 }
 
+float get_closest_dist(vec3 start_dir){
+    float index=get_cache_index(start_dir);
+    float closest=100000.;
+    for(float i=.5;i<360.;i=i+1.){
+        float d=texture(angle_cache_tex,vec2(i/float(angle_cache_tex_dim.x),(index+.5)/float(angle_cache_tex_dim.y))).y;
+        if(d<closest){
+            closest=d;
+        }
+    }
+    return closest;
+}
+
 vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
-    
     float angle=PI/2.;
     if(start_dir.x!=0.){
         angle=atan(start_dir.y,start_dir.x);
@@ -127,6 +144,10 @@ vec3 get_color(vec2 coord){
     if(black_hole_hit(start_dir)){
         return vec3(0.,0.,0.);
     }
+    float closest=get_closest_dist(start_dir);
+    if(closest>0.&&closest<10.){
+        return vec3(1.,1.,1.);
+    }
     vec3 cached_dir=get_cached_dir(start_dir);
     vec3 final_dir=get_final_dir(start_dir,cached_dir);
     return get_final_color(final_dir);
@@ -136,7 +157,6 @@ void main(){
     // Sample
     vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
     vec2 coord=gl_FragCoord.xy*delta;
-    
     float aa_half_delta=delta.x/(2.*AA_LEVEL);
     vec3 color=vec3(0.,0.,0.);
     for(float x=0.;x<AA_LEVEL;x=x+1.){

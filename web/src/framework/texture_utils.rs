@@ -74,7 +74,7 @@ pub fn generate_texture_from_f32(
             0,
             WebGl2RenderingContext::RGBA32F as i32,
             width,
-            1 as i32,
+            (arr.len() / (4 * width) as usize) as i32,
             0,
             WebGl2RenderingContext::RGBA,
             WebGl2RenderingContext::FLOAT,
