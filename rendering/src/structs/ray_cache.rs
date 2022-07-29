@@ -78,7 +78,7 @@ impl RayCache {
                 println!("Caching missed unexpectedly!");
                 break;
             } else {
-                let result = result.unwrap();
+                let result = result.unwrap().1;
                 cache.push(RayCachedAnswer {
                     z: ray.dir.z as f32,
                     final_dir: Vec3::new(result.x as f32, result.y as f32, result.z as f32),
@@ -265,7 +265,7 @@ mod tests {
             let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
-                let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).unwrap();
+                let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).unwrap().1;
                 let actual_dir = Vec3::new(
                     actual_dir.x as f32,
                     actual_dir.y as f32,
@@ -309,7 +309,7 @@ mod tests {
             let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
-                let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).unwrap();
+                let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).unwrap().1;
                 let actual_dir = Vec3::new(
                     actual_dir.x as f32,
                     actual_dir.y as f32,

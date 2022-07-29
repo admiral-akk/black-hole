@@ -13,10 +13,12 @@ pub fn cast_ray_steps(
     field: &Field,
     escape_radius: f64,
     max_distance: f64,
-) -> Option<DVec3> {
+) -> Option<(Vec<DVec3>, DVec3)> {
     let mut particle = Particle::new(ray, field);
     let mut distance = 0.0;
+    let mut steps = Vec::new();
     while particle.p.length() < escape_radius && distance < max_distance {
+        steps.push(particle.p);
         if hit(&particle, field) {
             return None;
         }
@@ -24,11 +26,11 @@ pub fn cast_ray_steps(
         step_particle(&mut particle, field);
         distance += (particle.p - prev).length();
     }
-    if distance >= max_distance {
+    if (distance >= max_distance) {
         return None;
     }
-
-    Some(particle.v)
+    steps.push(particle.p);
+    Some((steps, particle.v))
 }
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
