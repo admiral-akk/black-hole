@@ -20,13 +20,13 @@ pub struct RayCachedAnswer {
     pub final_dir: Vec3,
 }
 
-fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64) -> f64 {
+fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64, max_distance: f64) -> f64 {
     let (mut miss_z, mut hit_z) = (-1.0, 1.0);
     while hit_z - miss_z > epsilon {
         let z = 0.5 * (hit_z + miss_z);
         let test = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
         let ray = Ray::new(camera_pos.as_dvec3(), test);
-        let final_dir = cast_ray_steps(&ray, field, 100.0);
+        let final_dir = cast_ray_steps(&ray, field, max_distance, 10.0 * max_distance);
         if final_dir.is_none() {
             // hit the black hole
             hit_z = test.z;
@@ -66,13 +66,14 @@ impl RayCache {
 
         let cache_pos = camera_distance * RAY_START_DIR;
 
-        let max_z = find_bound(&cache_pos, &field, 0.0000001);
+        let max_distance = 2.0 * camera_distance as f64;
+        let max_z = find_bound(&cache_pos, &field, 0.0000001, max_distance);
 
         for i in 0..size {
             let z = index_to_z(i, size, max_z);
             let dir = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
             let ray = Ray::new(cache_pos.as_dvec3(), dir);
-            let result = cast_ray_steps(&ray, &field, 100.0);
+            let result = cast_ray_steps(&ray, &field, max_distance, 10.0 * max_distance);
             if result.is_none() {
                 println!("Caching missed unexpectedly!");
                 break;
@@ -175,7 +176,7 @@ mod tests {
         for x in (-iterations)..=iterations {
             let x = (x as f64) / (iterations as f64);
             let ray = Ray::new(pos, DVec3::new(x, 0.0, 1.0));
-            let actual_dir = cast_ray_steps(&ray, &field, 100.0);
+            let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0);
             let approx_dir = ray_cache.fetch_final_dir(ray.dir.z as f32);
             if approx_dir.is_none() != actual_dir.is_none() {
                 if approx_dir.is_none() {
@@ -216,7 +217,7 @@ mod tests {
         for y in 0..=(iterations + 1) {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(pos, DVec3::new(0.0, y, 1.0));
-            let actual_dir = cast_ray_steps(&ray, &field, 100.0);
+            let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0);
             let approx_dir = ray_cache.fetch_final_dir(ray.dir.z as f32);
             if approx_dir.is_none() != actual_dir.is_none() {
                 if approx_dir.is_none() {
@@ -261,10 +262,10 @@ mod tests {
             let t = x;
             let x = (x as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(pos, DVec3::new(x, 0.0, 1.0));
-            let actual_dir = cast_ray_steps(&ray, &field, 100.0);
+            let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
-                let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
+                let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).unwrap();
                 let actual_dir = Vec3::new(
                     actual_dir.x as f32,
                     actual_dir.y as f32,
@@ -305,10 +306,10 @@ mod tests {
             let t = y;
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(pos, DVec3::new(0.0, y, 1.0));
-            let actual_dir = cast_ray_steps(&ray, &field, 100.0);
+            let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0);
             if actual_dir.is_some() {
                 let approximate_dir = ray_cache.fetch_final_dir(ray.dir.z as f32).unwrap();
-                let actual_dir = cast_ray_steps(&ray, &field, 100.0).unwrap();
+                let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).unwrap();
                 let actual_dir = Vec3::new(
                     actual_dir.x as f32,
                     actual_dir.y as f32,

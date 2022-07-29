@@ -5,7 +5,7 @@ use path_integration::{cast_ray_steps, Field, Ray};
 // A full 10x10 image
 fn cast_ray_steps_repeated(ray: &Ray, field: &Field, pixel_count: u32) {
     for _i in 0..pixel_count {
-        black_box(cast_ray_steps(&ray, &field, 40.0));
+        black_box(cast_ray_steps(&ray, &field, 20.0, 40.0));
     }
 }
 

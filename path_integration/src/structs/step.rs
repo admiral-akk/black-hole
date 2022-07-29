@@ -1,6 +1,6 @@
 use super::{field::Field, particle::Particle};
 
-const MIN_STEP: f64 = 0.001;
+const MIN_STEP: f64 = 0.0002;
 
 pub fn step_particle(particle: &mut Particle, field: &Field) {
     let h = step_size(particle, field);

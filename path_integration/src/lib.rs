@@ -8,10 +8,15 @@ pub use structs::field::Field;
 use structs::step::{hit, step_particle};
 
 // Takes in a ray and a parameterization of the black hole; returns the final direction.
-pub fn cast_ray_steps(ray: &Ray, field: &Field, max_distance: f64) -> Option<DVec3> {
+pub fn cast_ray_steps(
+    ray: &Ray,
+    field: &Field,
+    escape_radius: f64,
+    max_distance: f64,
+) -> Option<DVec3> {
     let mut particle = Particle::new(ray, field);
     let mut distance = 0.0;
-    while particle.p.length() < 20.0 && distance < max_distance {
+    while particle.p.length() < escape_radius && distance < max_distance {
         if hit(&particle, field) {
             return None;
         }

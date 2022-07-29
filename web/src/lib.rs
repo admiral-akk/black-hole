@@ -399,12 +399,13 @@ fn update_exercise_state(
 ) {
     match exercise_state {
         ExerciseState::Exercise10(params, program) => {
+            let distance = (17.0 + new_params.mouse_scroll / 100.0) as f32;
             if old_params.mouse_scroll != new_params.mouse_scroll {
                 // recompute ray cache
                 let ray_cache = RayCache::compute_new(
                     params.cache_width as usize,
                     params.black_hole_radius,
-                    params.distance,
+                    distance,
                 );
 
                 let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
@@ -428,7 +429,6 @@ fn update_exercise_state(
                 let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
                 max_z.add_to_program(gl, program);
             }
-            let distance = (17.0 + new_params.mouse_scroll / 100.0) as f32;
             let vertical_fov_degrees = 50.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;
