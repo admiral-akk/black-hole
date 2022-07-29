@@ -139,18 +139,24 @@ vec3 get_final_color(vec3 final_dir){
     return clamp(star_sample(final_dir)+constellation_sample(final_dir)+galaxy_sample(final_dir),0.,1.);
 }
 
-vec3 get_color(vec2 coord){
-    vec3 start_dir=get_start_dir(coord);
+vec3 get_background_color(vec3 start_dir){
     if(black_hole_hit(start_dir)){
         return vec3(0.,0.,0.);
-    }
-    float closest=get_closest_dist(start_dir);
-    if(closest>0.&&closest<10.){
-        return vec3(1.,1.,1.);
     }
     vec3 cached_dir=get_cached_dir(start_dir);
     vec3 final_dir=get_final_dir(start_dir,cached_dir);
     return get_final_color(final_dir);
+}
+
+vec4 get_disc_color(vec3 start_dir){
+    return vec4(1.,1.,1.,.4);
+}
+
+vec3 get_color(vec2 coord){
+    vec3 start_dir=get_start_dir(coord);
+    vec3 background_color=get_background_color(start_dir);
+    vec4 disc_color=get_disc_color(start_dir);
+    return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
 }
 
 void main(){
