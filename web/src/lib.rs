@@ -386,7 +386,7 @@ fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
         }
         ExerciseState::Exercise8(..) => {}
         ExerciseState::Exercise9(..) => {}
-        ExerciseState::Exercise10(params, program) => {}
+        ExerciseState::Exercise10(_params, _program) => {}
         _ => {}
     }
 }
