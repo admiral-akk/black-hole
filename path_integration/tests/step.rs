@@ -2,7 +2,7 @@
 
 mod tests {
     use glam::DVec3;
-    use path_integration::{cast_ray_steps, cast_ray_steps_debug, Field, Ray};
+    use path_integration::{cast_ray_steps, Field, Ray};
     use plotters::prelude::*;
     use plotters::{
         prelude::{BitMapBackend, ChartBuilder, Circle, EmptyElement, IntoDrawingArea, LineSeries},
@@ -96,7 +96,7 @@ mod tests {
         while (left - right).length() > max_width {
             let center = 0.5 * (left + right);
             let ray = Ray::new(*camera_pos, (center - *camera_pos).normalize());
-            if cast_ray_steps(&ray, field, 20.0, 100.0).is_none() {
+            if cast_ray_steps(&ray, field, 20.0, 100.0).1.is_none() {
                 // hit the black hole
                 right = center;
             } else {
@@ -119,8 +119,8 @@ mod tests {
                 let r = (i as f64) / ((num_lines as f64) - 1.0);
                 let end = DVec3::new(10.0 * r - 5.0, 5.0, 0.0);
                 let ray = Ray::new(start, end - start);
-                is_hit.push(cast_ray_steps(&ray, &field, 20.0, 100.0).is_none());
-                let path = cast_ray_steps_debug(&ray, &field, 40.0);
+                let (path, hit) = cast_ray_steps(&ray, &field, 20.0, 100.0);
+                is_hit.push(hit.is_none());
                 lines.push(path);
             }
             let path = format!("output/radius/test_rad_{}_paths.png", r);
@@ -144,8 +144,8 @@ mod tests {
                 let r = (i as f64) / ((num_lines as f64) - 1.0);
                 let end = left - 0.1 * (1.0 - r) * DVec3::X;
                 let ray = Ray::new(start, end - start);
-                is_hit.push(cast_ray_steps(&ray, &field, 20.0, 100.0).is_none());
-                let path = cast_ray_steps_debug(&ray, &field, 40.0);
+                let (path, hit) = cast_ray_steps(&ray, &field, 20.0, 100.0);
+                is_hit.push(hit.is_none());
                 lines.push(path);
             }
             let path = format!("output/near/test_rad_{}_paths.png", r);
