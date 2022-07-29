@@ -18,6 +18,8 @@ pub const RAY_START_DIR: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 pub struct RayCachedAnswer {
     pub z: f32,
     pub final_dir: Vec3,
+    // this keeps track of where the ray might hit the accretion disc
+    pub angle_to_dist: Vec<(f32, f32)>,
 }
 
 fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64, max_distance: f64) -> f64 {
@@ -60,6 +62,43 @@ impl RayCache {
         (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z))
     }
 
+    fn get_angle(p: DVec3) -> f64 {
+        let mut a = f64::atan2(p.z, p.x);
+        if a < 0.0 {
+            a += std::f64::consts::TAU;
+        }
+        a
+    }
+
+    // returns an array containing size points whe
+    fn path_to_angles(path: Vec<DVec3>, size: usize, max_distance: f32) -> Vec<(f32, f32)> {
+        let mut angles: Vec<(f32, f32)> = Vec::new();
+        let angle_delta = std::f64::consts::TAU / (size - 1) as f64;
+        let mut next_angle: f64 = angle_delta;
+        angles.push((0.0, path[0].length() as f32));
+        for i in 1..path.len() {
+            if angles.len() == size {
+                break;
+            }
+            let p = path[i];
+            let a = RayCache::get_angle(p);
+            if a > next_angle {
+                // find the point where it crosses
+                let p_last = path[i - 1];
+                let a_last = RayCache::get_angle(p_last);
+                let last_weight = (next_angle - a_last) / (a - a_last);
+                let p = last_weight * p_last + (1.0 - last_weight) * p;
+                angles.push((next_angle as f32, p.length() as f32));
+                next_angle += angle_delta;
+            }
+        }
+        while angles.len() < size {
+            angles.push((next_angle as f32, max_distance));
+            next_angle += angle_delta;
+        }
+        angles
+    }
+
     pub fn compute_new(size: usize, black_hole_radius: f32, camera_distance: f32) -> Self {
         let mut cache = Vec::new();
         let field = Field::new(black_hole_radius as f64, camera_distance as f64);
@@ -78,10 +117,12 @@ impl RayCache {
                 println!("Caching missed unexpectedly!");
                 break;
             } else {
-                let result = result.1.unwrap();
+                let final_dir = result.1.unwrap();
+                let angles = RayCache::path_to_angles(result.0, 361, max_distance as f32);
                 cache.push(RayCachedAnswer {
                     z: ray.dir.z as f32,
-                    final_dir: Vec3::new(result.x as f32, result.y as f32, result.z as f32),
+                    final_dir: final_dir.as_vec3(),
+                    angle_to_dist: angles,
                 })
             }
         }
