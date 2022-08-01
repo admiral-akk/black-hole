@@ -768,7 +768,14 @@ pub struct ImageCache {
 }
 
 fn float_to_u16(v: f32) -> u16 {
-    (std::u16::MAX as f32 * ((v + 1.0) / 2.0)) as u16
+    let v = (std::u16::MAX as f32 * ((v + 1.0) / 2.0));
+    if v > std::u16::MAX as f32 {
+        return std::u16::MAX;
+    }
+    if v <= 0.0 {
+        return 0;
+    }
+    return v as u16;
 }
 fn u16_to_float(v: u16) -> f32 {
     (2.0 * v as f32 / std::u16::MAX as f32) - 1.0
@@ -823,6 +830,7 @@ impl ImageCache {
 
         let z_max_cache = fetch_url_binary(Z_MAX_CACHE_URL.to_string()).await?;
         let z_max_cache = to_image_from_png(z_max_cache);
+        let z_max_vec_u16: &Vec<u16> = z_max_cache.as_rgba16().unwrap().as_raw();
         let z_max_vec: Vec<f32> = z_max_cache
             .as_rgba16()
             .unwrap()
@@ -831,9 +839,10 @@ impl ImageCache {
             .map(|v| u16_to_float(*v))
             .collect();
 
+        console_log!("z_max u16: {:?}", z_max_vec_u16);
         console_log!("z_max: {:?}", z_max_vec);
         let z_max_cache_tex =
-            generate_texture_from_f32(&gl.gl, &z_max_vec, ray_cache.width() as i32);
+            generate_texture_from_f32(&gl.gl, &z_max_vec, z_max_cache.width() as i32);
 
         Ok(ImageCache {
             galaxy_tex,

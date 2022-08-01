@@ -139,11 +139,11 @@ mod tests {
 
     #[test]
     fn write_and_read_cache_from_image() -> Result<(), Box<dyn std::error::Error>> {
-        let (x_dim, y_dim) = (512, 2);
+        let (x_dim, y_dim) = (512, 64);
         let mut float_buffer: image::ImageBuffer<image::Rgba<u16>, Vec<u16>> =
             image::ImageBuffer::new(x_dim, y_dim);
         let mut z_max_buffer: image::ImageBuffer<image::Rgba<u16>, Vec<u16>> =
-            image::ImageBuffer::new(x_dim, 1);
+            image::ImageBuffer::new(y_dim, 1);
         let (min, max) = (5., 20.);
         for y in 0..y_dim {
             let dist = (max - min) * (y as f32) / (y_dim - 1) as f32 + min;
@@ -184,6 +184,7 @@ mod tests {
                 .get_pixel(y as u32, 0)
                 .0
                 .map(|v| u16_to_float(v));
+            println!("max_z:{}", image_dir[0]);
             assert!(
                 f32::abs(cache.max_z - image_dir[0]) < 0.0001,
                 "expected: {:?}\nactual: {:?}\n",

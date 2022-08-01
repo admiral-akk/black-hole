@@ -111,14 +111,14 @@ vec3 get_true_start_dir(vec2 coord){
 bool black_hole_hit(vec3 start_dir){
     float z=texture(z_max_cache,vec2((distance-5.)/15.,.5)).x;
     
-    return start_dir.z>=max_z;
+    return start_dir.z>=z;
 }
 
 float get_cache_index(vec3 start_dir){
     // todo(CPU pre-compute)
-    float z_to_index_multiple=((ray_cache_length-1.)/((max_z+1.)*(max_z+1.)));
-    
-    return z_to_index_multiple*(start_dir.z+1.)*(start_dir.z+1.);
+    float z=texture(z_max_cache,vec2((distance-5.)/15.,.5)).x;
+    float val=(start_dir.z+1.)/(z+1.);
+    return val*val;
 }
 float get_angle_cache_index(vec3 start_dir){
     // todo(CPU pre-compute)
@@ -129,7 +129,7 @@ float get_angle_cache_index(vec3 start_dir){
 
 vec3 get_cached_dir(vec3 start_dir){
     float index=get_cache_index(start_dir);
-    return texture(cache,vec2((index+.5)/ray_cache_length,.5)).xyz;
+    return texture(cache,vec2(index,(distance-5.)/15.)).xyz;
 }
 
 float get_closest_dist(vec3 start_dir){
