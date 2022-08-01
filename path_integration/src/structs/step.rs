@@ -25,7 +25,7 @@ fn step_size(particle: &mut Particle, field: &Field) -> f64 {
     let diff = -1.0 * particle.p;
     let v = particle.v.length();
     let r = diff.length();
-    let m_4 = 4.0 * field.m;
+    let m_4 = 8.0 * field.m;
     if r > m_4 {
         if diff.dot(particle.v) > 0.0 {
             return (0.1 * (r - m_4) + MIN_STEP) / v;
@@ -39,5 +39,5 @@ fn step_size(particle: &mut Particle, field: &Field) -> f64 {
 
 pub fn hit(particle: &Particle, field: &Field) -> bool {
     // We add some error so that the geodesics that are on the edge of the schwarzchild radius don't get pulled in accidentally.
-    particle.p.length() < 0.75 * field.schwarzchild_radius()
+    particle.p.length() < 0.85 * field.schwarzchild_radius()
 }

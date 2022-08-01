@@ -38,9 +38,9 @@ pub fn get_program(
         f32_vec.push(final_dir.y);
         f32_vec.push(final_dir.z);
         f32_vec.push(1.0);
-        for j in 0..answer.angle_to_dist.len() {
-            angle_vec.push(answer.angle_to_dist[j].0);
-            angle_vec.push(answer.angle_to_dist[j].1);
+        for j in 0..ray_cache.angle_cache[i].angle_to_dist.len() {
+            angle_vec.push(ray_cache.angle_cache[i].angle_to_dist[j].0);
+            angle_vec.push(ray_cache.angle_cache[i].angle_to_dist[j].1);
             angle_vec.push(1.0);
             angle_vec.push(1.0);
         }
@@ -81,6 +81,20 @@ pub fn get_program(
         images.galaxy_dim.0,
         images.galaxy_dim.1,
     );
+    let cache = UniformContext::new_from_allocated_ref(
+        &images.ray_cache_tex,
+        "cache",
+        images.ray_cache_dim.0,
+        images.ray_cache_dim.1,
+    );
+    let z_max_cache = UniformContext::new_from_allocated_ref(
+        &images.max_z_tex,
+        "z_max_cache",
+        images.max_z_dim.0,
+        images.max_z_dim.1,
+    );
+    text.push(&cache);
+    text.push(&z_max_cache);
     text.push(&stars);
     text.push(&galaxy);
     text.push(&constellations);

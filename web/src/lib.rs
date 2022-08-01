@@ -27,6 +27,7 @@ use js_sys::Uint8Array;
 use rendering::structs::image_data::ImageData;
 
 use rendering::structs::observer::Observer;
+use rendering::structs::ray_cache;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
 
@@ -424,9 +425,9 @@ fn update_exercise_state(
                         answer.angle_to_dist.len(),
                         answer.angle_to_dist
                     );
-                    for j in 0..answer.angle_to_dist.len() {
-                        angle_vec.push(answer.angle_to_dist[j].0);
-                        angle_vec.push(answer.angle_to_dist[j].1);
+                    for j in 0..ray_cache.angle_cache[i].angle_to_dist.len() {
+                        angle_vec.push(ray_cache.angle_cache[i].angle_to_dist[j].0);
+                        angle_vec.push(ray_cache.angle_cache[i].angle_to_dist[j].1);
                         angle_vec.push(1.0);
                         angle_vec.push(1.0);
                     }
@@ -739,11 +740,20 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
 const GALAXY_URL: &str = "http://localhost:8080/galaxy.jpg";
 const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
 const STARS_URL: &str = "http://localhost:8080/stars.jpg";
+const RAY_CACHE_URL: &str = "http://localhost:8080/cache.png";
+const Z_MAX_CACHE_URL: &str = "http://localhost:8080/z_max_cache.png";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
 
+fn to_image_from_png(u8: Uint8Array) -> DynamicImage {
+    image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Png).unwrap()
+}
+
+fn to_image_from_exr(u8: Uint8Array) -> DynamicImage {
+    image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::OpenExr).unwrap()
+}
 pub struct ImageCache {
     galaxy_tex: WebGlTexture,
     galaxy_dim: (i32, i32),
@@ -751,8 +761,18 @@ pub struct ImageCache {
     stars_dim: (i32, i32),
     constellations_tex: WebGlTexture,
     constellations_dim: (i32, i32),
+    ray_cache_tex: WebGlTexture,
+    ray_cache_dim: (i32, i32),
+    max_z_tex: WebGlTexture,
+    max_z_dim: (i32, i32),
 }
 
+fn float_to_u16(v: f32) -> u16 {
+    (std::u16::MAX as f32 * ((v + 1.0) / 2.0)) as u16
+}
+fn u16_to_float(v: u16) -> f32 {
+    (2.0 * v as f32 / std::u16::MAX as f32) - 1.0
+}
 impl ImageCache {
     fn to_rgba(rgb: &Vec<u8>) -> Vec<u8> {
         let mut rgba = Vec::new();
@@ -787,6 +807,34 @@ impl ImageCache {
             &ImageCache::to_rgba(constellations.as_rgb8().unwrap().as_raw()),
             constellations.width() as i32,
         );
+
+        let ray_cache = fetch_url_binary(RAY_CACHE_URL.to_string()).await?;
+        let ray_cache = to_image_from_png(ray_cache);
+        let ray_vec: Vec<f32> = ray_cache
+            .as_rgba16()
+            .unwrap()
+            .as_raw()
+            .iter()
+            .map(|v| u16_to_float(*v))
+            .collect();
+
+        console_log!("ray vec: {:?}", ray_vec);
+        let ray_cache_tex = generate_texture_from_f32(&gl.gl, &ray_vec, ray_cache.width() as i32);
+
+        let z_max_cache = fetch_url_binary(Z_MAX_CACHE_URL.to_string()).await?;
+        let z_max_cache = to_image_from_png(z_max_cache);
+        let z_max_vec: Vec<f32> = z_max_cache
+            .as_rgba16()
+            .unwrap()
+            .as_raw()
+            .iter()
+            .map(|v| u16_to_float(*v))
+            .collect();
+
+        console_log!("z_max: {:?}", z_max_vec);
+        let z_max_cache_tex =
+            generate_texture_from_f32(&gl.gl, &z_max_vec, ray_cache.width() as i32);
+
         Ok(ImageCache {
             galaxy_tex,
             galaxy_dim: (galaxy.width() as i32, galaxy.height() as i32),
@@ -797,6 +845,10 @@ impl ImageCache {
                 constellations.width() as i32,
                 constellations.height() as i32,
             ),
+            ray_cache_tex,
+            ray_cache_dim: (ray_cache.width() as i32, ray_cache.height() as i32),
+            max_z_tex: z_max_cache_tex,
+            max_z_dim: (z_max_cache.width() as i32, z_max_cache.height() as i32),
         })
     }
 }

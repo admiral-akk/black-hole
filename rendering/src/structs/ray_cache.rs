@@ -7,6 +7,7 @@ use super::data::Data;
 
 pub struct RayCache {
     pub cache: Vec<RayCachedAnswer>,
+    pub angle_cache: Vec<RayCachedAnswer>,
     pub max_z: f32,
     pub z_to_index_multiple: f32,
 }
@@ -93,7 +94,11 @@ impl RayCache {
             }
         }
         while angles.len() < size {
-            angles.push((next_angle as f32, max_distance));
+            if (path[path.len() - 1].length() > 10.) {
+                angles.push((next_angle as f32, max_distance));
+            } else {
+                angles.push((next_angle as f32, 0.0));
+            }
             next_angle += angle_delta;
         }
         angles
@@ -127,8 +132,24 @@ impl RayCache {
             }
         }
 
+        let mut angle_cache = Vec::new();
+        for i in 0..size {
+            let r = ((i as f64) / (size as f64 - 1.)).powf(1.0 / 30.0);
+            let z = (MIN_Z_F64 + (1.0 - MIN_Z_F64) * r);
+            let dir = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
+            let ray = Ray::new(cache_pos.as_dvec3(), dir);
+            let result = cast_ray_steps(&ray, &field, max_distance, 10.0 * max_distance);
+            let angles = RayCache::path_to_angles(result.0, 2048, max_distance as f32);
+            angle_cache.push(RayCachedAnswer {
+                z: ray.dir.z as f32,
+                final_dir: Vec3::ZERO,
+                angle_to_dist: angles,
+            })
+        }
+
         Self {
             cache,
+            angle_cache,
             max_z: max_z as f32,
             z_to_index_multiple: ((size - 1) as f64 / (max_z as f64 - MIN_Z_F64).powi(2)) as f32,
         }
@@ -207,13 +228,13 @@ mod tests {
         let pos = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, pos.length());
-        let cache_size = 10000;
+        let cache_size = 100;
         let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
 
-        let iterations = 100000;
+        let iterations = 10;
         for x in (-iterations)..=iterations {
             let x = (x as f64) / (iterations as f64);
             let ray = Ray::new(pos, DVec3::new(x, 0.0, 1.0));
@@ -249,12 +270,12 @@ mod tests {
         let pos = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, pos.length());
-        let cache_size = 10000;
+        let cache_size = 100;
         let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let mut false_positive = Vec::new();
         let mut false_negative = Vec::new();
-        let iterations = 100000;
+        let iterations = 10;
         for y in 0..=(iterations + 1) {
             let y = (y as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
             let ray = Ray::new(pos, DVec3::new(0.0, y, 1.0));
@@ -290,11 +311,11 @@ mod tests {
         let pos = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, pos.length());
-        let cache_size = 10000;
+        let cache_size = 100;
         let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
         let mut max_error = 0.0;
-        let iterations = 100000;
+        let iterations = 10;
         let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
         let mut approx = Vec3::new(0.0, 0.0, -10.0);
         let mut actual = Vec3::new(0.0, 0.0, -10.0);
@@ -334,10 +355,10 @@ mod tests {
         let pos = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, pos.length());
-        let cache_size = 10000;
+        let cache_size = 100;
         let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
 
-        let iterations = 100000;
+        let iterations = 10;
         let mut max_error = 0.0;
         let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
         let mut approx = Vec3::new(0.0, 0.0, -10.0);

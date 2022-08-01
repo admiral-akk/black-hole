@@ -1,3 +1,4 @@
+pub mod angle_cache;
 pub mod data;
 pub mod dimensions;
 pub mod image_data;
