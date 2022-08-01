@@ -400,58 +400,7 @@ fn update_exercise_state(
 ) {
     match exercise_state {
         ExerciseState::Exercise10(params, program) => {
-            let distance = (17.0 + new_params.mouse_scroll / 100.0) as f32;
-            if old_params.mouse_scroll != new_params.mouse_scroll {
-                // recompute ray cache
-                let ray_cache = RayCache::compute_new(
-                    params.cache_width as usize,
-                    params.black_hole_radius,
-                    distance,
-                );
-
-                let final_dirs: Vec<Vec3> = ray_cache.cache.iter().map(|r| r.final_dir).collect();
-                let mut f32_vec: Vec<f32> = Vec::new();
-                let mut angle_vec = Vec::new();
-                for i in 0..ray_cache.cache.len() {
-                    let answer = &ray_cache.cache[i];
-                    let final_dir = answer.final_dir;
-                    f32_vec.push(final_dir.x);
-                    f32_vec.push(final_dir.y);
-                    f32_vec.push(final_dir.z);
-                    f32_vec.push(1.0);
-                    console_log!(
-                        "angle len {}, {}: {:?}",
-                        i,
-                        answer.angle_to_dist.len(),
-                        answer.angle_to_dist
-                    );
-                    for j in 0..ray_cache.angle_cache[i].angle_to_dist.len() {
-                        angle_vec.push(ray_cache.angle_cache[i].angle_to_dist[j].0);
-                        angle_vec.push(ray_cache.angle_cache[i].angle_to_dist[j].1);
-                        angle_vec.push(1.0);
-                        angle_vec.push(1.0);
-                    }
-                }
-                let ray_cache_tex =
-                    generate_texture_from_f32(&gl.gl, &f32_vec, final_dirs.len() as i32);
-                let angle_cache_tex = generate_texture_from_f32(&gl.gl, &angle_vec, 361 as i32);
-                let ray_context = UniformContext::new_from_allocated_ref(
-                    &ray_cache_tex,
-                    "ray_cache_tex",
-                    final_dirs.len() as i32,
-                    1,
-                );
-                let angle_context = UniformContext::new_from_allocated_ref(
-                    &angle_cache_tex,
-                    "angle_cache_tex",
-                    361 as i32,
-                    final_dirs.len() as i32,
-                );
-                ray_context.add_to_program(gl, program);
-                angle_context.add_to_program(gl, program);
-                let max_z = UniformContext::f32(ray_cache.max_z, "max_z");
-                max_z.add_to_program(gl, program);
-            }
+            let distance = f32::clamp((17.0 + new_params.mouse_scroll / 100.0) as f32, 5.0, 20.0);
             let vertical_fov_degrees = 50.0;
             let black_hole_radius = 1.5;
             let cache_width: i32 = 1024;

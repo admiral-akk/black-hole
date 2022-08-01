@@ -151,7 +151,7 @@ mod tests {
             z_max_buffer.put_pixel(
                 y as u32,
                 0 as u32,
-                Rgba([float_to_u16(cache.max_z), 0, 0, 0]),
+                Rgba([float_to_u16(cache.max_z), 0, 0, u16::MAX]),
             );
             for x in 0..cache.cache.len() {
                 let final_dir = cache.cache[x].final_dir;
@@ -162,7 +162,7 @@ mod tests {
                         float_to_u16(final_dir.x),
                         float_to_u16(final_dir.y),
                         float_to_u16(final_dir.z),
-                        0,
+                        u16::MAX,
                     ]),
                 )
             }

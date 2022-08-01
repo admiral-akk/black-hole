@@ -45,7 +45,7 @@ const MIN_Z_F64: f64 = MIN_Z as f64;
 
 fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     let r = (index as f64) / ((size - 1) as f64);
-    let r = r.sqrt();
+    let r = r.powf(1. / 3.);
 
     let z = (MIN_Z_F64 + (max_z - MIN_Z_F64) * r);
     z

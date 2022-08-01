@@ -1,10 +1,6 @@
 #version 300 es
 
 precision mediump float;
-uniform sampler2D start_ray_tex;
-uniform sampler2D ray_cache_tex;
-uniform sampler2D angle_cache_tex;
-uniform ivec2 angle_cache_tex_dim;
 uniform sampler2D stars;
 uniform ivec2 stars_dim;
 uniform sampler2D constellations;
@@ -23,8 +19,6 @@ uniform vec3 normalized_dir;
 uniform vec3 normalized_up;
 uniform vec3 normalized_pos;
 uniform mat3x3 observer_mat;
-uniform float max_z;
-uniform float ray_cache_length;
 uniform float distance;
 #define PI 3.1415926538
 #define AA_LEVEL 4.
@@ -120,28 +114,10 @@ float get_cache_index(vec3 start_dir){
     float val=(start_dir.z+1.)/(z+1.);
     return val*val;
 }
-float get_angle_cache_index(vec3 start_dir){
-    // todo(CPU pre-compute)
-    float z_to_index_multiple=((ray_cache_length-1.)/pow(2.,6.));
-    
-    return z_to_index_multiple*pow(start_dir.z+1.,6.);
-}
 
 vec3 get_cached_dir(vec3 start_dir){
     float index=get_cache_index(start_dir);
-    return texture(cache,vec2(index,(distance-5.)/15.)).xyz;
-}
-
-float get_closest_dist(vec3 start_dir){
-    float index=get_cache_index(start_dir);
-    float closest=100000.;
-    for(float i=.5;i<360.;i=i+1.){
-        float d=texture(angle_cache_tex,vec2(i/float(angle_cache_tex_dim.x),(index+.5)/float(angle_cache_tex_dim.y))).y;
-        if(d<closest){
-            closest=d;
-        }
-    }
-    return closest;
+    return texture(cache,vec2(index-.5/float(cache_dim.x),(distance-5.)/15.)).xyz;
 }
 
 vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
@@ -175,56 +151,56 @@ vec3 get_background_color(vec3 start_dir){
     return get_final_color(final_dir);
 }
 
-vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
+// vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     
-    float index=get_angle_cache_index(start_dir)+.5;
-    vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
-    vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
+    //     float index=get_angle_cache_index(start_dir)+.5;
+    //     vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
+    //     vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
     
-    float dist=dot(intersection,-normalized_pos);
+    //     float dist=dot(intersection,-normalized_pos);
     
-    // there are two angles that matter;
-    // which to use depends on whether the ray is going "under" or "over"
+    //     // there are two angles that matter;
+    //     // which to use depends on whether the ray is going "under" or "over"
     
-    float angle=acos(dist);
-    if(normalized_pos.y>0.){
-        // top half should be >= PI/2.
-        if(coord.y>.5){
-            angle=max(angle,PI-angle);
-        }else{
-            angle=min(angle,PI-angle);
-        }
-    }else{
-        if(coord.y<.5){
-            angle=max(angle,PI-angle);
-        }else{
-            angle=min(angle,PI-angle);
-        }
-    }
+    //     float angle=acos(dist);
+    //     if(normalized_pos.y>0.){
+        //         // top half should be >= PI/2.
+        //         if(coord.y>.5){
+            //             angle=max(angle,PI-angle);
+        //         }else{
+            //             angle=min(angle,PI-angle);
+        //         }
+    //     }else{
+        //         if(coord.y<.5){
+            //             angle=max(angle,PI-angle);
+        //         }else{
+            //             angle=min(angle,PI-angle);
+        //         }
+    //     }
     
-    float other_angle=angle+PI;
+    //     float other_angle=angle+PI;
     
-    float dist_1=texture(angle_cache_tex,vec2(angle/(2.*PI),index/float(angle_cache_tex_dim.y))).y;
-    float dist_2=texture(angle_cache_tex,vec2(other_angle/(2.*PI),index/float(angle_cache_tex_dim.y))).y;
+    //     float dist_1=texture(angle_cache_tex,vec2(angle/(2.*PI),index/float(angle_cache_tex_dim.y))).y;
+    //     float dist_2=texture(angle_cache_tex,vec2(other_angle/(2.*PI),index/float(angle_cache_tex_dim.y))).y;
     
-    if(dist_1>3.&&dist_1<6.){
-        float d=(6.-dist_1)/3.;
-        return vec4(1.-d,d,0.,.8);
-    }
-    if(dist_2>3.&&dist_2<6.){
-        float d=(6.-dist_2)/3.;
-        return vec4(1.-d,d,0.,.8);
-    }
-    return vec4(1.,1.,1.,.0);
-}
+    //     if(dist_1>3.&&dist_1<6.){
+        //         float d=(6.-dist_1)/3.;
+        //         return vec4(1.-d,d,0.,.8);
+    //     }
+    //     if(dist_2>3.&&dist_2<6.){
+        //         float d=(6.-dist_2)/3.;
+        //         return vec4(1.-d,d,0.,.8);
+    //     }
+    //     return vec4(1.,1.,1.,.0);
+// }
 
 vec3 get_color(vec2 coord){
     vec3 start_dir=get_start_dir(coord);
     vec3 true_start_dir=get_true_start_dir(coord);
-    vec4 disc_color=get_disc_color(start_dir,true_start_dir,coord);
     vec3 background_color=get_background_color(start_dir);
     return background_color.xyz;
-    return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
+    //vec4 disc_color=get_disc_color(start_dir,true_start_dir,coord);
+    //return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
 }
 
 void main(){
