@@ -1,7 +1,6 @@
 #[cfg(test)]
 
 mod tests {
-    use path_integration::cache::ray_cache::RayCache;
     use plotters::prelude::*;
     use plotters::{
         prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries},
@@ -40,21 +39,21 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn plot_cached_final_dir() -> Result<(), Box<dyn std::error::Error>> {
-        let distance = 5.0;
-        let r = 1.0;
-        let cache_size = 512;
-        let ray_cache = RayCache::compute_new(cache_size, r, distance);
-        let mut lines: Vec<Vec<(f32, f32)>> = Vec::new();
-        let mut line: Vec<(f32, f32)> = Vec::new();
-        for i in 0..ray_cache.cache.len() {
-            let answer = &ray_cache.cache[i];
-            line.push((answer.z, answer.final_dir[2]));
-        }
-        lines.push(line);
-        let path = format!("output/ray_cache/z_to_z.png");
-        plot_trajectories(&path, &lines, ((-1., 1.), (-1., 1.)))?;
-        Ok(())
-    }
+    // #[test]
+    // fn plot_cached_final_dir() -> Result<(), Box<dyn std::error::Error>> {
+    //     let distance = 5.0;
+    //     let r = 1.0;
+    //     let cache_size = 512;
+    //     let ray_cache = RayCache::compute_new(cache_size, r, distance);
+    //     let mut lines: Vec<Vec<(f32, f32)>> = Vec::new();
+    //     let mut line: Vec<(f32, f32)> = Vec::new();
+    //     for i in 0..ray_cache.cache.len() {
+    //         let answer = &ray_cache.cache[i];
+    //         line.push((answer.z, answer.final_dir[2]));
+    //     }
+    //     lines.push(line);
+    //     let path = format!("output/ray_cache/z_to_z.png");
+    //     plot_trajectories(&path, &lines, ((-1., 1.), (-1., 1.)))?;
+    //     Ok(())
+    // }
 }

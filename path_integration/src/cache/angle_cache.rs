@@ -2,8 +2,9 @@ use glam::{DVec3, Vec3};
 
 use crate::{cast_ray_steps, Field, Ray};
 
-use super::ray_cache::RAY_START_DIR;
 use serde::{Deserialize, Serialize};
+
+use super::fixed_distance_ray_cache::RAY_START_DIR;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct AngleCache {
