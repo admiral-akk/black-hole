@@ -11,8 +11,6 @@ pub struct AngleCache {
     pub min_z: f32,
 }
 
-// We're always projecting from (0.0, 0.0, -Z)
-
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct AngleCacheAnswer {
     pub z: f32,
@@ -37,22 +35,14 @@ fn find_angle(
         let ray = Ray::new(cache_pos.as_dvec3(), test);
         let path = cast_ray_steps(&ray, field, max_distance, 10.0 * max_distance).0;
         let angles = to_angles(&path);
-        for i in 0..angles.len() {
-            if i % 100 == 0 {
-                //  println!("{:?} -> {:?}", path[i], angles[i]);
-            }
-        }
         let example = angles.iter().find(|x| x.0 >= target_angle as f32);
 
-        // println!("max angle: {}", angles.last().unwrap().0);
         if example.is_some() {
             let dist = example.unwrap().1 as f64;
             // could hit the disc, check the angle of the hit.
             if dist < ring_radius {
-                // println!("too close: {}", dist);
                 hit_z = test.z;
             } else {
-                //println!("too far: {}", dist);
                 miss_z = test.z;
             }
         } else {
@@ -62,7 +52,6 @@ fn find_angle(
             } else {
                 hit_z = test.z;
             }
-            // println!("hit black hole");
         }
     }
     hit_z
@@ -120,11 +109,7 @@ impl AngleCache {
             let path = cast_ray_steps(&ray, &field, max_distance, 10.0 * max_distance).0;
 
             let angles = to_angles(&path);
-            println!("max angle: {}", angles[angles.len() - 1].0);
 
-            // println!("\n\n");
-            // println!("target angle: {}", target_angle);
-            // println!("\n\n");
             cache.push(AngleCacheAnswer {
                 z: ray.dir.z as f32,
                 angle: target_angle as f32,
@@ -150,11 +135,16 @@ mod tests {
         let r = 1.0;
         let cache_size = 5;
         let angle_cache = AngleCache::compute_new(cache_size, r, distance, max_disc_radius);
+
         let serialized = serde_json::to_string(&angle_cache);
+
         assert!(serialized.is_ok());
+
         let deserialized: Result<AngleCache, serde_json::Error> =
             serde_json::from_str(serialized.unwrap().as_str());
+
         assert!(deserialized.is_ok());
+
         let deserialized = deserialized.unwrap();
         assert_eq!(deserialized, angle_cache);
     }

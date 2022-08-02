@@ -268,10 +268,14 @@ mod tests {
         let cache_size = 5;
         let ray_cache = RayCache::compute_new(cache_size, r as f32, pos.length() as f32);
         let serialized = serde_json::to_string(&ray_cache);
+
         assert!(serialized.is_ok());
+
         let deserialized: Result<RayCache, serde_json::Error> =
             serde_json::from_str(serialized.unwrap().as_str());
+
         assert!(deserialized.is_ok());
+
         let deserialized = deserialized.unwrap();
         assert_eq!(deserialized, ray_cache);
     }
