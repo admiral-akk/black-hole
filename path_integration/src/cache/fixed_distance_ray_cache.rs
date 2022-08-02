@@ -21,7 +21,7 @@ pub struct RayCachedAnswer {
 
 const MIN_Z: f64 = -1.0;
 const MIN_Z_F64: f64 = MIN_Z as f64;
-const POW: i32 = 4;
+const POW: i32 = 2;
 
 fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     let r = (index as f64) / ((size - 1) as f64);

@@ -47,7 +47,7 @@ fn find_angle(
     let (mut miss_z, mut hit_z) = (-1.0, 1.0);
     while hit_z - miss_z > epsilon {
         let z = (miss_z + hit_z) / 2.;
-        println!("test: {}", z);
+        // println!("test: {}", z);
         let test = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
         let ray = Ray::new(cache_pos.as_dvec3(), test);
         let path = cast_ray_steps(&ray, field, max_distance, 10.0 * max_distance).0;
@@ -59,15 +59,15 @@ fn find_angle(
         }
         let example = angles.iter().find(|x| x.0 >= target_angle as f32);
 
-        println!("max angle: {}", angles.last().unwrap().0);
+        // println!("max angle: {}", angles.last().unwrap().0);
         if example.is_some() {
             let dist = example.unwrap().1 as f64;
             // could hit the disc, check the angle of the hit.
             if dist < ring_radius {
-                println!("too close: {}", dist);
+                // println!("too close: {}", dist);
                 hit_z = test.z;
             } else {
-                println!("too far: {}", dist);
+                //println!("too far: {}", dist);
                 miss_z = test.z;
             }
         } else {
@@ -77,7 +77,7 @@ fn find_angle(
             } else {
                 hit_z = test.z;
             }
-            println!("hit black hole");
+            // println!("hit black hole");
         }
     }
     hit_z
@@ -96,7 +96,7 @@ fn to_angles(path: &Vec<DVec3>) -> Vec<(f32, f32)> {
     let mut offset = 0.0;
     for i in 0..path.len() {
         let angle_dist = to_angle_dist(&path[i]);
-        if output.len() > 0 && output[output.len() - 1].0 > angle_dist.0 {
+        if output.len() > 0 && output[output.len() - 1].0 > angle_dist.0 + offset {
             offset += std::f32::consts::TAU;
         }
         output.push((angle_dist.0 + offset, angle_dist.1));
@@ -109,7 +109,7 @@ impl AngleCache {
         size: usize,
         black_hole_radius: f32,
         camera_distance: f32,
-        disc_radius: f32,
+        max_disc_radius: f32,
     ) -> Self {
         let mut cache = Vec::new();
         let field = Field::new(black_hole_radius as f64, camera_distance as f64);
@@ -118,12 +118,12 @@ impl AngleCache {
 
         let max_distance = 10.0 * camera_distance as f64;
         let epsilon = 0.00000001;
-        let ring_radius = disc_radius as f64;
+        let ring_radius = max_disc_radius as f64;
         // let min_z = find_bound(&cache_pos, &field, epsilon, max_distance, ring_radius);
 
         let orbit = find_bound_orbit(&cache_pos, &field, epsilon, max_distance);
 
-        for i in 1..(size + 1) {
+        for i in 0..(size + 1) {
             let target_angle = std::f64::consts::TAU * i as f64 / size as f64;
             let z = find_angle(
                 &cache_pos,
@@ -139,16 +139,10 @@ impl AngleCache {
             let path = cast_ray_steps(&ray, &field, max_distance, 10.0 * max_distance).0;
 
             let angles = to_angles(&path);
+            println!("max angle: {}", angles[angles.len() - 1].0);
 
             // println!("\n\n");
-            println!("target angle: {}", target_angle);
-            for i in 0..angles.len() {
-                if angles[i].0 >= target_angle as f32 {
-                    println!("{}: {:?} -> {:?}", i, &path[i], angles[i]);
-                    break;
-                }
-                //  println!("{:?} -> {:?}", &path[i], angles[i]);
-            }
+            // println!("target angle: {}", target_angle);
             // println!("\n\n");
             cache.push(AngleCacheAnswer {
                 z: ray.dir.z as f32,

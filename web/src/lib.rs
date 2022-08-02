@@ -24,10 +24,10 @@ use glam::Vec3;
 
 use image::DynamicImage;
 use js_sys::Uint8Array;
+use path_integration::cache::ray_cache::RayCache as PathRayCache;
 use rendering::structs::image_data::ImageData;
 
 use rendering::structs::observer::Observer;
-use rendering::structs::ray_cache;
 use rendering::structs::ray_cache::RayCache;
 use rendering::structs::stars::Stars;
 
@@ -691,6 +691,7 @@ const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
 const STARS_URL: &str = "http://localhost:8080/stars.jpg";
 const RAY_CACHE_URL: &str = "http://localhost:8080/cache.png";
 const Z_MAX_CACHE_URL: &str = "http://localhost:8080/z_max_cache.png";
+const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -764,34 +765,28 @@ impl ImageCache {
             constellations.width() as i32,
         );
 
-        let ray_cache = fetch_url_binary(RAY_CACHE_URL.to_string()).await?;
-        let ray_cache = to_image_from_png(ray_cache);
-        let ray_vec: Vec<f32> = ray_cache
-            .as_rgba16()
-            .unwrap()
-            .as_raw()
-            .iter()
-            .map(|v| u16_to_float(*v))
-            .collect();
-
-        console_log!("ray vec: {:?}", ray_vec);
-        let ray_cache_tex = generate_texture_from_f32(&gl.gl, &ray_vec, ray_cache.width() as i32);
-
-        let z_max_cache = fetch_url_binary(Z_MAX_CACHE_URL.to_string()).await?;
-        let z_max_cache = to_image_from_png(z_max_cache);
-        let z_max_vec_u16: &Vec<u16> = z_max_cache.as_rgba16().unwrap().as_raw();
-        let z_max_vec: Vec<f32> = z_max_cache
-            .as_rgba16()
-            .unwrap()
-            .as_raw()
-            .iter()
-            .map(|v| u16_to_float(*v))
-            .collect();
-
-        console_log!("z_max u16: {:?}", z_max_vec_u16);
-        console_log!("z_max: {:?}", z_max_vec);
-        let z_max_cache_tex =
-            generate_texture_from_f32(&gl.gl, &z_max_vec, z_max_cache.width() as i32);
+        let ray_cache_2 = fetch_url_binary(RAY_CACHE_2_URL.to_string()).await?;
+        let ray_cache_2 = serde_json::from_slice::<PathRayCache>(&ray_cache_2.to_vec()).unwrap();
+        console_log!("Deserialized: {:?}", ray_cache_2);
+        let (ray_width, ray_height) = (ray_cache_2.caches[0].cache.len(), ray_cache_2.caches.len());
+        let mut ray_vec_2 = Vec::new();
+        let mut z_max_vec = Vec::new();
+        for y in 0..ray_height {
+            let cache = &ray_cache_2.caches[y];
+            z_max_vec.push(cache.max_z);
+            z_max_vec.push(cache.max_z);
+            z_max_vec.push(cache.max_z);
+            z_max_vec.push(cache.max_z);
+            for x in 0..ray_width {
+                let final_dir = cache.cache[x].final_dir;
+                ray_vec_2.push(final_dir[0]);
+                ray_vec_2.push(final_dir[1]);
+                ray_vec_2.push(final_dir[2]);
+                ray_vec_2.push(1.0);
+            }
+        }
+        let ray_cache_tex = generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32);
+        let z_max_cache_tex = generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32);
 
         Ok(ImageCache {
             galaxy_tex,
@@ -804,9 +799,9 @@ impl ImageCache {
                 constellations.height() as i32,
             ),
             ray_cache_tex,
-            ray_cache_dim: (ray_cache.width() as i32, ray_cache.height() as i32),
+            ray_cache_dim: (ray_width as i32, ray_height as i32),
             max_z_tex: z_max_cache_tex,
-            max_z_dim: (z_max_cache.width() as i32, z_max_cache.height() as i32),
+            max_z_dim: (ray_height as i32, 1 as i32),
         })
     }
 }

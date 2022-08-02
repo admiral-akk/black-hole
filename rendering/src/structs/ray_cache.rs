@@ -94,7 +94,7 @@ impl RayCache {
             }
         }
         while angles.len() < size {
-            if (path[path.len() - 1].length() > 10.) {
+            if path[path.len() - 1].length() > 10. {
                 angles.push((next_angle as f32, max_distance));
             } else {
                 angles.push((next_angle as f32, 0.0));

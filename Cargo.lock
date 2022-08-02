@@ -566,6 +566,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "generate-artifacts"
+version = "0.1.0"
+dependencies = [
+ "path-integration",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1474,7 +1483,10 @@ dependencies = [
  "glam",
  "image",
  "js-sys",
+ "path-integration",
  "rendering",
+ "serde",
+ "serde_json",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-timer",

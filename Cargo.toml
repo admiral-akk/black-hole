@@ -4,6 +4,7 @@ members = [
     "rendering",
     "local",
     "web",
+    "generate_artifacts",
 ]
 resolver = "2"
 

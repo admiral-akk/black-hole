@@ -7,6 +7,7 @@ use super::fixed_distance_ray_cache::FixedDistanceRayCache;
 pub struct RayCache {
     pub caches: Vec<FixedDistanceRayCache>,
 }
+
 fn index_to_distance(index: usize, size: usize, distance_bounds: (f32, f32)) -> f32 {
     (index as f32) * (distance_bounds.1 - distance_bounds.0) / ((size - 1) as f32)
         + distance_bounds.0
@@ -148,22 +149,21 @@ mod tests {
         }
     }
     #[test]
-    fn final_dir_in_x_plane() {
-        let mut max_error = 0.0;
-        let iterations = 10;
-        let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
-        let mut approx = Vec3::new(0.0, 0.0, -10.0);
-        let mut actual = Vec3::new(0.0, 0.0, -10.0);
-        let mut index = 0;
-        let mut false_negatives = 0;
-        let mut false_positives = 0;
-
-        let cache_dimensions = (100, 100);
-        let black_hole_radius = 1.0;
+    fn caches_final_dir_in_x_plane() {
+        let cache_dimensions = (128, 512);
+        let black_hole_radius = 1.5;
         let distance_bounds = (5.0, 20.0);
         let ray_cache = RayCache::compute_new(cache_dimensions, black_hole_radius, distance_bounds);
 
         for i in 0..100 {
+            let mut max_error = 0.0;
+            let iterations = 300;
+            let mut index = 0;
+            let mut worst_case = DVec3::new(0.0, 0.0, -10.0);
+            let mut approx = Vec3::new(0.0, 0.0, -10.0);
+            let mut actual = Vec3::new(0.0, 0.0, -10.0);
+            let mut false_negatives = 0;
+            let mut false_positives = 0;
             let distance = distance_bounds.0 as f64
                 + (distance_bounds.1 - distance_bounds.0) as f64 * i as f64 / (100 - 1) as f64;
             let pos = -distance * DVec3::Z;
@@ -171,7 +171,7 @@ mod tests {
             let field = Field::new(r, pos.length());
             for x in 0..=(iterations + 1) {
                 let t = x;
-                let x = (x as f64 - (iterations as f64 / 2.0)) / (iterations as f64 / 2.0);
+                let x = (x as f64) / (iterations as f64);
                 let ray = Ray::new(pos, DVec3::new(x, 0.0, 1.0));
                 let actual_dir = cast_ray_steps(&ray, &field, 20.0, 100.0).1;
                 if actual_dir.is_some() {
@@ -204,12 +204,12 @@ mod tests {
                     }
                 }
             }
-        }
 
-        println!(
-            "Cache size: {:?}\nIteration size: {}\nMax Error: {}\nInitial Dir: {:?}\nApprox: {:?}Actual: {:?}\nIndex: {}\nFalse Negatives: {}\nFalse Positives: {}",
-            cache_dimensions, iterations, max_error, worst_case, approx, actual, index,false_negatives,false_positives
-        );
+            println!(
+                "Distance: {:?}\nIteration size: {}\nMax Error: {}\nInitial Dir: {:?}\nApprox: {:?}Actual: {:?}\nIndex: {}\nFalse Negatives: {}\nFalse Positives: {}",
+                distance, iterations, max_error, worst_case, approx, actual, index, false_negatives, false_positives
+            );
+        }
     }
 
     #[test]

@@ -9,6 +9,6 @@ module.exports = {
   },
   mode: "development",
   plugins: [
-    new CopyWebpackPlugin(['index.html', 'z_max_cache.exr', 'cache.exr'])
+    new CopyWebpackPlugin(['index.html', 'ray_cache.txt'])
   ],
 };
