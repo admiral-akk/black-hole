@@ -1,14 +1,12 @@
 #[cfg(test)]
 
 mod tests {
-    use glam::DVec3;
     use path_integration::cache::ray_cache::RayCache;
     use plotters::prelude::*;
     use plotters::{
-        prelude::{BitMapBackend, ChartBuilder, Circle, EmptyElement, IntoDrawingArea, LineSeries},
-        style::{IntoFont, BLACK, WHITE},
+        prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries},
+        style::{IntoFont, WHITE},
     };
-    use serde::Serialize;
 
     fn plot_trajectories(
         file_path: &str,

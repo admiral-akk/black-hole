@@ -35,7 +35,7 @@ pub fn cast_ray_steps(
     (steps, Some(particle.v))
 }
 
-pub fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64, max_distance: f64) -> f64 {
+fn find_bound(camera_pos: &Vec3, field: &Field, epsilon: f64, max_distance: f64) -> f64 {
     let (mut miss_z, mut hit_z) = (-1.0, 1.0);
     while hit_z - miss_z > epsilon {
         let z = 0.5 * (hit_z + miss_z);
