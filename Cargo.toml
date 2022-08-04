@@ -5,6 +5,7 @@ members = [
     "local",
     "web",
     "generate_artifacts",
+    "test_utils",
 ]
 resolver = "2"
 
@@ -16,5 +17,4 @@ debug = 1
 debug = 1
 opt-level = 3
 [profile.release]
-debug = 1
 opt-level = 3

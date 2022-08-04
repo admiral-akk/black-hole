@@ -30,7 +30,7 @@ fn step_size(particle: &mut Particle, field: &Field) -> f64 {
         if diff.dot(particle.v) > 0.0 {
             return (0.1 * (r - m_4) + MIN_STEP) / v;
         } else {
-            return 0.1 * r * r / v;
+            return (0.1 * r + MIN_STEP) / v;
         }
     } else {
         return MIN_STEP / v;

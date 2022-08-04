@@ -1,60 +1,6 @@
-use crate::{cast_ray_steps_response, find_optimal_z, structs::response::Response};
+use crate::{cast_ray_steps_response, find_z_bounds_for_angle};
 
 use serde::{Deserialize, Serialize};
-
-fn find_z_bounds_for_angle(
-    camera_distance: f64,
-    black_hole_radius: f64,
-    epsilon: f64,
-    distance_bounds: (f64, f64),
-    target_angle: f64,
-) -> (f64, f64) {
-    let bound_predicate = |r: Response| r.hits_black_hole();
-    let valid_z = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
-        epsilon,
-        (-1., 1.),
-        &bound_predicate,
-    );
-
-    let is_too_close = move |r: Response| {
-        let angle_d = r.get_angle_dist();
-        if angle_d.get_max_angle() < target_angle {
-            return false;
-        }
-        if angle_d.get_dist(target_angle).unwrap() > distance_bounds.1 {
-            return false;
-        }
-        true
-    };
-    let lower = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
-        epsilon,
-        (-1., valid_z.0),
-        &is_too_close,
-    );
-    let is_too_close = move |r: Response| {
-        let angle_d = r.get_angle_dist();
-        if angle_d.get_max_angle() < target_angle {
-            return true;
-        }
-        if angle_d.get_dist(target_angle).unwrap() < distance_bounds.0 {
-            return true;
-        }
-        false
-    };
-    let upper = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
-        epsilon,
-        (valid_z.0, 1.),
-        &is_too_close,
-    );
-
-    (lower.1, upper.0)
-}
 
 const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
@@ -67,7 +13,16 @@ pub struct FixedDistanceFixedAngleDistanceCache {
     pub z_to_distance: Vec<f64>,
 }
 
-fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
+fn float_01_to_left_index(mut float_01: f64, vec_len: usize) -> (usize, f64) {
+    if float_01 > 0.5 {
+        float_01 = 2.0 * (float_01 - 0.5);
+        float_01 = float_01 * float_01;
+        float_01 = float_01 / 2.0 + 0.5;
+    } else {
+        float_01 = 2.0 * (0.5 - float_01);
+        float_01 = float_01 * float_01;
+        float_01 = 0.5 - float_01 / 2.0;
+    }
     let float_index = (vec_len - 1) as f64 * float_01;
     let mut index = float_index as usize;
     if index == vec_len - 1 {
@@ -77,7 +32,13 @@ fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
     (index, t)
 }
 fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
-    (index as f64) / (vec_len - 1) as f64
+    let mut float_01 = (index as f64) / (vec_len - 1) as f64;
+    if float_01 > 0.5 {
+        float_01 = (2. * (float_01 - 0.5)).sqrt() / 2. + 0.5;
+    } else {
+        float_01 = 0.5 - (2. * (0.5 - float_01)).sqrt() / 2.;
+    }
+    float_01
 }
 impl FixedDistanceFixedAngleDistanceCache {
     pub fn compute_new(
@@ -99,8 +60,7 @@ impl FixedDistanceFixedAngleDistanceCache {
         for i in 0..cache_size {
             let float_01 = index_to_float_01(i, cache_size);
             let z = (z_bounds.1 - z_bounds.0) * float_01 + z_bounds.0;
-            let response =
-                cast_ray_steps_response(z, camera_distance as f64, black_hole_radius as f64);
+            let response = cast_ray_steps_response(z, camera_distance, black_hole_radius);
             let angle_path = response.get_angle_dist();
             let dist = angle_path.get_dist(angle);
             if dist.is_none() {
@@ -114,6 +74,21 @@ impl FixedDistanceFixedAngleDistanceCache {
                 )
             } else {
                 let dist = dist.unwrap();
+                if i == 0 {
+                    assert!(
+                        (dist - disc_bounds.1).abs() < 0.1,
+                        "First ray doesn't hit outer edge!\nActual dist: {}\nDisc bounds: {:?}\n",
+                        dist,
+                        disc_bounds
+                    );
+                } else if i == cache_size - 1 {
+                    assert!(
+                        (dist - disc_bounds.0).abs() < 0.1,
+                        "Last ray doesn't hit inner edge!\nActual dist: {}\nDisc bounds: {:?}\n",
+                        dist,
+                        disc_bounds
+                    );
+                }
                 z_to_distance.push(dist);
             }
         }
@@ -127,8 +102,8 @@ impl FixedDistanceFixedAngleDistanceCache {
         }
     }
 
-    pub fn get_dist(&self, float_01: f64) -> f64 {
-        let (index, t) = float_01_to_left_index(float_01, self.z_to_distance.len());
+    pub fn get_dist(&self, z_01: f64) -> f64 {
+        let (index, t) = float_01_to_left_index(z_01, self.z_to_distance.len());
         let left = self.z_to_distance[index];
         let right = self.z_to_distance[index + 1];
         right * t + (1. - t) * left
@@ -146,15 +121,15 @@ mod tests {
     use super::FixedDistanceFixedAngleDistanceCache;
     #[test]
     fn fixed_angle_test_error() {
-        let cache_size = 16;
-        let distance = 10.0;
+        let cache_size = 256;
+        let distance = 17.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (3.0, 6.0);
         let mut lines = Vec::new();
 
-        let angle_iterations = 32;
-        let distance_iterations = 512;
-        for j in 0..=angle_iterations {
+        let angle_iterations = 256;
+        let distance_iterations = 1024;
+        for j in 1..=(angle_iterations / 10) {
             let mut line = Vec::new();
             let angle = TAU * (j as f64) / (angle_iterations as f64);
             let cache = FixedDistanceFixedAngleDistanceCache::compute_new(
@@ -164,10 +139,10 @@ mod tests {
                 max_disc_radius,
                 angle,
             );
-            for i in 0..=distance_iterations {
-                let float_index_01 = (i as f64) / (distance_iterations as f64);
-                let approx_dist = cache.get_dist(float_index_01);
-                let z = (cache.z_bounds.1 - cache.z_bounds.0) * float_index_01 + cache.z_bounds.0;
+            for i in 0..=(distance_iterations / 10) {
+                let z_01 = (i as f64) / (distance_iterations as f64);
+                let approx_dist = cache.get_dist(z_01);
+                let z = (cache.z_bounds.1 - cache.z_bounds.0) * z_01 + cache.z_bounds.0;
                 let true_path =
                     cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius)
                         .get_angle_dist();
@@ -182,15 +157,9 @@ mod tests {
                 println!(
                     "Angle: {}, data: {:?}",
                     angle,
-                    (
-                        float_index_01 as f32,
-                        (true_dist - approx_dist).abs() as f32,
-                    )
+                    (z_01 as f32, (true_dist - approx_dist).abs() as f32,)
                 );
-                line.push((
-                    float_index_01 as f32,
-                    (true_dist - approx_dist).abs() as f32,
-                ));
+                line.push((z_01 as f32, (true_dist - approx_dist).abs() as f32));
             }
             lines.push(line);
         }

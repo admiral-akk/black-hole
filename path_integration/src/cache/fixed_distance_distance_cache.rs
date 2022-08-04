@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use super::fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDistanceCache;
 
+const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceDistanceCache {
+    pub min_angle: f64,
     pub camera_distance: f64,
     pub black_hole_radius: f64,
     pub disc_bounds: (f64, f64),
@@ -37,7 +39,8 @@ impl FixedDistanceDistanceCache {
 
         for i in 0..cache_size.0 {
             let float_01 = index_to_float_01(i, cache_size.0);
-            let angle = TAU * float_01;
+            let angle = (TAU - MIN_ANGLE) * float_01 + MIN_ANGLE;
+            println!("Generating: {:?}", (angle));
             let z_to_distance_cache = FixedDistanceFixedAngleDistanceCache::compute_new(
                 cache_size.1,
                 camera_distance,
@@ -48,6 +51,7 @@ impl FixedDistanceDistanceCache {
             angle_to_z_to_distance.push(z_to_distance_cache);
         }
         FixedDistanceDistanceCache {
+            min_angle: MIN_ANGLE,
             camera_distance,
             black_hole_radius,
             disc_bounds,
@@ -80,7 +84,7 @@ impl FixedDistanceDistanceCache {
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::TAU;
+    use std::{f64::consts::TAU, fs};
 
     use test_utils::plot_trajectories;
 
@@ -89,19 +93,17 @@ mod tests {
     use super::FixedDistanceDistanceCache;
     #[test]
     fn fixed_distance_test_error() {
-        let cache_size = (16, 16);
-        let distance = 10.0;
+        let cache_size = (512, 64);
+        let distance = 17.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (3.0, 6.0);
         let mut lines = Vec::new();
 
-        let cache = FixedDistanceDistanceCache::compute_new(
-            cache_size,
-            distance,
-            black_hole_radius,
-            max_disc_radius,
-        );
-        let angle_iterations = 32;
+        let cache = serde_json::from_str::<FixedDistanceDistanceCache>(
+            &fs::read_to_string("fixed_distance_distance_cache2.txt").unwrap(),
+        )
+        .unwrap();
+        let angle_iterations = 256;
         let distance_iterations = 1024;
         for j in 0..=angle_iterations {
             let mut line = Vec::new();

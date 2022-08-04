@@ -24,6 +24,8 @@ use glam::Vec3;
 
 use image::DynamicImage;
 use js_sys::Uint8Array;
+use path_integration::cache::angle_cache::AngleCache;
+use path_integration::cache::fixed_distance_distance_cache::FixedDistanceDistanceCache;
 use path_integration::cache::ray_cache::RayCache as PathRayCache;
 use rendering::structs::image_data::ImageData;
 
@@ -692,6 +694,9 @@ const STARS_URL: &str = "http://localhost:8080/stars.jpg";
 const RAY_CACHE_URL: &str = "http://localhost:8080/cache.png";
 const Z_MAX_CACHE_URL: &str = "http://localhost:8080/z_max_cache.png";
 const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
+const ANGLE_CACHE_URL: &str = "http://localhost:8080/angle_cache.txt";
+const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
+    "http://localhost:8080/fixed_distance_distance_cache.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -715,6 +720,10 @@ pub struct ImageCache {
     ray_cache_dim: (i32, i32),
     max_z_tex: WebGlTexture,
     max_z_dim: (i32, i32),
+    angle_cache_tex: WebGlTexture,
+    angle_cache_dim: (i32, i32),
+    angle_min_z_tex: WebGlTexture,
+    angle_min_z_dim: (i32, i32),
 }
 
 fn float_to_u16(v: f32) -> u16 {
@@ -788,6 +797,38 @@ impl ImageCache {
         let ray_cache_tex = generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32);
         let z_max_cache_tex = generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32);
 
+        let angle_cache = fetch_url_binary(FIXED_DISTANCE_ANGLE_CACHE_URL.to_string()).await?;
+        let angle_cache =
+            serde_json::from_slice::<FixedDistanceDistanceCache>(&angle_cache.to_vec()).unwrap();
+
+        let mut v = Vec::new();
+        let mut min_z = Vec::new();
+
+        for x in 0..angle_cache.angle_to_z_to_distance.len() {
+            let cache = &angle_cache.angle_to_z_to_distance[x];
+            min_z.push(cache.z_bounds.0 as f32);
+            min_z.push(cache.z_bounds.1 as f32);
+            min_z.push(0.);
+            min_z.push(1.);
+            for c in &cache.z_to_distance {
+                v.push(*c as f32);
+                v.push(0.);
+                v.push(0.);
+                v.push(1.);
+            }
+        }
+        console_log!("min_z: {:?}", min_z);
+        console_log!("min_z length: {:?}", min_z.len());
+
+        console_log!("angle_cache: {:?}", v);
+        console_log!("angle_cache length: {:?}", v.len());
+
+        let angle_height = (min_z.len() / 4) as i32;
+        let angle_width = (v.len() / 4) as i32 / angle_height;
+
+        let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width);
+        let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height);
+
         Ok(ImageCache {
             galaxy_tex,
             galaxy_dim: (galaxy.width() as i32, galaxy.height() as i32),
@@ -802,6 +843,10 @@ impl ImageCache {
             ray_cache_dim: (ray_width as i32, ray_height as i32),
             max_z_tex: z_max_cache_tex,
             max_z_dim: (ray_height as i32, 1 as i32),
+            angle_cache_tex: angle_cache_tex,
+            angle_cache_dim: (angle_width as i32, angle_height as i32),
+            angle_min_z_tex: angle_min_z_tex,
+            angle_min_z_dim: (angle_height as i32, 1 as i32),
         })
     }
 }

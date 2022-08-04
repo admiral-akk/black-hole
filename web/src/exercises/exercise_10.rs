@@ -53,8 +53,22 @@ pub fn get_program(
         images.max_z_dim.0,
         images.max_z_dim.1,
     );
+    let angle_cache = UniformContext::new_from_allocated_ref(
+        &images.angle_cache_tex,
+        "angle_cache",
+        images.ray_cache_dim.0,
+        images.ray_cache_dim.1,
+    );
+    let angle_z_max_cache = UniformContext::new_from_allocated_ref(
+        &images.angle_min_z_tex,
+        "angle_z_max_cache",
+        images.max_z_dim.0,
+        images.max_z_dim.1,
+    );
     text.push(&cache);
     text.push(&z_max_cache);
+    text.push(&angle_cache);
+    text.push(&angle_z_max_cache);
     text.push(&stars);
     text.push(&galaxy);
     text.push(&constellations);

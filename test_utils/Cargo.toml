@@ -1,0 +1,12 @@
+[package]
+name = "test-utils"
+version = "0.1.0"
+authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+plotters = {version= "0.3.1", features = ['bitmap_encoder']}
+

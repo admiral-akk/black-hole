@@ -11,6 +11,10 @@ uniform sampler2D cache;
 uniform ivec2 cache_dim;
 uniform sampler2D z_max_cache;
 uniform ivec2 z_max_cache_dim;
+uniform sampler2D angle_cache;
+uniform ivec2 angle_cache_dim;
+uniform sampler2D angle_z_max_cache;
+uniform ivec2 angle_z_max_cache_dim;
 out vec4 outColor;
 
 uniform ivec2 dimensions;
@@ -151,56 +155,92 @@ vec3 get_background_color(vec3 start_dir){
     return get_final_color(final_dir);
 }
 
-// vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
+float z_to_z_index(float z_01){
+    if(z_01>.5){
+        z_01=2.*(z_01-.5);
+        z_01=z_01*z_01;
+        z_01=z_01/2.+.5;
+    }else{
+        z_01=2.*(.5-z_01);
+        z_01=z_01*z_01;
+        z_01=.5-z_01/2.;
+    }
+    return z_01;
+}
+
+vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
+    vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
+    vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
     
-    //     float index=get_angle_cache_index(start_dir)+.5;
-    //     vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
-    //     vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
+    float dist=dot(intersection,-normalized_pos);
     
-    //     float dist=dot(intersection,-normalized_pos);
+    // there are two angles that matter;
+    // which to use depends on whether the ray is going "under" or "over"
     
-    //     // there are two angles that matter;
-    //     // which to use depends on whether the ray is going "under" or "over"
+    vec3 top_color=vec3(1.,0.,0.);
+    vec3 bottom_color=vec3(0.,1.,0.);
+    float angle=acos(dist);
+    if(normalized_pos.y>0.){
+        // top half should be >= PI/2.
+        if(coord.y>.5){
+            angle=max(angle,PI-angle);
+        }else{
+            angle=min(angle,PI-angle);
+        }
+    }else{
+        if(coord.y<.5){
+            angle=max(angle,PI-angle);
+        }else{
+            angle=min(angle,PI-angle);
+        }
+    }
     
-    //     float angle=acos(dist);
-    //     if(normalized_pos.y>0.){
-        //         // top half should be >= PI/2.
-        //         if(coord.y>.5){
-            //             angle=max(angle,PI-angle);
-        //         }else{
-            //             angle=min(angle,PI-angle);
-        //         }
-    //     }else{
-        //         if(coord.y<.5){
-            //             angle=max(angle,PI-angle);
-        //         }else{
-            //             angle=min(angle,PI-angle);
-        //         }
-    //     }
+    float other_angle=angle+PI;
     
-    //     float other_angle=angle+PI;
-    
-    //     float dist_1=texture(angle_cache_tex,vec2(angle/(2.*PI),index/float(angle_cache_tex_dim.y))).y;
-    //     float dist_2=texture(angle_cache_tex,vec2(other_angle/(2.*PI),index/float(angle_cache_tex_dim.y))).y;
-    
-    //     if(dist_1>3.&&dist_1<6.){
-        //         float d=(6.-dist_1)/3.;
-        //         return vec4(1.-d,d,0.,.8);
-    //     }
-    //     if(dist_2>3.&&dist_2<6.){
-        //         float d=(6.-dist_2)/3.;
-        //         return vec4(1.-d,d,0.,.8);
-    //     }
-    //     return vec4(1.,1.,1.,.0);
-// }
+    float z=start_dir.z;
+    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle/(2.*PI),.5)).xy;
+    // if(z_bounds.x>z){
+        //     return vec4(1.-(z_bounds.x-z),0.,0.,.8);
+    // }
+    // if(z_bounds.y<z){
+        //     return vec4(0.,1.-(z-z_bounds.y),0.,.8);
+    // }
+    // return vec4(1.,1.,1.,.8);
+    float z_01=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+    float z_index=z_to_z_index(z_01);
+    if(z_01>=0.&&z_01<=1.){
+        if(z_index>=0.&&z_index<=1.){
+            // return vec4(angle/(2.*PI),1.,0.,0.);
+            float dist_1=texture(angle_cache,vec2(angle/(2.*PI),z_index)).x;
+            return vec4(50.*(z_bounds.x-.98),1.,0.,1.);
+            if(dist_1>3.&&dist_1<6.){
+                float d=(6.-dist_1)/3.;
+                return vec4(top_color,.5);
+            }
+        }
+    };
+    z_bounds=texture(angle_z_max_cache,vec2(other_angle/(2.*PI),.5)).xy;
+    z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+    if(z_index>=0.&&z_index<=1.){
+        float dist_2=texture(angle_cache,vec2(other_angle/(2.*PI),z_index)).x;
+        if(dist_2>3.&&dist_2<6.){
+            float d=(6.-dist_2)/3.;
+            return vec4(bottom_color,.5);
+        }
+    }
+    return vec4(0.,0.,0.,0.);
+}
 
 vec3 get_color(vec2 coord){
     vec3 start_dir=get_start_dir(coord);
     vec3 true_start_dir=get_true_start_dir(coord);
     vec3 background_color=get_background_color(start_dir);
-    return background_color.xyz;
-    //vec4 disc_color=get_disc_color(start_dir,true_start_dir,coord);
-    //return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
+    vec4 disc_color=get_disc_color(start_dir,true_start_dir,coord);
+    // if(background_color.xyz==vec3(0.,0.,0.)){
+        //     return background_color;
+    // }
+    //return get_disc_color(start_dir,true_start_dir,coord).xyz;
+    return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
 }
 
 void main(){
