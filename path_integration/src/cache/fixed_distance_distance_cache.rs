@@ -101,8 +101,8 @@ mod tests {
             black_hole_radius,
             max_disc_radius,
         );
-        let angle_iterations = 16;
-        let distance_iterations = 16;
+        let angle_iterations = 32;
+        let distance_iterations = 1024;
         for j in 0..=angle_iterations {
             let mut line = Vec::new();
             let angle_01 = (j as f64) / (angle_iterations as f64);
