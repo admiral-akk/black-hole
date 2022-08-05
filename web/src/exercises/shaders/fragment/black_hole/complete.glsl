@@ -29,27 +29,22 @@ uniform float distance;
 #define TAU 6.2831853076
 #define AA_LEVEL 4.
 
-vec3 uv_grid(vec3 final_dir){
-    float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
-    float phi=atan(final_dir.z,final_dir.x);
-    if(phi<0.){
-        phi=4.*PI+phi;
-    }
-    
-    float theta=atan(final_dir.y,horizontal_len)+PI;
-    
-    phi=mod(phi,2.*PI);
-    theta=mod(theta,PI);
-    
-    float phi_d=mod(180.*phi/PI,10.);
-    float theta_d=mod(180.*theta/PI,10.);
-    
-    float r=(1.-(smoothstep(0.,1.,phi_d)-smoothstep(9.,10.,phi_d)))*(.5+phi/(4.*PI));
-    float g=(1.-(smoothstep(0.,1.,theta_d)-smoothstep(9.,10.,theta_d)))*(.5+theta/(2.*PI));
-    float b=.25+r+g;
-    return vec3(r,g,b);
-}
+//
+/* Background color calculations */
+//
 
+// Pretty sure this is just sampling from (x,y,1.)?
+vec3 get_start_dir(vec2 coord){
+    // todo(CPU pre-compute)
+    vec3 forward=observer_mat*normalized_dir;
+    // todo(CPU pre-compute)
+    vec3 up=observer_mat*normalized_up;
+    // todo(CPU pre-compute)
+    vec3 right=cross(forward,up);
+    // todo(CPU pre-compute)
+    float view_width=2.*tan(PI*vertical_fov_degrees/360.);
+    return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
+}
 vec3 star_sample(vec3 final_dir){
     float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
     float phi=4.*PI+atan(final_dir.z,final_dir.x);
@@ -81,36 +76,8 @@ vec3 galaxy_sample(vec3 final_dir){
     theta=mod(theta,PI);
     return texture(galaxy,vec2(phi/(2.*PI),theta/PI)).xyz;
 }
-
-vec3 get_start_dir(vec2 coord){
-    // todo(CPU pre-compute)
-    vec3 forward=observer_mat*normalized_dir;
-    // todo(CPU pre-compute)
-    vec3 up=observer_mat*normalized_up;
-    // todo(CPU pre-compute)
-    vec3 right=cross(forward,up);
-    // todo(CPU pre-compute)
-    float view_width=2.*tan(PI*vertical_fov_degrees/360.);
-    
-    return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
-}
-
-vec3 get_true_start_dir(vec2 coord){
-    // todo(CPU pre-compute)
-    vec3 forward=normalized_dir;
-    // todo(CPU pre-compute)
-    vec3 up=normalized_up;
-    // todo(CPU pre-compute)
-    vec3 right=cross(forward,up);
-    // todo(CPU pre-compute)
-    float view_width=2.*tan(PI*vertical_fov_degrees/360.);
-    
-    return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
-    
-}
 bool black_hole_hit(vec3 start_dir){
     float z=texture(z_max_cache,vec2((distance-5.)/15.,.5)).x;
-    
     return start_dir.z>=z;
 }
 
@@ -120,12 +87,10 @@ float get_cache_index(vec3 start_dir){
     float val=(start_dir.z+1.)/(z+1.);
     return val*val;
 }
-
 vec3 get_cached_dir(vec3 start_dir){
     float index=get_cache_index(start_dir);
     return texture(cache,vec2(index-.5/float(cache_dim.x),(distance-5.)/15.)).xyz;
 }
-
 vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
     float angle=PI/2.;
     if(start_dir.x!=0.){
@@ -143,7 +108,6 @@ vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
     mat3x3 inv=inverse(observer_mat);
     return inv*cached_dir;
 }
-
 vec3 get_final_color(vec3 final_dir){
     return clamp(star_sample(final_dir)+constellation_sample(final_dir)+galaxy_sample(final_dir),0.,1.);
 }
@@ -157,8 +121,24 @@ vec3 get_background_color(vec3 start_dir){
     return get_final_color(final_dir);
 }
 
-float to_angle_index(float angle,float z){
+//
+/* Disc color calculations */
+//
+
+vec3 get_true_start_dir(vec2 coord){
+    // todo(CPU pre-compute)
+    vec3 forward=normalized_dir;
+    // todo(CPU pre-compute)
+    vec3 up=normalized_up;
+    // todo(CPU pre-compute)
+    vec3 right=cross(forward,up);
+    // todo(CPU pre-compute)
+    float view_width=2.*tan(PI*vertical_fov_degrees/360.);
     
+    return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
+}
+
+float to_angle_index(float angle,float z){
     vec2 z_bounds=texture(angle_z_max_cache,vec2(angle,.5)).xy;
     float z_01=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
     if(z_01>.5){
@@ -230,15 +210,15 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     return vec4(0.,0.,0.,0.);
 }
 
+//
+/* Main methods */
+//
+
 vec3 get_color(vec2 coord){
     vec3 start_dir=get_start_dir(coord);
     vec3 true_start_dir=get_true_start_dir(coord);
     vec3 background_color=get_background_color(start_dir);
     vec4 disc_color=get_disc_color(start_dir,true_start_dir,coord);
-    // if(background_color.xyz==vec3(0.,0.,0.)){
-        //     return background_color;
-    // }
-    //return get_disc_color(start_dir,true_start_dir,coord).xyz;
     return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
 }
 
