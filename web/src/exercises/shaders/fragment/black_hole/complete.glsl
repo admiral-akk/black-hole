@@ -182,21 +182,13 @@ float get_disc_angle(vec3 true_start_dir,vec2 coord){
     // which to use depends on whether the ray is going "under" or "over"
     
     float angle=acos(dist);
-    if(normalized_pos.y>0.){
-        // top half should be >= PI/2.
-        if(coord.y>.5){
-            angle=max(angle,PI-angle);
-        }else{
-            angle=min(angle,PI-angle);
-        }
-    }else{
-        if(coord.y<.5){
-            angle=max(angle,PI-angle);
-        }else{
-            angle=min(angle,PI-angle);
-        }
+    float alt_angle=PI-angle;
+    bool above=normalized_pos.y>0.;
+    bool top_coord=coord.y>.5;
+    if(above==top_coord){
+        return max(angle,alt_angle);
     }
-    return angle;
+    return min(angle,alt_angle);
 }
 
 vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
