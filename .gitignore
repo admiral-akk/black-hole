@@ -9,8 +9,8 @@
 *.webm
 *.apng
 perf.data*
-.txt
-.flex
+*.txt
+*.flex
 
 /dist
 /tmp
