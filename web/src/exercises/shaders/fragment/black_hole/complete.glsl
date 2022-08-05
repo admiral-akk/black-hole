@@ -159,7 +159,7 @@ vec3 get_background_color(vec3 start_dir){
 
 float to_angle_index(float angle,float z){
     
-    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle/(2.*PI),.5)).xy;
+    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle/TAU,.5)).xy;
     float z_01=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
     if(z_01>.5){
         z_01=2.*(z_01-.5);
