@@ -184,12 +184,18 @@ vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
     float alt_angle_01=.5-angle_01;
     bool above=normalized_pos.y>0.;
     bool top_coord=coord.y>.5;
-    float theta=atan(intersection.z,intersection.x)/TAU+.5;
+    float theta_01=atan(intersection.z,intersection.x)/TAU+.5;
     if(above==top_coord){
-        return vec2(max(angle_01,alt_angle_01),theta);
+        return vec2(max(angle_01,alt_angle_01),theta_01);
     }else{
-        return vec2(min(angle_01,alt_angle_01),theta);
+        return vec2(min(angle_01,alt_angle_01),theta_01);
     }
+}
+
+vec4 disc_color(float dist_01,float theta_01){
+    float offset=5.*TAU*dist_01;
+    float white=clamp((.5+sin(theta_01*TAU+offset)),0.,1.);
+    return vec4(white,white,white,white);
 }
 
 vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
@@ -206,19 +212,19 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     float z_index=to_angle_index(angle_01.x,z);
     if(z_index>=0.&&z_index<=1.){
         // return vec4(angle/(2.*PI),1.,0.,0.);
-        float dist_1=texture(angle_cache,vec2(z_index,angle_01.x)).x;
-        if(dist_1>3.&&dist_1<6.){
-            float d=(6.-dist_1)/3.;
-            return vec4(close_color,1.)+vec4(0.,0.,d,0.);
+        float dist=texture(angle_cache,vec2(z_index,angle_01.x)).x;
+        if(dist>3.&&dist<6.){
+            float dist_01=(6.-dist)/3.;
+            return disc_color(dist_01,angle_01.y);
         }
     }
     vec2 other_angle_01=angle_01+.5;
     z_index=to_angle_index(other_angle_01.x,z);
     if(z_index>=0.&&z_index<=1.){
-        float dist_2=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
-        if(dist_2>3.&&dist_2<6.){
-            float d=(6.-dist_2)/3.;
-            return vec4(far_color,1.)+vec4(0.,0.,d,0.);
+        float dist=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
+        if(dist>3.&&dist<6.){
+            float dist_01=(6.-dist)/3.;
+            return disc_color(dist_01,other_angle_01.y);
         }
     }
     return vec4(0.,0.,0.,0.);
