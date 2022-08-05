@@ -158,6 +158,7 @@ pub struct BlackHoleParams {
     pub normalized_dir: Vec3,
     pub normalized_up: Vec3,
     pub observer_mat: Mat3,
+    pub time_s: f32,
 }
 
 impl BlackHoleParams {
@@ -170,6 +171,7 @@ impl BlackHoleParams {
         pos: Vec3,
         dir: Vec3,
         up: Vec3,
+        time_s: f32,
     ) -> Self {
         let observer_quat = Quat::from_rotation_arc(pos.normalize(), -Vec3::Z);
         let euler = Quat::to_euler(observer_quat, glam::EulerRot::XYZ);
@@ -185,6 +187,7 @@ impl BlackHoleParams {
             normalized_dir: dir.normalize(),
             normalized_up: up.normalize(),
             observer_mat,
+            time_s,
         }
     }
 
@@ -205,6 +208,7 @@ impl BlackHoleParams {
         v.push(UniformContext::vec3(self.normalized_dir, "normalized_dir"));
         v.push(UniformContext::vec3(self.normalized_up, "normalized_up"));
         v.push(UniformContext::mat3x3(self.observer_mat, "observer_mat"));
+        v.push(UniformContext::f32(self.time_s, "time_s"));
         v
     }
 }
@@ -230,10 +234,10 @@ impl ExerciseState {
 fn init_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
-    exercise_index: u32,
+    render_params: &RenderParams,
     images: &ImageCache,
 ) {
-    match exercise_index {
+    match render_params.select_index {
         0 => {
             *exercise_state = ExerciseState::Exercise0;
         }
@@ -287,6 +291,7 @@ fn init_exercise(
                 pos,
                 dir,
                 up,
+                render_params.seconds_since_start,
             );
             let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
 
@@ -325,6 +330,7 @@ fn init_exercise(
                 pos,
                 dir,
                 up,
+                render_params.seconds_since_start,
             );
             *exercise_state = ExerciseState::Exercise9(params);
         }
@@ -345,6 +351,7 @@ fn init_exercise(
                 pos,
                 dir,
                 up,
+                render_params.seconds_since_start,
             );
 
             let program = exercise_10::get_program(gl, &params, images);
@@ -434,6 +441,7 @@ fn update_exercise_state(
                 pos,
                 dir,
                 up,
+                new_params.seconds_since_start,
             );
         }
         _ => {}
@@ -449,7 +457,7 @@ fn update_exercise(
 ) {
     if exercise_state.index() != new_params.select_index {
         clean_up_exercise(gl, exercise_state);
-        init_exercise(gl, exercise_state, new_params.select_index, images);
+        init_exercise(gl, exercise_state, new_params, images);
     }
     update_exercise_state(gl, exercise_state, old_params, new_params);
 }

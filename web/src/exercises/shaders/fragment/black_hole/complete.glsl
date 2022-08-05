@@ -24,6 +24,7 @@ uniform vec3 normalized_up;
 uniform vec3 normalized_pos;
 uniform mat3x3 observer_mat;
 uniform float distance;
+uniform float time_s;
 #define PI_2 1.5707963269
 #define PI 3.1415926538
 #define TAU 6.2831853076
@@ -151,7 +152,7 @@ float noise(in vec2 _st) {
 vec4 disc_color(float dist_01,float theta_01){
     float cyclic_theta = sin(theta_01*TAU);
     float n = noise(vec2(dist_01,cyclic_theta)*vec2(32.3,10.54));
-    float offset=5.*TAU*dist_01+n;
+    float offset=5.*TAU*dist_01+n+time_s;
     float white=clamp((.5+sin(theta_01*TAU+offset)),0.,1.);
     return vec4(white,white,white,white);
 }
