@@ -6,6 +6,7 @@ use super::fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDis
 
 const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
+
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceDistanceCache {
     pub min_angle: f64,
@@ -86,6 +87,11 @@ impl FixedDistanceDistanceCache {
 mod tests {
     use std::{f64::consts::TAU, fs};
 
+    use bson;
+    use rmp_serde::{Deserializer, Serializer};
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
+
     use test_utils::plot_trajectories;
 
     use crate::cast_ray_steps_response;
@@ -163,16 +169,18 @@ mod tests {
             max_disc_radius,
         );
 
-        let serialized = serde_json::to_string(&cache);
-
+        // Get a serialized version of the input data as a `Bson`.
+        let mut s = flexbuffers::FlexbufferSerializer::new();
+        let serialized = cache.serialize(&mut s);
         assert!(serialized.is_ok());
 
-        let deserialized: Result<FixedDistanceDistanceCache, serde_json::Error> =
-            serde_json::from_str(serialized.unwrap().as_str());
+        let r = flexbuffers::Reader::get_root(s.view()).unwrap();
 
+        // Serialization is similar to JSON. Field names are stored in the buffer but are reused
+        // between all maps and structs.
+
+        let deserialized = FixedDistanceDistanceCache::deserialize(r);
         assert!(deserialized.is_ok());
-
-        let deserialized = deserialized.unwrap();
-        assert_eq!(deserialized, cache);
+        assert_eq!(cache, deserialized.unwrap());
     }
 }
