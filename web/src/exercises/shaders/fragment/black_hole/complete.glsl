@@ -127,7 +127,7 @@ vec3 get_background_color(vec3 start_dir){
 //
 
 float random(in vec2 _st) {
-    return fract(sin(dot(_st.xy, vec2(12.9898,78.233)))*43758.5453123);
+    return fract(sin(dot(_st.xy, vec2(312.12,1.*TAU)))*42.5453123);
 }
 
 // Based on Morgan McGuire @morgan3d
@@ -150,11 +150,11 @@ float noise(in vec2 _st) {
 }
 
 vec4 disc_color(float dist_01,float theta_01){
-    float cyclic_theta = sin(theta_01*TAU);
-    float n = noise(vec2(dist_01,cyclic_theta)*vec2(32.3,10.54));
+    float n = noise(vec2(dist_01,theta_01)*vec2(42.3,1.));
+    return vec4(n,n,n,1.0);
     float offset=5.*TAU*dist_01+n+time_s;
     float white=clamp((.5+sin(theta_01*TAU+offset)),0.,1.);
-    return vec4(white,white,white,white);
+    return vec4(n,n,n,1.0);
 }
 
 //
