@@ -159,7 +159,7 @@ vec3 get_background_color(vec3 start_dir){
 
 float to_angle_index(float angle,float z){
     
-    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle/TAU,.5)).xy;
+    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle,.5)).xy;
     float z_01=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
     if(z_01>.5){
         z_01=2.*(z_01-.5);
@@ -180,15 +180,14 @@ float get_disc_angle(vec3 true_start_dir,vec2 coord){
     
     // there are two angles that matter;
     // which to use depends on whether the ray is going "under" or "over"
-    
-    float angle=acos(dist);
-    float alt_angle=PI-angle;
+    float angle_01=acos(dist)/TAU;
+    float alt_angle_01=.5-angle_01;
     bool above=normalized_pos.y>0.;
     bool top_coord=coord.y>.5;
     if(above==top_coord){
-        return max(angle,alt_angle);
+        return max(angle_01,alt_angle_01);
     }
-    return min(angle,alt_angle);
+    return min(angle_01,alt_angle_01);
 }
 
 vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
@@ -199,22 +198,22 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     }
     vec3 close_color=vec3(is_top,1.-is_top,0.);
     vec3 far_color=vec3(1.-is_top,is_top,0.);
-    float angle=get_disc_angle(true_start_dir,coord);
-    float other_angle=angle+PI;
+    float angle_01=get_disc_angle(true_start_dir,coord);
     
     float z=start_dir.z;
-    float z_index=to_angle_index(angle,z);
+    float z_index=to_angle_index(angle_01,z);
     if(z_index>=0.&&z_index<=1.){
         // return vec4(angle/(2.*PI),1.,0.,0.);
-        float dist_1=texture(angle_cache,vec2(z_index,angle/TAU)).x;
+        float dist_1=texture(angle_cache,vec2(z_index,angle_01)).x;
         if(dist_1>3.&&dist_1<6.){
             float d=(6.-dist_1)/3.;
             return vec4(close_color,1.)+vec4(0.,0.,d,0.);
         }
     }
-    z_index=to_angle_index(other_angle,z);
+    float other_angle_01=angle_01+.5;
+    z_index=to_angle_index(other_angle_01,z);
     if(z_index>=0.&&z_index<=1.){
-        float dist_2=texture(angle_cache,vec2(z_index,other_angle/TAU)).x;
+        float dist_2=texture(angle_cache,vec2(z_index,other_angle_01)).x;
         if(dist_2>3.&&dist_2<6.){
             float d=(6.-dist_2)/3.;
             return vec4(far_color,1.)+vec4(0.,0.,d,0.);
