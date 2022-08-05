@@ -211,36 +211,6 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     float other_angle=angle+PI;
     
     float z=start_dir.z;
-    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle/TAU,.5)).xy;
-    // if(z_bounds.x>z){
-        //     return vec4(1.-(z_bounds.x-z),0.,0.,.8);
-    // }
-    // if(z_bounds.y<z){
-        //     return vec4(0.,1.-(z-z_bounds.y),0.,.8);
-    // }
-    // return vec4(1.,1.,1.,.8);
-    // float d_4=(texture(angle_cache,coord).x-3.)/3.;
-    // vec3 c_1=vec3(d_4,0.,0.);
-    // if(d_4<0.){
-        //     c_1.x=0.;
-        //     c_1.y=1.;
-    // }
-    // if(d_4>1.){
-        //     c_1.x=0.;
-        //     c_1.z=1.;
-    // }
-    // return vec4(c_1,1.);
-    // float z_index=to_angle_index(angle,z);
-    // float d_0=texture(angle_cache,vec2(0.,angle/TAU)).x;
-    // float d_1=texture(angle_cache,vec2(1.,angle/TAU)).x;
-    // vec3 c=vec3(z_index,0.,0.);
-    // if(d_1<3.1){
-        //     c.y=1.;
-    // }
-    // if(d_0>5.9){
-        //     c.z=1.;
-    // }
-    // return vec4(c,1.);
     float z_index=to_angle_index(angle,z);
     if(z_index>=0.&&z_index<=1.){
         // return vec4(angle/(2.*PI),1.,0.,0.);
