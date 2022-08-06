@@ -203,12 +203,7 @@ pub struct RenderState {
     images: ImageCache,
 }
 
-fn update_exercise(
-    gl: &RenderContext,
-    exercise_state: &mut ExerciseState,
-    old_params: &RenderParams,
-    new_params: &RenderParams,
-) {
+fn update_params(exercise_state: &mut ExerciseState, new_params: &RenderParams) {
     let distance = f32::clamp((17.0 + new_params.mouse_scroll / 100.0) as f32, 5.0, 20.0);
     let vertical_fov_degrees = 50.0;
     let black_hole_radius = 1.5;
@@ -255,12 +250,7 @@ impl RenderState {
         console_log!("params: {:?}", params);
         let gl = &self.gl;
 
-        update_exercise(
-            gl,
-            &mut *self.exercise_state.borrow_mut(),
-            &self.prev_params.get(),
-            params,
-        );
+        update_params(&mut *self.exercise_state.borrow_mut(), params);
         render_exercise(gl, &mut *self.exercise_state.borrow_mut());
         self.prev_params.set(*params);
         Ok(())
