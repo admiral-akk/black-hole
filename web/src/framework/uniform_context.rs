@@ -3,7 +3,7 @@ use web_sys::{WebGl2RenderingContext, WebGlTexture};
 
 use super::{program_context::ProgramContext, render_context::RenderContext};
 
-pub enum UniformStore<'a> {
+pub enum UniformStore {
     I32(i32),
     F32(f32),
     Vec2(Vec2),
@@ -12,78 +12,66 @@ pub enum UniformStore<'a> {
     Vec4(Vec4),
     Mat3x3(Mat3),
     ArrayF32(Vec<f32>),
-    Texture2dRef(&'a WebGlTexture, i32, i32),
     Texture2d(WebGlTexture, i32, i32),
 }
 
-pub struct UniformContext<'a> {
-    pub store: UniformStore<'a>,
+pub struct UniformContext {
+    pub store: UniformStore,
     pub name: String,
 }
 
-impl UniformContext<'_> {
-    pub fn new_from_allocated_ref<'a>(
-        texture: &'a WebGlTexture,
-        name: &str,
-        width: i32,
-        height: i32,
-    ) -> UniformContext<'a> {
-        UniformContext {
-            store: UniformStore::Texture2dRef(texture, width, height),
-            name: name.to_string(),
-        }
-    }
-    pub fn new_from_allocated_val<'a>(
+impl UniformContext {
+    pub fn new_from_allocated_val(
         texture: WebGlTexture,
         name: &str,
         width: i32,
         height: i32,
-    ) -> UniformContext<'a> {
+    ) -> UniformContext {
         UniformContext {
             store: UniformStore::Texture2d(texture, width, height),
             name: name.to_string(),
         }
     }
 
-    pub fn array_f32<'a>(arr: &[f32], name: &str) -> UniformContext<'a> {
+    pub fn array_f32<'a>(arr: &[f32], name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::ArrayF32(arr.to_vec()),
             name: name.to_string(),
         }
     }
-    pub fn i32<'a>(i: i32, name: &str) -> UniformContext<'a> {
+    pub fn i32<'a>(i: i32, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::I32(i),
             name: name.to_string(),
         }
     }
-    pub fn ivec2<'a>(vec: IVec2, name: &str) -> UniformContext<'a> {
+    pub fn ivec2<'a>(vec: IVec2, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::IVec2(vec),
             name: name.to_string(),
         }
     }
-    pub fn f32<'a>(f: f32, name: &str) -> UniformContext<'a> {
+    pub fn f32<'a>(f: f32, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::F32(f),
             name: name.to_string(),
         }
     }
-    pub fn vec2<'a>(vec: Vec2, name: &str) -> UniformContext<'a> {
+    pub fn vec2<'a>(vec: Vec2, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::Vec2(vec),
             name: name.to_string(),
         }
     }
 
-    pub fn vec3<'a>(vec: Vec3, name: &str) -> UniformContext<'a> {
+    pub fn vec3<'a>(vec: Vec3, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::Vec3(vec),
             name: name.to_string(),
         }
     }
 
-    pub fn mat3x3<'a>(mat: Mat3, name: &str) -> UniformContext<'a> {
+    pub fn mat3x3<'a>(mat: Mat3, name: &str) -> UniformContext {
         UniformContext {
             store: UniformStore::Mat3x3(mat),
             name: name.to_string(),
@@ -126,9 +114,6 @@ impl UniformContext<'_> {
             UniformStore::ArrayF32(arr) => {
                 let loc = gl.gl.get_uniform_location(&program.program, &self.name);
                 gl.gl.uniform1fv_with_f32_array(loc.as_ref(), arr);
-            }
-            UniformStore::Texture2dRef(texture, width, height) => {
-                add_texture_to_program(&texture, gl, program, &self.name, *width, *height);
             }
             UniformStore::Texture2d(texture, width, height) => {
                 add_texture_to_program(&texture, gl, program, &self.name, *width, *height);

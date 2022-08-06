@@ -197,11 +197,11 @@ fn init_exercise(gl: &RenderContext, images: &ImageCache) -> ExerciseState {
     ExerciseState { params, program }
 }
 
-pub struct RenderState<'a> {
+pub struct RenderState {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
     exercise_state: RefCell<Box<ExerciseState>>,
-    images: ImageCache<'a>,
+    images: ImageCache,
 }
 
 fn update_params(exercise_state: &mut ExerciseState, new_params: &RenderParams) {
@@ -246,7 +246,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
     gl.run_program(&exercise_state.program, None);
 }
 
-impl<'a> RenderState<'a> {
+impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("params: {:?}", params);
         let gl = &self.gl;
@@ -289,8 +289,8 @@ vec4 disc_color(float dist_01,float theta_01){
     return vec4(n,n,n,1.0);
 }";
 
-impl<'a> RenderState<'a> {
-    pub async fn new(width: u32, height: u32) -> Result<RenderState<'a>, JsValue> {
+impl RenderState {
+    pub async fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
         let gl = RenderContext::new(width, height);
 
         let images = ImageCache::new(&gl).await?;
@@ -388,11 +388,7 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
     Ok(Uint8Array::new(&image_data))
 }
 
-pub async fn fetch_rgb_texture<'a>(
-    gl: &RenderContext,
-    url: &str,
-    name: &str,
-) -> UniformContext<'a> {
+pub async fn fetch_rgb_texture(gl: &RenderContext, url: &str, name: &str) -> UniformContext {
     let image = to_image(fetch_url_binary(url.to_string()).await.unwrap());
     let image_tex = generate_texture_from_u8(
         &gl.gl,
@@ -421,18 +417,12 @@ const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
-pub struct ImageCache<'a> {
-    galaxy_tex: UniformContext<'a>,
-    stars_tex: UniformContext<'a>,
-    constellations_tex: UniformContext<'a>,
-    ray_cache_tex: UniformContext<'a>,
-    max_z_tex: UniformContext<'a>,
-    angle_cache_tex: UniformContext<'a>,
-    angle_min_z_tex: UniformContext<'a>,
+pub struct ImageCache {
+    textures: [UniformContext; 7],
 }
 
-impl<'a> ImageCache<'a> {
-    pub async fn new(gl: &RenderContext) -> Result<ImageCache<'a>, JsValue> {
+impl ImageCache {
+    pub async fn new(gl: &RenderContext) -> Result<ImageCache, JsValue> {
         let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
         let stars_tex = fetch_rgb_texture(gl, STARS_URL, "stars").await;
         let constellations_tex = fetch_rgb_texture(gl, CONSTELLATIONS_URL, "constellations").await;
@@ -509,13 +499,15 @@ impl<'a> ImageCache<'a> {
             1 as i32,
         );
         Ok(ImageCache {
-            galaxy_tex,
-            stars_tex,
-            constellations_tex,
-            ray_cache_tex,
-            max_z_tex: z_max_cache_tex,
-            angle_cache_tex,
-            angle_min_z_tex,
+            textures: [
+                galaxy_tex,
+                stars_tex,
+                constellations_tex,
+                ray_cache_tex,
+                z_max_cache_tex,
+                angle_cache_tex,
+                angle_min_z_tex,
+            ],
         })
     }
 }

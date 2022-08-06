@@ -132,7 +132,7 @@ impl RenderContext {
         &self,
         vertex_source: Option<&SourceContext>,
         fragment_source: &SourceContext,
-        textures: &[&UniformContext],
+        textures: &[UniformContext],
     ) -> ProgramContext {
         let gl = &self.gl;
 
