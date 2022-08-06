@@ -457,19 +457,15 @@ impl<'a> ImageCache<'a> {
         for y in 0..ray_height {
             let cache = &ray_cache_2.caches[y];
             z_max_vec.push(cache.max_z);
-            z_max_vec.push(cache.max_z);
-            z_max_vec.push(cache.max_z);
-            z_max_vec.push(cache.max_z);
             for x in 0..ray_width {
                 let final_dir = cache.cache[x].final_dir;
                 ray_vec_2.push(final_dir[0]);
                 ray_vec_2.push(final_dir[1]);
                 ray_vec_2.push(final_dir[2]);
-                ray_vec_2.push(1.0);
             }
         }
         let ray_cache_tex =
-            generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32, Format::RGBA);
+            generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32, Format::RGB);
         let ray_cache_tex = UniformContext::new_from_allocated_val(
             ray_cache_tex,
             "cache",
@@ -477,7 +473,7 @@ impl<'a> ImageCache<'a> {
             ray_height as i32,
         );
         let z_max_cache_tex =
-            generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32, Format::RGBA);
+            generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32, Format::R);
         let z_max_cache_tex = UniformContext::new_from_allocated_val(
             z_max_cache_tex,
             "z_max_cache",
