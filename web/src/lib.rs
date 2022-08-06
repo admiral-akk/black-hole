@@ -329,6 +329,7 @@ impl RenderState {
         }
         .replace("\n", "");
         self.source.add_code(shader_code);
+        self.program = compile_shader_program(&self.gl, &self.source, &self.images);
     }
 }
 
@@ -340,12 +341,6 @@ fn document() -> web_sys::Document {
     window()
         .document()
         .expect("should have a document on window")
-}
-
-fn request_animation_frame(f: &Closure<dyn FnMut()>) {
-    window()
-        .request_animation_frame(f.as_ref().unchecked_ref())
-        .expect("should register `requestAnimationFrame` OK");
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -506,6 +501,14 @@ pub async fn start() -> Result<(), JsValue> {
         .get_element_by_id("canvas")
         .unwrap()
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
+    let shader_text_box = document
+        .get_element_by_id("shader")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlTextAreaElement>()?;
+    let compile_button = document
+        .get_element_by_id("recompile")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlButtonElement>()?;
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
@@ -550,7 +553,9 @@ pub async fn start() -> Result<(), JsValue> {
             render(&mut render_state.borrow_mut(), &params.borrow()).unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
-        request_animation_frame(g.borrow().as_ref().unwrap());
+        window()
+            .request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+            .expect("should register `requestAnimationFrame` OK");
     }
 
     Ok(())

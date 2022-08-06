@@ -44,6 +44,8 @@ features = [
   'HtmlInputElement',
   'HtmlOptionElement',
   'HtmlImageElement',
+  'HtmlTextAreaElement',
+  'HtmlButtonElement',
   'HtmlSelectElement',
   'CssStyleDeclaration',
   'Document',
