@@ -6,6 +6,7 @@ mod framework;
 use exercises::exercise_10;
 
 use framework::program_context::ProgramContext;
+use framework::texture_utils::generate_rgb_texture_from_u8;
 use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
 use glam::Mat3;
@@ -393,9 +394,9 @@ pub async fn fetch_rgb_texture<'a>(
     name: &str,
 ) -> UniformContext<'a> {
     let image = to_image(fetch_url_binary(url.to_string()).await.unwrap());
-    let image_tex = generate_texture_from_u8(
+    let image_tex = generate_rgb_texture_from_u8(
         &gl.gl,
-        &ImageCache::to_rgba(image.as_rgb8().unwrap().as_raw()),
+        &image.as_rgb8().unwrap().as_raw(),
         image.width() as i32,
     );
     UniformContext::new_from_allocated_val(

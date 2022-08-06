@@ -119,7 +119,7 @@ pub fn generate_rgb_texture_from_u8(
         0,
         WebGl2RenderingContext::RGB as i32,
         width,
-        (arr.len() / (4 * width) as usize) as i32,
+        (arr.len() / (3 * width) as usize) as i32,
         0,
         WebGl2RenderingContext::RGB,
         WebGl2RenderingContext::UNSIGNED_BYTE,
