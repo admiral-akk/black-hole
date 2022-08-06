@@ -25,6 +25,7 @@ uniform vec3 normalized_pos;
 uniform mat3x3 observer_mat;
 uniform float distance;
 uniform float time_s;
+
 #define PI_2 1.5707963269
 #define PI 3.1415926538
 #define TAU 6.2831853076
@@ -126,6 +127,8 @@ vec3 get_background_color(vec3 start_dir){
 /* Disc color calculations */
 //
 
+// this is a temporary marker to get the code to appear here.
+// Disc code here!
 float random(in vec2 _st) {
     return fract(sin(dot(_st.xy, vec2(312.12,1.*TAU)))*42.5453123);
 }

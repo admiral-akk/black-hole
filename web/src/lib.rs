@@ -21,8 +21,6 @@ use path_integration::cache::ray_cache::RayCache as PathRayCache;
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
 
-
-
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -32,7 +30,6 @@ use framework::render_context::RenderContext;
 use framework::uniform_context::UniformContext;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-
 
 use crate::framework::texture_utils::generate_texture_from_u8;
 
@@ -303,10 +300,12 @@ impl RenderState {
         })
     }
 
-    pub fn update_disc_shader(shader_func: &str) {
-        if shader_func.is_empty() {
-        } else {
+    pub fn update_disc_shader(&mut self, shader_func: &str) {
+        let shader_code = match shader_func.is_empty() {
+            true => DEFAULT_DISC_FUNC,
+            false => shader_func,
         }
+        .replace("\n", "");
     }
 }
 
@@ -347,7 +346,6 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 #[derive(Clone, Copy, Debug, Default)]
 struct RenderParams {
     pub seconds_since_start: f32,
-    pub select_index: u32,
     pub mouse_pos: Option<(i32, i32)>,
     pub mouse_scroll: f64,
 }
@@ -358,14 +356,6 @@ impl RenderParams {
         c.seconds_since_start = seconds_since_start;
         c
     }
-
-    pub fn update_exercise(&self, select_index: u32) -> RenderParams {
-        let mut c = self.clone();
-        c.seconds_since_start = 0.0;
-        c.select_index = select_index;
-        c
-    }
-
     pub fn update_mouse_pos(&self, mouse_pos: Option<(i32, i32)>) -> RenderParams {
         let mut c = self.clone();
         c.mouse_pos = mouse_pos;
@@ -407,10 +397,7 @@ pub async fn fetch_rgb_texture(gl: &RenderContext, url: &str, name: &str) -> Uni
 const GALAXY_URL: &str = "http://localhost:8080/galaxy.jpg";
 const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
 const STARS_URL: &str = "http://localhost:8080/stars.jpg";
-const RAY_CACHE_URL: &str = "http://localhost:8080/cache.png";
-const Z_MAX_CACHE_URL: &str = "http://localhost:8080/z_max_cache.png";
 const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
-const ANGLE_CACHE_URL: &str = "http://localhost:8080/angle_cache.txt";
 const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
     "http://localhost:8080/fixed_distance_distance_cache.txt";
 
