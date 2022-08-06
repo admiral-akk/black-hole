@@ -21,7 +21,6 @@ use path_integration::cache::ray_cache::RayCache as PathRayCache;
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
 
-use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -252,7 +251,6 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
     );
 }
 fn render(render_state: &mut RenderState, params: &RenderParams) -> Result<(), JsValue> {
-    console_log!("Code: {:?}", render_state.source.code);
     let gl = &render_state.gl;
     update_params(&mut render_state.black_hole_params, params);
     for ele in render_state.black_hole_params.uniform_context() {
@@ -360,7 +358,6 @@ impl ImageCache {
 
         let ray_cache_2 = fetch_url_binary(RAY_CACHE_2_URL.to_string()).await?;
         let ray_cache_2 = serde_json::from_slice::<PathRayCache>(&ray_cache_2.to_vec()).unwrap();
-        console_log!("Deserialized: {:?}", ray_cache_2);
         let (ray_width, ray_height) = (ray_cache_2.caches[0].cache.len(), ray_cache_2.caches.len());
         let mut ray_vec_2 = Vec::new();
         let mut z_max_vec = Vec::new();
@@ -405,11 +402,6 @@ impl ImageCache {
                 v.push(*c as f32);
             }
         }
-        console_log!("min_z: {:?}", min_z);
-        console_log!("min_z length: {:?}", min_z.len());
-
-        console_log!("angle_cache: {:?}", v);
-        console_log!("angle_cache length: {:?}", v.len());
 
         let angle_height = (min_z.len() / 2) as i32;
         let angle_width = v.len() as i32 / angle_height;
@@ -460,7 +452,7 @@ pub async fn start() -> Result<(), JsValue> {
         .unwrap()
         .dyn_into::<web_sys::HtmlButtonElement>()?;
 
-    let start_time = Rc::new(Cell::new(SystemTime::now()));
+    let start_time = Rc::new(RefCell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
     let render_state = Rc::new(RefCell::new(RenderState::new(1024, 1024).await?));
     {
@@ -491,8 +483,10 @@ pub async fn start() -> Result<(), JsValue> {
     }
 
     {
+        let start_time = start_time.clone();
         let render_state = render_state.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
+            *start_time.borrow_mut() = SystemTime::now();
             render_state
                 .borrow_mut()
                 .update_disc_shader(&shader_text_box.value());
@@ -509,11 +503,10 @@ pub async fn start() -> Result<(), JsValue> {
         let start_time = start_time.clone();
         let params = params.clone();
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            let seconds_since_start = SystemTime::now()
-                .duration_since(start_time.get())
+            params.borrow_mut().seconds_since_start = SystemTime::now()
+                .duration_since(*start_time.borrow())
                 .unwrap()
                 .as_secs_f32();
-            params.borrow_mut().seconds_since_start = seconds_since_start;
             render(&mut render_state.borrow_mut(), &params.borrow()).unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
