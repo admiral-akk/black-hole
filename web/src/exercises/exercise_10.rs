@@ -12,11 +12,6 @@ pub fn get_program(
     images: &ImageCache,
 ) -> ProgramContext {
     let mut text: Vec<&UniformContext> = Vec::new();
-
-    let fb2 = gl.create_framebuffer();
-    // get the view_port -> start_dir
-    let fb_context2 =
-        UniformContext::new_from_allocated_ref(&fb2.backing_texture, "start_ray_tex", 1024, 1024);
     let stars = UniformContext::new_from_allocated_ref(
         &images.stars_tex,
         "stars",
@@ -66,7 +61,6 @@ pub fn get_program(
     text.push(&stars);
     text.push(&galaxy);
     text.push(&constellations);
-    text.push(&fb_context2);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
     gl.get_program(None, &frag, &text)
