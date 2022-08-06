@@ -115,21 +115,36 @@ pub fn generate_rgb_texture_from_u8(
     texture.unwrap()
 }
 
+pub enum Format {
+    R,
+    RG,
+    RGB,
+    RGBA,
+}
+
 pub fn generate_texture_from_u8(
     gl: &WebGl2RenderingContext,
     arr: &[u8],
     width: i32,
+    format: Format,
 ) -> WebGlTexture {
     let texture = gl.create_texture();
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
+    let (dimensions, web_gl_format) = match format {
+        Format::R => (1, WebGl2RenderingContext::R8),
+        Format::RG => (2, WebGl2RenderingContext::RG),
+        Format::RGB => (3, WebGl2RenderingContext::RGB),
+        Format::RGBA => (4, WebGl2RenderingContext::RGBA),
+    };
+
     gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
         WebGl2RenderingContext::TEXTURE_2D,
         0,
-        WebGl2RenderingContext::RGBA as i32,
+        web_gl_format as i32,
         width,
-        (arr.len() / (4 * width) as usize) as i32,
+        (arr.len() / (dimensions * width) as usize) as i32,
         0,
-        WebGl2RenderingContext::RGBA,
+        web_gl_format,
         WebGl2RenderingContext::UNSIGNED_BYTE,
         Some(arr),
     )
