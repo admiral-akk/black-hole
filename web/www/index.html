@@ -8,13 +8,10 @@
 
 <body>
   <script src="./bootstrap.js"></script>
-  <div> <select id="input"></select></div>
   <canvas id="canvas" height="150" width="150"></canvas>
-  <!-- Just to force the images to be loaded; inelegant, 
-    but the most inelegant implementation is one that doesn't work -->
-  <img src="stars.jpg" style="display: none;" alt="Italian Trulli">
-  <img src="galaxy.jpg" style="display: none;" alt="Italian Trulli">
-  <img src="constellations.jpg" style="display: none;" alt="Italian Trulli">
+  <textarea type="text" id="shader" name="shader" rows="10" cols="100"></textarea>
+  <button type="button" id="recompile" name="recompile">Recompile shader!</button>
 </body>
+
 
 </html>

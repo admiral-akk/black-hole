@@ -102,15 +102,9 @@ fn get_selected_index() -> Result<u32, JsValue> {
         .selected_index() as u32)
 }
 
-enum ExerciseState {
-    Exercise0,
-    Exercise10(BlackHoleParams, ProgramContext),
-}
-
-impl Default for ExerciseState {
-    fn default() -> Self {
-        ExerciseState::Exercise0
-    }
+struct ExerciseState {
+    pub params: BlackHoleParams,
+    pub program: ProgramContext,
 }
 
 pub struct BlackHoleParams {
@@ -178,50 +172,28 @@ impl BlackHoleParams {
     }
 }
 
-impl ExerciseState {
-    pub fn index(&self) -> u32 {
-        match self {
-            ExerciseState::Exercise0 => 0,
-            ExerciseState::Exercise10(..) => 10,
-        }
-    }
-}
+fn init_exercise(gl: &RenderContext, images: &ImageCache) -> ExerciseState {
+    let distance = 17.0;
+    let vertical_fov_degrees = 50.0;
+    let black_hole_radius = 1.5;
+    let cache_width: i32 = 1024;
+    let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
 
-fn init_exercise(
-    gl: &RenderContext,
-    exercise_state: &mut ExerciseState,
-    render_params: &RenderParams,
-    images: &ImageCache,
-) {
-    match render_params.select_index {
-        0 => {
-            *exercise_state = ExerciseState::Exercise0;
-        }
-        1 => {
-            let distance = 17.0;
-            let vertical_fov_degrees = 50.0;
-            let black_hole_radius = 1.5;
-            let cache_width: i32 = 1024;
-            let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
+    let (dir, up) = (-pos.normalize(), Vec3::Y);
+    let params = BlackHoleParams::new(
+        IVec2::new(1024, 1024),
+        distance,
+        vertical_fov_degrees,
+        black_hole_radius,
+        cache_width,
+        pos,
+        dir,
+        up,
+        0.0,
+    );
+    let program = exercise_10::get_program(gl, &params, images);
 
-            let (dir, up) = (-pos.normalize(), Vec3::Y);
-            let params = BlackHoleParams::new(
-                IVec2::new(1024, 1024),
-                distance,
-                vertical_fov_degrees,
-                black_hole_radius,
-                cache_width,
-                pos,
-                dir,
-                up,
-                render_params.seconds_since_start,
-            );
-
-            let program = exercise_10::get_program(gl, &params, images);
-            *exercise_state = ExerciseState::Exercise10(params, program);
-        }
-        _ => {}
-    }
+    ExerciseState { params, program }
 }
 
 pub struct RenderState {
@@ -231,89 +203,53 @@ pub struct RenderState {
     images: ImageCache,
 }
 
-fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
-    match exercise_state {
-        ExerciseState::Exercise0 => {}
-        ExerciseState::Exercise10(_params, _program) => {}
-        _ => {}
-    }
-}
-
-fn update_exercise_state(
-    gl: &RenderContext,
-    exercise_state: &mut ExerciseState,
-    old_params: &RenderParams,
-    new_params: &RenderParams,
-) {
-    match exercise_state {
-        ExerciseState::Exercise10(params, program) => {
-            let distance = f32::clamp((17.0 + new_params.mouse_scroll / 100.0) as f32, 5.0, 20.0);
-            let vertical_fov_degrees = 50.0;
-            let black_hole_radius = 1.5;
-            let cache_width: i32 = 1024;
-
-            let mut pos = params.normalized_pos;
-            if new_params.mouse_pos.is_some() {
-                let x_angle =
-                    std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 1024.;
-                let y_angle =
-                    std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 512.) / 1024.;
-
-                pos = distance
-                    * (y_angle.cos() * x_angle.cos() * Vec3::Z
-                        + y_angle.cos() * x_angle.sin() * Vec3::X
-                        + y_angle.sin() * Vec3::Y);
-            }
-
-            pos = pos.normalize();
-            let dir = -pos;
-            let right = Vec3::cross(Vec3::Y, dir).normalize();
-            let up = Vec3::cross(right, dir);
-
-            *params = BlackHoleParams::new(
-                IVec2::new(1024, 1024),
-                distance,
-                vertical_fov_degrees,
-                black_hole_radius,
-                cache_width,
-                pos,
-                dir,
-                up,
-                new_params.seconds_since_start,
-            );
-        }
-        _ => {}
-    }
-}
-
 fn update_exercise(
     gl: &RenderContext,
     exercise_state: &mut ExerciseState,
     old_params: &RenderParams,
     new_params: &RenderParams,
-    images: &ImageCache,
 ) {
-    if exercise_state.index() != new_params.select_index {
-        clean_up_exercise(gl, exercise_state);
-        init_exercise(gl, exercise_state, new_params, images);
-    }
-    update_exercise_state(gl, exercise_state, old_params, new_params);
-}
+    let distance = f32::clamp((17.0 + new_params.mouse_scroll / 100.0) as f32, 5.0, 20.0);
+    let vertical_fov_degrees = 50.0;
+    let black_hole_radius = 1.5;
+    let cache_width: i32 = 1024;
 
+    let mut pos = exercise_state.params.normalized_pos;
+    if new_params.mouse_pos.is_some() {
+        let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 1024.;
+        let y_angle =
+            std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 512.) / 1024.;
+
+        pos = distance
+            * (y_angle.cos() * x_angle.cos() * Vec3::Z
+                + y_angle.cos() * x_angle.sin() * Vec3::X
+                + y_angle.sin() * Vec3::Y);
+    }
+
+    pos = pos.normalize();
+    let dir = -pos;
+    let right = Vec3::cross(Vec3::Y, dir).normalize();
+    let up = Vec3::cross(right, dir);
+
+    exercise_state.params = BlackHoleParams::new(
+        IVec2::new(1024, 1024),
+        distance,
+        vertical_fov_degrees,
+        black_hole_radius,
+        cache_width,
+        pos,
+        dir,
+        up,
+        new_params.seconds_since_start,
+    );
+}
 fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
-    match exercise_state {
-        ExerciseState::Exercise0 => {}
-        ExerciseState::Exercise10(params, program) => {
-            console_log!("Normalized pos: {}", params.normalized_pos);
-            for ele in params.uniform_context() {
-                ele.add_to_program(gl, program);
-            }
-            gl.run_program(program, None);
-        }
+    for ele in exercise_state.params.uniform_context() {
+        ele.add_to_program(gl, &mut exercise_state.program);
     }
+    gl.run_program(&exercise_state.program, None);
 }
 
-const EXERCISE_COUNT: u32 = 11;
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("params: {:?}", params);
@@ -324,7 +260,6 @@ impl RenderState {
             &mut *self.exercise_state.borrow_mut(),
             &self.prev_params.get(),
             params,
-            &self.images,
         );
         render_exercise(gl, &mut *self.exercise_state.borrow_mut());
         self.prev_params.set(*params);
@@ -332,17 +267,55 @@ impl RenderState {
     }
 }
 
+const DEFAULT_DISC_FUNC: &str = "float random(in vec2 _st) {
+    return fract(sin(dot(_st.xy, vec2(312.12,1.*TAU)))*42.5453123);
+}
+
+// Based on Morgan McGuire @morgan3d
+// https://www.shadertoy.com/view/4dS3Wd
+float noise(in vec2 _st) {
+    vec2 i = floor(_st);
+    vec2 f = fract(_st);
+    
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+    
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    
+    return mix(a, b, u.x) +
+    (c - a)* u.y * (1.0 - u.x) +
+    (d - b) * u.x * u.y;
+}
+
+vec4 disc_color(float dist_01,float theta_01){
+    float n = noise(vec2(dist_01,theta_01)*vec2(42.3,1.));
+    return vec4(n,n,n,1.0);
+    float offset=5.*TAU*dist_01+n+time_s;
+    float white=clamp((.5+sin(theta_01*TAU+offset)),0.,1.);
+    return vec4(n,n,n,1.0);
+}";
+
 impl RenderState {
     pub async fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
         let gl = RenderContext::new(width, height);
 
         let images = ImageCache::new(&gl).await?;
+        let exercise_state = init_exercise(&gl, &images);
         Ok(RenderState {
             gl,
             prev_params: Cell::default(),
-            exercise_state: RefCell::default(),
+            exercise_state: RefCell::new(Box::new(exercise_state)),
             images,
         })
+    }
+
+    pub fn update_disc_shader(shader_func: &str) {
+        if shader_func.is_empty() {
+        } else {
+        }
     }
 }
 
@@ -570,34 +543,14 @@ impl ImageCache {
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
     let document = document();
-    let select = document
-        .get_element_by_id("input")
-        .unwrap()
-        .dyn_into::<web_sys::HtmlSelectElement>()?;
     let canvas = document
         .get_element_by_id("canvas")
         .unwrap()
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
 
-    for i in 1..=EXERCISE_COUNT {
-        let option = HtmlOptionElement::new_with_text(&format!("Exercise {}", i))?;
-        select.append_child(&option)?;
-    }
-
     let start_time = Rc::new(Cell::new(SystemTime::now()));
     let params = Rc::new(Cell::new(RenderParams::default()));
     let renderer = Rc::new(RenderState::new(1024, 1024).await?);
-    {
-        let start_time = start_time.clone();
-        let params = params.clone();
-        let closure = Closure::wrap(Box::new(move |_event: web_sys::Event| {
-            start_time.set(SystemTime::now());
-            let exercise = get_selected_index().unwrap();
-            params.set(params.get().update_exercise(exercise));
-        }) as Box<dyn FnMut(_)>);
-        select.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())?;
-        closure.forget();
-    }
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
