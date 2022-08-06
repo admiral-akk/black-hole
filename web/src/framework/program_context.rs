@@ -23,7 +23,7 @@ fn initalize_position(gl: &WebGl2RenderingContext, program: &WebGlProgram) {
     gl.enable_vertex_attrib_array(position_attribute_location as u32);
 }
 
-const VERTEX_DEFAULT: &str = include_str!("../shaders/vertex/position.glsl");
+const VERTEX_DEFAULT: &str = include_str!("position.glsl");
 
 impl ProgramContext {
     pub fn new(

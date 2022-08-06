@@ -3,35 +3,19 @@ extern crate wasm_bindgen;
 
 mod exercises;
 mod framework;
-mod utils;
-
-use exercises::exercise_1;
 use exercises::exercise_10;
-use exercises::exercise_2;
-use exercises::exercise_3;
-use exercises::exercise_4;
-use exercises::exercise_8;
-use exercises::exercise_9;
-use framework::frame_buffer_context::FrameBufferContext;
 
 use framework::program_context::ProgramContext;
 use framework::texture_utils::generate_texture_from_f32;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
-use glam::Vec2;
 use glam::Vec3;
 
 use image::DynamicImage;
 use js_sys::Uint8Array;
-use path_integration::cache::angle_cache::AngleCache;
 use path_integration::cache::fixed_distance_distance_cache::FixedDistanceDistanceCache;
 use path_integration::cache::ray_cache::RayCache as PathRayCache;
-use rendering::structs::image_data::ImageData;
-
-use rendering::structs::observer::Observer;
-use rendering::structs::ray_cache::RayCache;
-use rendering::structs::stars::Stars;
 
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
@@ -44,11 +28,7 @@ use std::rc::Rc;
 
 use cfg_if::cfg_if;
 use framework::render_context::RenderContext;
-use framework::source_context::SourceContext;
 use framework::uniform_context::UniformContext;
-use utils::color_map::colormap1;
-use utils::color_map::colormap2;
-use utils::gaussian::generate_gaussian_weights;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlOptionElement;
@@ -124,21 +104,6 @@ fn get_selected_index() -> Result<u32, JsValue> {
 
 enum ExerciseState {
     Exercise0,
-    Exercise1(WebGlTexture),
-    Exercise2(WebGlTexture, WebGlTexture),
-    Exercise3(FrameBufferContext),
-    Exercise4(FrameBufferContext, FrameBufferContext, Vec<f32>),
-    Exercise5(
-        FrameBufferContext,
-        FrameBufferContext,
-        Vec<f32>,
-        Vec<f32>,
-        Vec<f32>,
-    ),
-    Exercise6,
-    Exercise7(FrameBufferContext, FrameBufferContext),
-    Exercise8(ImageData, Stars, RayCache, Observer, BlackHoleParams),
-    Exercise9(BlackHoleParams),
     Exercise10(BlackHoleParams, ProgramContext),
 }
 
@@ -217,15 +182,6 @@ impl ExerciseState {
     pub fn index(&self) -> u32 {
         match self {
             ExerciseState::Exercise0 => 0,
-            ExerciseState::Exercise1(..) => 1,
-            ExerciseState::Exercise2(..) => 2,
-            ExerciseState::Exercise3(..) => 3,
-            ExerciseState::Exercise4(..) => 4,
-            ExerciseState::Exercise5(..) => 5,
-            ExerciseState::Exercise6 => 6,
-            ExerciseState::Exercise7(..) => 7,
-            ExerciseState::Exercise8(..) => 8,
-            ExerciseState::Exercise9(..) => 9,
             ExerciseState::Exercise10(..) => 10,
         }
     }
@@ -242,99 +198,6 @@ fn init_exercise(
             *exercise_state = ExerciseState::Exercise0;
         }
         1 => {
-            let cm = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
-            *exercise_state = ExerciseState::Exercise1(cm);
-        }
-        2 => {
-            let cm1 = generate_texture_from_u8(&gl.gl, &colormap1(), 256);
-            let cm2 = generate_texture_from_u8(&gl.gl, &colormap2(), 256);
-            *exercise_state = ExerciseState::Exercise2(cm1, cm2);
-        }
-        3 => {
-            *exercise_state = ExerciseState::Exercise3(gl.create_framebuffer());
-        }
-        4 => {
-            *exercise_state = ExerciseState::Exercise4(
-                gl.create_framebuffer(),
-                gl.create_framebuffer(),
-                generate_gaussian_weights(1.0, 3),
-            );
-        }
-        5 => {
-            *exercise_state = ExerciseState::Exercise5(
-                gl.create_framebuffer(),
-                gl.create_framebuffer(),
-                generate_gaussian_weights(1.0, 3),
-                generate_gaussian_weights(2.0, 3),
-                generate_gaussian_weights(3.0, 3),
-            );
-        }
-        6 => {
-            *exercise_state = ExerciseState::Exercise6;
-        }
-        7 => {
-            *exercise_state =
-                ExerciseState::Exercise7(gl.create_framebuffer(), gl.create_framebuffer());
-        }
-        8 => {
-            let distance = 3.0;
-            let vertical_fov_degrees = 20.0;
-            let black_hole_radius = 1.5;
-            let cache_width: i32 = 1024;
-            let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
-            let params = BlackHoleParams::new(
-                IVec2::new(1024, 1024),
-                distance,
-                vertical_fov_degrees,
-                black_hole_radius,
-                cache_width,
-                pos,
-                dir,
-                up,
-                render_params.seconds_since_start,
-            );
-            let uv = generate_uv(params.dimensions.x as u32, params.dimensions.y as u32);
-
-            let mut stars =
-                Stars::new_from_u8(uv, params.dimensions.x as u32, params.dimensions.y as u32);
-            let ray_cache = RayCache::compute_new(
-                params.cache_width as usize,
-                params.black_hole_radius,
-                params.distance,
-            );
-
-            let observer = Observer::new(
-                params.normalized_pos,
-                params.normalized_dir,
-                params.normalized_up,
-                params.vertical_fov_degrees,
-            );
-            stars.update_position(&&params.normalized_pos);
-            let image_data =
-                ImageData::new(params.dimensions.x as usize, params.dimensions.y as usize);
-            *exercise_state =
-                ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params);
-        }
-        9 => {
-            let distance = 3.0;
-            let vertical_fov_degrees = 20.0;
-            let black_hole_radius = 1.5;
-            let cache_width: i32 = 1024;
-            let (pos, dir, up) = (distance * Vec3::Z, -Vec3::Z, Vec3::Y);
-            let params = BlackHoleParams::new(
-                IVec2::new(1024, 1024),
-                distance,
-                vertical_fov_degrees,
-                black_hole_radius,
-                cache_width,
-                pos,
-                dir,
-                up,
-                render_params.seconds_since_start,
-            );
-            *exercise_state = ExerciseState::Exercise9(params);
-        }
-        10 => {
             let distance = 17.0;
             let vertical_fov_degrees = 50.0;
             let black_hole_radius = 1.5;
@@ -371,31 +234,6 @@ pub struct RenderState {
 fn clean_up_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
     match exercise_state {
         ExerciseState::Exercise0 => {}
-        ExerciseState::Exercise1(cm) => {
-            gl.delete_texture(&cm);
-        }
-        ExerciseState::Exercise2(cm1, cm2) => {
-            gl.delete_texture(&cm1);
-            gl.delete_texture(&cm2);
-        }
-        ExerciseState::Exercise3(fb) => {
-            gl.delete_framebuffer(&fb);
-        }
-        ExerciseState::Exercise4(fb1, fb2, _) => {
-            gl.delete_framebuffer(&fb1);
-            gl.delete_framebuffer(&fb2);
-        }
-        ExerciseState::Exercise5(fb1, fb2, _, _, _) => {
-            gl.delete_framebuffer(&fb1);
-            gl.delete_framebuffer(&fb2);
-        }
-        ExerciseState::Exercise6 => {}
-        ExerciseState::Exercise7(fb1, fb2) => {
-            gl.delete_framebuffer(&fb1);
-            gl.delete_framebuffer(&fb2);
-        }
-        ExerciseState::Exercise8(..) => {}
-        ExerciseState::Exercise9(..) => {}
         ExerciseState::Exercise10(_params, _program) => {}
         _ => {}
     }
@@ -463,116 +301,8 @@ fn update_exercise(
 }
 
 fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
-    let mut frag;
     match exercise_state {
-        ExerciseState::Exercise0 => {
-            frag = SourceContext::new(include_str!("shaders/fragment/striped.glsl"));
-            gl.draw(None, &frag, &[], None);
-        }
-        ExerciseState::Exercise1(cm) => {
-            exercise_1::exercise_1(gl, cm);
-        }
-        ExerciseState::Exercise2(cm1, cm2) => {
-            exercise_2::exercise_2(gl, cm1, cm2);
-        }
-        ExerciseState::Exercise3(fb) => {
-            exercise_3::exercise_3(gl, fb);
-        }
-        ExerciseState::Exercise4(fb1, fb2, kernel) => {
-            exercise_4::exercise_4(gl, fb1, fb2, kernel);
-        }
-        ExerciseState::Exercise5(fb1, fb2, r, g, b) => {
-            let fb_texture = UniformContext::new_from_allocated_ref(
-                &fb1.backing_texture,
-                "rtt_sampler",
-                1024,
-                1024,
-            );
-            let fb_texture2 = UniformContext::new_from_allocated_ref(
-                &fb2.backing_texture,
-                "rtt_sampler",
-                1024,
-                1024,
-            );
-            let r_kernel_weights = UniformContext::array_f32(&r, "r");
-            let g_kernel_weights = UniformContext::array_f32(&g, "g");
-            let b_kernel_weights = UniformContext::array_f32(&b, "b");
-
-            frag = SourceContext::new(include_str!("shaders/fragment/checkered.glsl"));
-            gl.draw(None, &frag, &[], Some(&fb1.frame_buffer));
-
-            for _ in 0..10 {
-                frag =
-                    SourceContext::new(include_str!("shaders/fragment/multi_gaussian_blur.glsl"));
-                frag.add_parameter("HORIZONTAL", "TRUE");
-                frag.add_parameter("K", &r.len().to_string());
-                gl.draw(
-                    None,
-                    &frag,
-                    &[
-                        &fb_texture,
-                        &r_kernel_weights,
-                        &g_kernel_weights,
-                        &b_kernel_weights,
-                    ],
-                    Some(&fb2.frame_buffer),
-                );
-
-                frag =
-                    SourceContext::new(include_str!("shaders/fragment/multi_gaussian_blur.glsl"));
-                frag.add_parameter("K", &r.len().to_string());
-                frag.add_parameter("VERTICAL", "TRUE");
-                gl.draw(
-                    None,
-                    &frag,
-                    &[
-                        &fb_texture2,
-                        &r_kernel_weights,
-                        &g_kernel_weights,
-                        &b_kernel_weights,
-                    ],
-                    Some(&fb1.frame_buffer),
-                );
-            }
-            frag = SourceContext::new(RENDER_TEXTURE_DEFAULT);
-            gl.draw(None, &frag, &[&fb_texture], None);
-        }
-        ExerciseState::Exercise6 => {
-            let time = 1.0;
-
-            let pos_seed = Vec2::new(52.912 * time, 11.30 * time);
-            let color_seed = Vec3::new(10.10241 * time, 22.958 * time, 25.1 * time);
-
-            frag = SourceContext::new(include_str!("shaders/fragment/psuedo_random.glsl"));
-            let pos_seed_uniform = UniformContext::vec2(pos_seed, "pos_seed");
-            let color_seed_uniform = UniformContext::vec3(color_seed, "color_seed");
-            gl.draw(None, &frag, &[&pos_seed_uniform, &color_seed_uniform], None);
-        }
-        ExerciseState::Exercise7(fb1, fb2) => {
-            let state_texture = UniformContext::new_from_allocated_ref(
-                &fb1.backing_texture,
-                "rtt_sampler",
-                1024,
-                1024,
-            );
-            frag = SourceContext::new(include_str!("shaders/fragment/add_white.glsl"));
-            gl.draw(None, &frag, &[&state_texture], Some(&fb2.frame_buffer));
-
-            let fb_texture = UniformContext::new_from_allocated_ref(
-                &fb2.backing_texture,
-                "rtt_sampler",
-                1024,
-                1024,
-            );
-            gl.draw(None, &frag, &[&fb_texture], Some(&fb1.frame_buffer));
-            gl.draw(None, &frag, &[&fb_texture], None);
-        }
-        ExerciseState::Exercise8(image_data, stars, ray_cache, observer, params) => {
-            exercise_8::exercise_8(gl, image_data, stars, ray_cache, observer, params);
-        }
-        ExerciseState::Exercise9(params) => {
-            exercise_9::exercise_9(gl, params);
-        }
+        ExerciseState::Exercise0 => {}
         ExerciseState::Exercise10(params, program) => {
             console_log!("Normalized pos: {}", params.normalized_pos);
             for ele in params.uniform_context() {
@@ -584,7 +314,6 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
 }
 
 const EXERCISE_COUNT: u32 = 11;
-const RENDER_TEXTURE_DEFAULT: &str = include_str!("shaders/fragment/render_texture.glsl");
 impl RenderState {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("params: {:?}", params);
@@ -709,14 +438,6 @@ const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
-
-fn to_image_from_png(u8: Uint8Array) -> DynamicImage {
-    image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Png).unwrap()
-}
-
-fn to_image_from_exr(u8: Uint8Array) -> DynamicImage {
-    image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::OpenExr).unwrap()
-}
 pub struct ImageCache {
     galaxy_tex: WebGlTexture,
     galaxy_dim: (i32, i32),
@@ -734,19 +455,6 @@ pub struct ImageCache {
     angle_min_z_dim: (i32, i32),
 }
 
-fn float_to_u16(v: f32) -> u16 {
-    let v = (std::u16::MAX as f32 * ((v + 1.0) / 2.0));
-    if v > std::u16::MAX as f32 {
-        return std::u16::MAX;
-    }
-    if v <= 0.0 {
-        return 0;
-    }
-    return v as u16;
-}
-fn u16_to_float(v: u16) -> f32 {
-    (2.0 * v as f32 / std::u16::MAX as f32) - 1.0
-}
 impl ImageCache {
     fn to_rgba(rgb: &Vec<u8>) -> Vec<u8> {
         let mut rgba = Vec::new();
