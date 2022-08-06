@@ -21,7 +21,7 @@ use path_integration::cache::ray_cache::RayCache as PathRayCache;
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
 
-use web_sys::WebGlTexture;
+
 
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -32,7 +32,7 @@ use framework::render_context::RenderContext;
 use framework::uniform_context::UniformContext;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::HtmlOptionElement;
+
 
 use crate::framework::texture_utils::generate_texture_from_u8;
 

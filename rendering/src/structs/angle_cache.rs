@@ -42,7 +42,7 @@ fn find_angle(
     max_distance: f64,
     ring_radius: f64,
     target_angle: f64,
-    orbit_angle: f64,
+    _orbit_angle: f64,
 ) -> f64 {
     let (mut miss_z, mut hit_z) = (-1.0, 1.0);
     while hit_z - miss_z > epsilon {

@@ -1,5 +1,5 @@
 use glam::{DVec3, Vec3};
-use structs::{particle::Particle, response::Response, utils::PolarAngle};
+use structs::{particle::Particle, response::Response};
 
 pub mod cache;
 mod structs;
@@ -89,7 +89,7 @@ fn find_z_bounds_for_angle(
         lower = lower_2.1;
     }
 
-    let is_too_close = move |r: Response| {
+    let _is_too_close = move |r: Response| {
         let angle_d = r.get_angle_dist();
         if angle_d.get_max_angle() < target_angle {
             return true;

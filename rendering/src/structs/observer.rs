@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use glam::{EulerRot, Mat3, Quat, Vec3};
+use glam::{Quat, Vec3};
 
 use super::{data::Data, ray_cache::RAY_START_DIR};
 pub struct Observer {

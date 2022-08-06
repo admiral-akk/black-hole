@@ -29,10 +29,10 @@ mod tests {
 
         chart.configure_mesh().draw()?;
         for i in 0..lines.len() {
-            let r = (i as f64) / ((lines.len() as f64) - 1.0);
+            let _r = (i as f64) / ((lines.len() as f64) - 1.0);
             let path = &lines[i];
             let r = (255.0 * i as f32 / (lines.len() - 1) as f32) as u8;
-            let mut color = RGBColor(r, 255 - r, 0);
+            let color = RGBColor(r, 255 - r, 0);
             chart.draw_series(LineSeries::new(
                 path.iter().map(|v| (v.0 as f64, v.1 as f64)),
                 &color,

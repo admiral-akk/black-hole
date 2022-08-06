@@ -121,7 +121,7 @@ mod tests {
                 }
             }
             let fp_10 = &false_positive[0..(usize::min(10, false_positive.len()))];
-            let fp_rate = (false_positive.len() as f32 / true_positives_count as f32);
+            let fp_rate = false_positive.len() as f32 / true_positives_count as f32;
             if true_positives_count > 0 || false_positive.len() > 0 {
                 assert!(
                 fp_rate < 0.01,
@@ -135,7 +135,7 @@ mod tests {
             }
             if true_negatives_count > 0 || false_positive.len() > 0 {
                 let fn_10 = &false_negative[0..(usize::min(10, false_negative.len()))];
-                let fn_rate = (false_negative.len() as f32 / true_negatives_count as f32);
+                let fn_rate = false_negative.len() as f32 / true_negatives_count as f32;
                 assert!(
                 fn_rate < 0.01,
                 "\nFalse negative rate is >= 1%\nDistance: {}\nTrue negative count: {}\nFalse negative count: {}\n Rate: {}\nExamples: {:?}",

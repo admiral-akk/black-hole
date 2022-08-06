@@ -137,7 +137,7 @@ mod tests {
                 }
             }
             let fp_10 = &false_positive[0..(usize::min(10, false_positive.len()))];
-            let fp_rate = (false_positive.len() as f32 / true_positives_count as f32);
+            let fp_rate = false_positive.len() as f32 / true_positives_count as f32;
             if true_positives_count > 0 || false_positive.len() > 0 {
                 assert!(
                 fp_rate < 0.01,
@@ -151,7 +151,7 @@ mod tests {
             }
             if true_negatives_count > 0 || false_positive.len() > 0 {
                 let fn_10 = &false_negative[0..(usize::min(10, false_negative.len()))];
-                let fn_rate = (false_negative.len() as f32 / true_negatives_count as f32);
+                let fn_rate = false_negative.len() as f32 / true_negatives_count as f32;
                 assert!(
                 fn_rate < 0.01,
                 "\nFalse negative rate is >= 1%\nDistance: {}\nTrue negative count: {}\nFalse negative count: {}\n Rate: {}\nExamples: {:?}",
@@ -167,11 +167,11 @@ mod tests {
 
     #[test]
     fn ray_cache_absorbed_in_x_plane() {
-        let cache_dimensions = (10, 100);
+        let _cache_dimensions = (10, 100);
         let pos = -5.0 * DVec3::Z;
         let r = 1.0;
         let field = Field::new(r, pos.length());
-        let distance_bounds = (5.0, 20.0);
+        let _distance_bounds = (5.0, 20.0);
         let ray_cache = FixedDistanceRayCache::compute_new(100, r as f32, pos.length() as f32);
 
         let mut false_positive = Vec::new();

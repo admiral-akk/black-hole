@@ -7,8 +7,8 @@ mod tests {
     use path_integration::cast_ray_steps_response;
     use plotters::prelude::*;
     use plotters::{
-        prelude::{BitMapBackend, ChartBuilder, Circle, EmptyElement, IntoDrawingArea, LineSeries},
-        style::{IntoFont, BLACK, WHITE},
+        prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries},
+        style::{IntoFont, WHITE},
     };
 
     fn plot_trajectories(
@@ -29,10 +29,10 @@ mod tests {
 
         chart.configure_mesh().draw()?;
         for i in 0..lines.len() {
-            let r = (i as f64) / ((lines.len() as f64) - 1.0);
+            let _r = (i as f64) / ((lines.len() as f64) - 1.0);
             let path = &lines[i];
             let r = (255.0 * i as f32 / (lines.len() - 1) as f32) as u8;
-            let mut color = RGBColor(r, 255 - r, 0);
+            let color = RGBColor(r, 255 - r, 0);
             chart.draw_series(LineSeries::new(
                 path.iter().map(|v| (v.0 as f64, v.1 as f64)),
                 &color,
@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn print_all_angle_error() {
         let black_hole_radius = 1.5;
-        let distance = (7.0, 20.0);
+        let _distance = (7.0, 20.0);
         let cache =
             serde_json::from_str::<AngleCache>(&fs::read_to_string("angle_cache.txt").unwrap())
                 .unwrap();
@@ -55,7 +55,7 @@ mod tests {
 
         let iterations = 10;
         let mut lines = Vec::new();
-        for d in 0..1 {
+        for _d in 0..1 {
             let dist = 17.0;
             let mut line = Vec::new();
             for angle in 1..(60) {

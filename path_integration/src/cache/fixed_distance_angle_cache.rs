@@ -1,10 +1,10 @@
-use glam::{DVec3, Vec3};
+use glam::{DVec3};
 
 use crate::{
-    cast_ray_steps, cast_ray_steps_response, find_bound, find_bound_with_grazing_distance,
+    cast_ray_steps_response, find_bound_with_grazing_distance,
     find_optimal_z,
     structs::{response::Response, utils::PolarAngle},
-    Field, Ray, TooClosePredicate,
+    Field,
 };
 
 use serde::{Deserialize, Serialize};
@@ -233,7 +233,7 @@ impl FixedDistanceAngleCache {
     }
 
     pub fn get_dist(&self, z: f32, angle: f32) -> Option<f32> {
-        let float_index = angle / TAU;
+        let _float_index = angle / TAU;
 
         if z < self.min_z {
             return None;
@@ -259,18 +259,18 @@ impl FixedDistanceAngleCache {
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::TAU;
+    
     use test_utils::plot_trajectories;
 
-    use glam::DVec3;
+    
 
     use crate::cache::angle_cache::TestStats;
     use crate::cast_ray_steps_response;
     use crate::{
-        cache::fixed_distance_angle_cache::FixedDistanceAngleCache, cast_ray_steps, Field, Ray,
+        cache::fixed_distance_angle_cache::FixedDistanceAngleCache,
     };
 
-    use super::{to_angle_dist, MAX_Z};
+    
     #[test]
     fn render_index_to_max_angle() {
         let cache_size = (512, 512);

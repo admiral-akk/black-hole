@@ -1,4 +1,4 @@
-use std::fs::{self, OpenOptions};
+use std::fs::{self};
 
 use path_integration::cache::{
     angle_cache::AngleCache, fixed_distance_distance_cache::FixedDistanceDistanceCache,

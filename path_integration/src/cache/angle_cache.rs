@@ -1,4 +1,4 @@
-use std::f32::consts::E;
+
 
 use serde::{Deserialize, Serialize};
 
@@ -52,7 +52,7 @@ impl AngleCache {
         max_disc_radius: (f32, f32),
     ) -> Self {
         let mut cache = Vec::new();
-        for i in 0..cache_dimensions.0 {
+        for _i in 0..cache_dimensions.0 {
             // let distance = (distance_bounds.1 - distance_bounds.0)
             //     * (i as f32 / (cache_dimensions.0 - 1) as f32)
             //     + distance_bounds.0;
@@ -71,7 +71,7 @@ impl AngleCache {
     }
 
     pub fn get_dist(&self, distance: f32, z: f32, angle: f32) -> Option<f32> {
-        let float_index =
+        let _float_index =
             (distance - self.distance_bounds.0) / (self.distance_bounds.1 - self.distance_bounds.0);
         let mut index = dist_to_index(distance, self.cache.len(), self.distance_bounds) as usize;
         if index == self.cache.len() - 1 {
@@ -103,9 +103,9 @@ mod tests {
 
     #[test]
     fn all_dist_angle_close() {
-        let cache_size = (16, 256, 64);
+        let _cache_size = (16, 256, 64);
         let black_hole_radius = 1.5;
-        let max_disc_radius = (3.0, 6.0);
+        let _max_disc_radius = (3.0, 6.0);
         let distance = (7.0, 20.0);
         let cache =
             serde_json::from_str::<AngleCache>(&fs::read_to_string("angle_cache.txt").unwrap())

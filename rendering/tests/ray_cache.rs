@@ -1,9 +1,9 @@
 #[cfg(test)]
 
 mod tests {
-    use glam::{DVec3, Vec3};
+    use glam::{Vec3};
     use image::Rgba;
-    use path_integration::{cast_ray_steps, Field, Ray};
+    
     use plotters::prelude::*;
     use plotters::{
         prelude::{BitMapBackend, ChartBuilder, Circle, EmptyElement, IntoDrawingArea, LineSeries},
@@ -21,7 +21,7 @@ mod tests {
         let mut trim_path = Vec::new();
         let mut i = 0;
         while i < path.len() {
-            let (mut x, mut y) = (path[i].0, path[i].1);
+            let (x, y) = (path[i].0, path[i].1);
             while x < x_min || x > x_max || y < y_min || y > y_max {
                 i += 1;
             }
@@ -88,7 +88,7 @@ mod tests {
         for i in 0..lines.len() {
             let r = (i as f64) / ((lines.len() as f64) - 1.0);
             let path = &lines[i];
-            let mut color = RGBColor((255.0 * r) as u8, (255.0 * (1.0 - r)) as u8, 0);
+            let color = RGBColor((255.0 * r) as u8, (255.0 * (1.0 - r)) as u8, 0);
             chart.draw_series(LineSeries::new(
                 path.iter().map(|v| (v.0 as f64, v.1 as f64)),
                 &color,
@@ -124,7 +124,7 @@ mod tests {
     }
 
     fn float_to_u16(v: f32) -> u16 {
-        let v = (std::u16::MAX as f32 * ((v + 1.0) / 2.0));
+        let v = std::u16::MAX as f32 * ((v + 1.0) / 2.0);
         if v > std::u16::MAX as f32 {
             return std::u16::MAX;
         }

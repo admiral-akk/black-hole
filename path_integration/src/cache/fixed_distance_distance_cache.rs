@@ -16,7 +16,7 @@ pub struct FixedDistanceDistanceCache {
     pub angle_to_z_to_distance: Vec<FixedDistanceFixedAngleDistanceCache>,
 }
 
-fn float_01_to_left_index(mut float_01: f64, vec_len: usize) -> (usize, f64) {
+fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
     let float_index = (vec_len - 1) as f64 * float_01;
     let mut index = float_index as usize;
     if index == vec_len - 1 {
@@ -26,7 +26,7 @@ fn float_01_to_left_index(mut float_01: f64, vec_len: usize) -> (usize, f64) {
     (index, t)
 }
 fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
-    let mut float_01 = (index as f64) / (vec_len - 1) as f64;
+    let float_01 = (index as f64) / (vec_len - 1) as f64;
     float_01
 }
 impl FixedDistanceDistanceCache {
@@ -87,10 +87,10 @@ impl FixedDistanceDistanceCache {
 mod tests {
     use std::{f64::consts::TAU, fs};
 
-    use bson;
-    use rmp_serde::{Deserializer, Serializer};
+    
+    
     use serde::{Deserialize, Serialize};
-    use std::collections::HashMap;
+    
 
     use test_utils::plot_trajectories;
 
@@ -99,10 +99,10 @@ mod tests {
     use super::FixedDistanceDistanceCache;
     #[test]
     fn fixed_distance_test_error() {
-        let cache_size = (512, 64);
-        let distance = 17.0;
-        let black_hole_radius = 1.5;
-        let max_disc_radius = (3.0, 6.0);
+        let _cache_size = (512, 64);
+        let _distance = 17.0;
+        let _black_hole_radius = 1.5;
+        let _max_disc_radius = (3.0, 6.0);
         let mut lines = Vec::new();
 
         let cache = serde_json::from_str::<FixedDistanceDistanceCache>(

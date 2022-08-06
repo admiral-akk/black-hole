@@ -47,7 +47,7 @@ fn index_to_z(index: usize, size: usize, max_z: f64) -> f64 {
     let r = (index as f64) / ((size - 1) as f64);
     let r = r.powf(1. / 3.);
 
-    let z = (MIN_Z_F64 + (max_z - MIN_Z_F64) * r);
+    let z = MIN_Z_F64 + (max_z - MIN_Z_F64) * r;
     z
 }
 
@@ -60,7 +60,7 @@ fn rotate_about_z(angle: f32, vec: &mut Vec3) {
 
 impl RayCache {
     fn z_to_index(&self, z: f32) -> f32 {
-        (self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z))
+        self.z_to_index_multiple * (z - MIN_Z) * (z - MIN_Z)
     }
 
     fn get_angle(p: DVec3) -> f64 {
@@ -135,7 +135,7 @@ impl RayCache {
         let mut angle_cache = Vec::new();
         for i in 0..size {
             let r = ((i as f64) / (size as f64 - 1.)).powf(1.0 / 30.0);
-            let z = (MIN_Z_F64 + (1.0 - MIN_Z_F64) * r);
+            let z = MIN_Z_F64 + (1.0 - MIN_Z_F64) * r;
             let dir = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
             let ray = Ray::new(cache_pos.as_dvec3(), dir);
             let result = cast_ray_steps(&ray, &field, max_distance, 10.0 * max_distance);
@@ -164,8 +164,8 @@ impl RayCache {
                     let z = start_dir.z / start_dir.length();
                     let fetch = self.fetch_final_dir(z);
                     if fetch.is_some() {
-                        let mut fetch = fetch.unwrap();
-                        let angle = fast_math::atan2(start_dir.y, start_dir.x);
+                        let _fetch = fetch.unwrap();
+                        let _angle = fast_math::atan2(start_dir.y, start_dir.x);
                         let index1 = self.z_to_index(z);
                         let index2 = index1 as usize;
 
