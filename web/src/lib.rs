@@ -425,10 +425,8 @@ fn to_image(u8: Uint8Array) -> DynamicImage {
 }
 pub struct ImageCache<'a> {
     galaxy_tex: UniformContext<'a>,
-    stars_tex: WebGlTexture,
-    stars_dim: (i32, i32),
-    constellations_tex: WebGlTexture,
-    constellations_dim: (i32, i32),
+    stars_tex: UniformContext<'a>,
+    constellations_tex: UniformContext<'a>,
     ray_cache_tex: WebGlTexture,
     ray_cache_dim: (i32, i32),
     max_z_tex: WebGlTexture,
@@ -453,20 +451,8 @@ impl<'a> ImageCache<'a> {
 
     pub async fn new(gl: &RenderContext) -> Result<ImageCache<'a>, JsValue> {
         let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
-        let stars = fetch_url_binary(STARS_URL.to_string()).await?;
-        let stars = to_image(stars);
-        let stars_tex = generate_texture_from_u8(
-            &gl.gl,
-            &ImageCache::to_rgba(stars.as_rgb8().unwrap().as_raw()),
-            stars.width() as i32,
-        );
-        let constellations = fetch_url_binary(CONSTELLATIONS_URL.to_string()).await?;
-        let constellations = to_image(constellations);
-        let constellations_tex = generate_texture_from_u8(
-            &gl.gl,
-            &ImageCache::to_rgba(constellations.as_rgb8().unwrap().as_raw()),
-            constellations.width() as i32,
-        );
+        let stars_tex = fetch_rgb_texture(gl, STARS_URL, "stars").await;
+        let constellations_tex = fetch_rgb_texture(gl, CONSTELLATIONS_URL, "constellations").await;
 
         let ray_cache_2 = fetch_url_binary(RAY_CACHE_2_URL.to_string()).await?;
         let ray_cache_2 = serde_json::from_slice::<PathRayCache>(&ray_cache_2.to_vec()).unwrap();
@@ -526,12 +512,7 @@ impl<'a> ImageCache<'a> {
         Ok(ImageCache {
             galaxy_tex,
             stars_tex,
-            stars_dim: (stars.width() as i32, stars.height() as i32),
             constellations_tex,
-            constellations_dim: (
-                constellations.width() as i32,
-                constellations.height() as i32,
-            ),
             ray_cache_tex,
             ray_cache_dim: (ray_width as i32, ray_height as i32),
             max_z_tex: z_max_cache_tex,

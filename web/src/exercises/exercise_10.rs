@@ -12,19 +12,6 @@ pub fn get_program(
     images: &ImageCache,
 ) -> ProgramContext {
     let mut text: Vec<&UniformContext> = Vec::new();
-    let stars = UniformContext::new_from_allocated_ref(
-        &images.stars_tex,
-        "stars",
-        images.stars_dim.0,
-        images.stars_dim.1,
-    );
-    let constellations = UniformContext::new_from_allocated_ref(
-        &images.constellations_tex,
-        "constellations",
-        images.constellations_dim.0,
-        images.constellations_dim.1,
-    );
-    let galaxy = &images.galaxy_tex;
     let cache = UniformContext::new_from_allocated_ref(
         &images.ray_cache_tex,
         "cache",
@@ -53,9 +40,9 @@ pub fn get_program(
     text.push(&z_max_cache);
     text.push(&angle_cache);
     text.push(&angle_z_max_cache);
-    text.push(&stars);
-    text.push(galaxy);
-    text.push(&constellations);
+    text.push(&images.stars_tex);
+    text.push(&images.galaxy_tex);
+    text.push(&images.constellations_tex);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));
     gl.get_program(None, &frag, &text)
