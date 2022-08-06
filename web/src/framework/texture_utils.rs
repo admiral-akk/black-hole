@@ -19,26 +19,7 @@ pub fn create_texture(
         None,
     )
     .expect("Failed to generate texture for frame buffer");
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_S,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_T,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
+    add_default_tex_parameters(gl);
     tex
 }
 
@@ -83,6 +64,12 @@ pub fn generate_texture_from_f32(
         .unwrap();
     }
 
+    add_default_tex_parameters(gl);
+    gl.bind_buffer(WebGl2RenderingContext::PIXEL_UNPACK_BUFFER, None);
+    texture.unwrap()
+}
+
+fn add_default_tex_parameters(gl: &WebGl2RenderingContext) {
     gl.tex_parameteri(
         WebGl2RenderingContext::TEXTURE_2D,
         WebGl2RenderingContext::TEXTURE_MAG_FILTER,
@@ -103,8 +90,6 @@ pub fn generate_texture_from_f32(
         WebGl2RenderingContext::TEXTURE_WRAP_T,
         WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
     );
-    gl.bind_buffer(WebGl2RenderingContext::PIXEL_UNPACK_BUFFER, None);
-    texture.unwrap()
 }
 
 pub fn generate_rgb_texture_from_u8(
@@ -126,26 +111,7 @@ pub fn generate_rgb_texture_from_u8(
         Some(arr),
     )
     .unwrap();
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_S,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_T,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
+    add_default_tex_parameters(gl);
     texture.unwrap()
 }
 
@@ -168,25 +134,6 @@ pub fn generate_texture_from_u8(
         Some(arr),
     )
     .unwrap();
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_S,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_T,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
+    add_default_tex_parameters(gl);
     texture.unwrap()
 }
