@@ -391,13 +391,7 @@ pub async fn fetch_rgb_texture<'a>(
     url: &str,
     name: &str,
 ) -> UniformContext<'a> {
-    let window = web_sys::window().unwrap(); // Browser window
-    let promise = JsFuture::from(window.fetch_with_str(&url)); // File fetch promise
-    let result = promise.await; // Await fulfillment of fetch
-    let response: web_sys::Response = result.unwrap().dyn_into().unwrap(); // Type casting
-    let image_data = JsFuture::from(response.array_buffer().unwrap()).await; // Get text
-
-    let image = to_image(Uint8Array::new(&image_data.unwrap()));
+    let image = to_image(fetch_url_binary(url.to_string()).await.unwrap());
     let image_tex = generate_texture_from_u8(
         &gl.gl,
         &ImageCache::to_rgba(image.as_rgb8().unwrap().as_raw()),
@@ -410,6 +404,7 @@ pub async fn fetch_rgb_texture<'a>(
         image.height() as i32,
     )
 }
+
 const GALAXY_URL: &str = "http://localhost:8080/galaxy.jpg";
 const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
 const STARS_URL: &str = "http://localhost:8080/stars.jpg";
