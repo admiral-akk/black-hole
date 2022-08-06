@@ -469,14 +469,16 @@ impl<'a> ImageCache<'a> {
                 ray_vec_2.push(1.0);
             }
         }
-        let ray_cache_tex = generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32);
+        let ray_cache_tex =
+            generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32, Format::RGBA);
         let ray_cache_tex = UniformContext::new_from_allocated_val(
             ray_cache_tex,
             "cache",
             ray_width as i32,
             ray_height as i32,
         );
-        let z_max_cache_tex = generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32);
+        let z_max_cache_tex =
+            generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32, Format::RGBA);
         let z_max_cache_tex = UniformContext::new_from_allocated_val(
             z_max_cache_tex,
             "z_max_cache",
@@ -513,14 +515,14 @@ impl<'a> ImageCache<'a> {
         let angle_height = (min_z.len() / 4) as i32;
         let angle_width = (v.len() / 4) as i32 / angle_height;
 
-        let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width);
+        let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width, Format::RGBA);
         let angle_cache_tex = UniformContext::new_from_allocated_val(
             angle_cache_tex,
             "angle_cache",
             angle_width as i32,
             angle_height as i32,
         );
-        let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height);
+        let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height, Format::RGBA);
 
         let angle_min_z_tex = UniformContext::new_from_allocated_val(
             angle_min_z_tex,

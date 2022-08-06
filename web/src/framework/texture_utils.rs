@@ -27,7 +27,14 @@ pub fn generate_texture_from_f32(
     gl: &WebGl2RenderingContext,
     arr: &[f32],
     width: i32,
+    format: Format,
 ) -> WebGlTexture {
+    let internal_format = match format {
+        Format::R => WebGl2RenderingContext::R32F,
+        Format::RG => WebGl2RenderingContext::RG32F,
+        Format::RGB => WebGl2RenderingContext::RGB32F,
+        Format::RGBA => WebGl2RenderingContext::RGBA32F,
+    };
     let texture = gl.create_texture();
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
     let buffer = gl.create_buffer().ok_or("Failed to create buffer").unwrap();
@@ -53,11 +60,11 @@ pub fn generate_texture_from_f32(
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_array_buffer_view(
             WebGl2RenderingContext::TEXTURE_2D,
             0,
-            WebGl2RenderingContext::RGBA32F as i32,
+            internal_format as i32,
             width,
-            (arr.len() / (4 * width) as usize) as i32,
+            (arr.len() / (format.dimension() * width) as usize) as i32,
             0,
-            WebGl2RenderingContext::RGBA,
+            format.external_format(),
             WebGl2RenderingContext::FLOAT,
             Some(&buffer),
         )
@@ -122,6 +129,25 @@ pub enum Format {
     RGBA,
 }
 
+impl Format {
+    pub fn dimension(&self) -> i32 {
+        match self {
+            Format::R => 1,
+            Format::RG => 2,
+            Format::RGB => 3,
+            Format::RGBA => 4,
+        }
+    }
+    pub fn external_format(&self) -> u32 {
+        match self {
+            Format::R => WebGl2RenderingContext::RED,
+            Format::RG => WebGl2RenderingContext::RG,
+            Format::RGB => WebGl2RenderingContext::RGB,
+            Format::RGBA => WebGl2RenderingContext::RGBA,
+        }
+    }
+}
+
 pub fn generate_texture_from_u8(
     gl: &WebGl2RenderingContext,
     arr: &[u8],
@@ -130,21 +156,20 @@ pub fn generate_texture_from_u8(
 ) -> WebGlTexture {
     let texture = gl.create_texture();
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
-    let (dimensions, web_gl_format) = match format {
-        Format::R => (1, WebGl2RenderingContext::R8),
-        Format::RG => (2, WebGl2RenderingContext::RG),
-        Format::RGB => (3, WebGl2RenderingContext::RGB),
-        Format::RGBA => (4, WebGl2RenderingContext::RGBA),
+    let internal_format = match format {
+        Format::R => WebGl2RenderingContext::R8,
+        Format::RG => WebGl2RenderingContext::RG8,
+        Format::RGB => WebGl2RenderingContext::RGB8,
+        Format::RGBA => WebGl2RenderingContext::RGBA8,
     };
-
     gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
         WebGl2RenderingContext::TEXTURE_2D,
         0,
-        web_gl_format as i32,
+        internal_format as i32,
         width,
-        (arr.len() / (dimensions * width) as usize) as i32,
+        (arr.len() / (format.dimension() * width) as usize) as i32,
         0,
-        web_gl_format,
+        format.external_format(),
         WebGl2RenderingContext::UNSIGNED_BYTE,
         Some(arr),
     )
