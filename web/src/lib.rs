@@ -386,6 +386,7 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
     let image_data = JsFuture::from(response.array_buffer()?).await?; // Get text
     Ok(Uint8Array::new(&image_data))
 }
+
 pub async fn fetch_rgb_texture<'a>(
     gl: &RenderContext,
     url: &str,
@@ -422,14 +423,10 @@ pub struct ImageCache<'a> {
     galaxy_tex: UniformContext<'a>,
     stars_tex: UniformContext<'a>,
     constellations_tex: UniformContext<'a>,
-    ray_cache_tex: WebGlTexture,
-    ray_cache_dim: (i32, i32),
-    max_z_tex: WebGlTexture,
-    max_z_dim: (i32, i32),
-    angle_cache_tex: WebGlTexture,
-    angle_cache_dim: (i32, i32),
-    angle_min_z_tex: WebGlTexture,
-    angle_min_z_dim: (i32, i32),
+    ray_cache_tex: UniformContext<'a>,
+    max_z_tex: UniformContext<'a>,
+    angle_cache_tex: UniformContext<'a>,
+    angle_min_z_tex: UniformContext<'a>,
 }
 
 impl<'a> ImageCache<'a> {
@@ -470,7 +467,19 @@ impl<'a> ImageCache<'a> {
             }
         }
         let ray_cache_tex = generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32);
+        let ray_cache_tex = UniformContext::new_from_allocated_val(
+            ray_cache_tex,
+            "cache",
+            ray_width as i32,
+            ray_height as i32,
+        );
         let z_max_cache_tex = generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32);
+        let z_max_cache_tex = UniformContext::new_from_allocated_val(
+            z_max_cache_tex,
+            "z_max_cache",
+            ray_height as i32,
+            1 as i32,
+        );
 
         let angle_cache = fetch_url_binary(FIXED_DISTANCE_ANGLE_CACHE_URL.to_string()).await?;
         let angle_cache =
@@ -502,20 +511,28 @@ impl<'a> ImageCache<'a> {
         let angle_width = (v.len() / 4) as i32 / angle_height;
 
         let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width);
+        let angle_cache_tex = UniformContext::new_from_allocated_val(
+            angle_cache_tex,
+            "angle_cache",
+            angle_width as i32,
+            angle_height as i32,
+        );
         let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height);
 
+        let angle_min_z_tex = UniformContext::new_from_allocated_val(
+            angle_min_z_tex,
+            "angle_z_max_cache",
+            angle_height as i32,
+            1 as i32,
+        );
         Ok(ImageCache {
             galaxy_tex,
             stars_tex,
             constellations_tex,
             ray_cache_tex,
-            ray_cache_dim: (ray_width as i32, ray_height as i32),
             max_z_tex: z_max_cache_tex,
-            max_z_dim: (ray_height as i32, 1 as i32),
-            angle_cache_tex: angle_cache_tex,
-            angle_cache_dim: (angle_width as i32, angle_height as i32),
-            angle_min_z_tex: angle_min_z_tex,
-            angle_min_z_dim: (angle_height as i32, 1 as i32),
+            angle_cache_tex,
+            angle_min_z_tex,
         })
     }
 }

@@ -12,34 +12,10 @@ pub fn get_program(
     images: &ImageCache,
 ) -> ProgramContext {
     let mut text: Vec<&UniformContext> = Vec::new();
-    let cache = UniformContext::new_from_allocated_ref(
-        &images.ray_cache_tex,
-        "cache",
-        images.ray_cache_dim.0,
-        images.ray_cache_dim.1,
-    );
-    let z_max_cache = UniformContext::new_from_allocated_ref(
-        &images.max_z_tex,
-        "z_max_cache",
-        images.max_z_dim.0,
-        images.max_z_dim.1,
-    );
-    let angle_cache = UniformContext::new_from_allocated_ref(
-        &images.angle_cache_tex,
-        "angle_cache",
-        images.angle_cache_dim.0,
-        images.angle_cache_dim.1,
-    );
-    let angle_z_max_cache = UniformContext::new_from_allocated_ref(
-        &images.angle_min_z_tex,
-        "angle_z_max_cache",
-        images.angle_min_z_dim.0,
-        images.angle_min_z_dim.1,
-    );
-    text.push(&cache);
-    text.push(&z_max_cache);
-    text.push(&angle_cache);
-    text.push(&angle_z_max_cache);
+    text.push(&images.ray_cache_tex);
+    text.push(&images.max_z_tex);
+    text.push(&images.angle_cache_tex);
+    text.push(&images.angle_min_z_tex);
     text.push(&images.stars_tex);
     text.push(&images.galaxy_tex);
     text.push(&images.constellations_tex);
