@@ -129,36 +129,6 @@ vec3 get_background_color(vec3 start_dir){
 
 // this is a temporary marker to get the code to appear here.
 // Disc code here!
-float random(in vec2 _st) {
-    return fract(sin(dot(_st.xy, vec2(312.12,1.*TAU)))*42.5453123);
-}
-
-// Based on Morgan McGuire @morgan3d
-// https://www.shadertoy.com/view/4dS3Wd
-float noise(in vec2 _st) {
-    vec2 i = floor(_st);
-    vec2 f = fract(_st);
-    
-    // Four corners in 2D of a tile
-    float a = random(i);
-    float b = random(i + vec2(1.0, 0.0));
-    float c = random(i + vec2(0.0, 1.0));
-    float d = random(i + vec2(1.0, 1.0));
-    
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    
-    return mix(a, b, u.x) +
-    (c - a)* u.y * (1.0 - u.x) +
-    (d - b) * u.x * u.y;
-}
-
-vec4 disc_color(float dist_01,float theta_01){
-    float n = noise(vec2(dist_01,theta_01)*vec2(42.3,1.));
-    return vec4(n,n,n,1.0);
-    float offset=5.*TAU*dist_01+n+time_s;
-    float white=clamp((.5+sin(theta_01*TAU+offset)),0.,1.);
-    return vec4(n,n,n,1.0);
-}
 
 //
 /* Disc distance/angle calculations */
@@ -213,7 +183,6 @@ vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
 
 
 vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
-    
     float is_top=1.;
     if(normalized_pos.y<0.){
         is_top=0.;
@@ -252,8 +221,8 @@ vec3 get_color(vec2 coord){
     vec3 start_dir=get_start_dir(coord);
     vec3 true_start_dir=get_true_start_dir(coord);
     vec3 background_color=get_background_color(start_dir);
-    vec4 disc_color=get_disc_color(start_dir,true_start_dir,coord);
-    return disc_color.w*disc_color.xyz+(1.-disc_color.w)*background_color.xyz;
+    vec4 disc_color_f=get_disc_color(start_dir,true_start_dir,coord);
+    return disc_color_f.w*disc_color_f.xyz+(1.-disc_color_f.w)*background_color.xyz;
 }
 
 void main(){

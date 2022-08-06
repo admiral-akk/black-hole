@@ -109,34 +109,14 @@ impl RenderContext {
         vals
     }
 
-    pub fn draw(
-        &self,
-        vertex_source: Option<&SourceContext>,
-        fragment_source: &SourceContext,
-        textures: &[&UniformContext],
-        out_buffer: Option<&WebGlFramebuffer>,
-    ) {
-        let gl = &self.gl;
-
-        let mut program_context = ProgramContext::new(gl, vertex_source, fragment_source);
-        gl.use_program(Some(&program_context.program));
-
-        for i in 0..textures.len() {
-            textures[i].add_to_program(self, &mut program_context);
-        }
-
-        self.run_program(&program_context, out_buffer);
-    }
-
     pub fn get_program(
         &self,
-        vertex_source: Option<&SourceContext>,
         fragment_source: &SourceContext,
         textures: &[UniformContext],
     ) -> ProgramContext {
         let gl = &self.gl;
 
-        let mut program_context = ProgramContext::new(gl, vertex_source, fragment_source);
+        let mut program_context = ProgramContext::new(gl, None, fragment_source);
         gl.use_program(Some(&program_context.program));
 
         for i in 0..textures.len() {

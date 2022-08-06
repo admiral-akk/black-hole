@@ -3,7 +3,6 @@ extern crate wasm_bindgen;
 
 mod exercises;
 mod framework;
-use exercises::exercise_10;
 
 use framework::program_context::ProgramContext;
 use framework::source_context::SourceContext;
@@ -209,14 +208,6 @@ impl BlackHoleParams {
     }
 }
 
-fn compile_shader_program(
-    gl: &RenderContext,
-    frag: &SourceContext,
-    images: &ImageCache,
-) -> ProgramContext {
-    gl.get_program(None, frag, &images.textures)
-}
-
 pub struct RenderState {
     gl: RenderContext,
     source: SourceContext,
@@ -261,7 +252,7 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
     );
 }
 fn render(render_state: &mut RenderState, params: &RenderParams) -> Result<(), JsValue> {
-    console_log!("params: {:?}", params);
+    console_log!("Code: {:?}", render_state.source.code);
     let gl = &render_state.gl;
     update_params(&mut render_state.black_hole_params, params);
     for ele in render_state.black_hole_params.uniform_context() {
@@ -271,47 +262,19 @@ fn render(render_state: &mut RenderState, params: &RenderParams) -> Result<(), J
     Ok(())
 }
 
-const DEFAULT_DISC_FUNC: &str = "float random(in vec2 _st) {
-    return fract(sin(dot(_st.xy, vec2(312.12,1.*TAU)))*42.5453123);
-}
-
-// Based on Morgan McGuire @morgan3d
-// https://www.shadertoy.com/view/4dS3Wd
-float noise(in vec2 _st) {
-    vec2 i = floor(_st);
-    vec2 f = fract(_st);
-    
-    // Four corners in 2D of a tile
-    float a = random(i);
-    float b = random(i + vec2(1.0, 0.0));
-    float c = random(i + vec2(0.0, 1.0));
-    float d = random(i + vec2(1.0, 1.0));
-    
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    
-    return mix(a, b, u.x) +
-    (c - a)* u.y * (1.0 - u.x) +
-    (d - b) * u.x * u.y;
-}
-
-vec4 disc_color(float dist_01,float theta_01){
-    float n = noise(vec2(dist_01,theta_01)*vec2(42.3,1.));
-    return vec4(n,n,n,1.0);
-    float offset=5.*TAU*dist_01+n+time_s;
-    float white=clamp((.5+sin(theta_01*TAU+offset)),0.,1.);
-    return vec4(n,n,n,1.0);
-}";
+const DEFAULT_DISC_FUNC: &str = include_str!("default_disc_color.glsl");
 
 impl RenderState {
     pub async fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
         let gl = RenderContext::new(width, height);
 
         let images = ImageCache::new(&gl).await?;
-        let source = SourceContext::new(include_str!(
+        let mut source = SourceContext::new(include_str!(
             "exercises/shaders/fragment/black_hole/complete.glsl"
         ));
+        source.add_code(DEFAULT_DISC_FUNC.to_string());
         let black_hole_params = BlackHoleParams::default();
-        let program = compile_shader_program(&gl, &source, &images);
+        let program = gl.get_program(&source, &images.textures);
 
         Ok(RenderState {
             gl,
@@ -327,9 +290,9 @@ impl RenderState {
             true => DEFAULT_DISC_FUNC,
             false => shader_func,
         }
-        .replace("\n", "");
+        .to_string();
         self.source.add_code(shader_code);
-        self.program = compile_shader_program(&self.gl, &self.source, &self.images);
+        self.program = self.gl.get_program(&self.source, &self.images.textures);
     }
 }
 
@@ -348,20 +311,6 @@ pub struct RenderParams {
     pub seconds_since_start: f32,
     pub mouse_pos: Option<(i32, i32)>,
     pub mouse_scroll: f64,
-}
-
-impl RenderParams {
-    pub fn update_time(&mut self, seconds_since_start: f32) {
-        self.seconds_since_start = seconds_since_start;
-    }
-
-    pub fn update_mouse_pos(&mut self, mouse_pos: Option<(i32, i32)>) {
-        self.mouse_pos = mouse_pos;
-    }
-
-    pub fn update_mouse_scroll(&mut self, delta: f64) {
-        self.mouse_scroll += delta;
-    }
 }
 
 pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
@@ -496,16 +445,17 @@ impl ImageCache {
 
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
-    let document = document();
-    let canvas = document
+    let d = document();
+    let canvas = d
         .get_element_by_id("canvas")
         .unwrap()
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
-    let shader_text_box = document
+    let shader_text_box = d
         .get_element_by_id("shader")
         .unwrap()
         .dyn_into::<web_sys::HtmlTextAreaElement>()?;
-    let compile_button = document
+    shader_text_box.set_value(DEFAULT_DISC_FUNC);
+    let compile_button = d
         .get_element_by_id("recompile")
         .unwrap()
         .dyn_into::<web_sys::HtmlButtonElement>()?;
@@ -521,6 +471,7 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
+
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
@@ -529,12 +480,25 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.add_event_listener_with_callback("mouseleave", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
+
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
             params.borrow_mut().mouse_scroll += _event.delta_y();
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("wheel", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
+    {
+        let render_state = render_state.clone();
+        let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
+            render_state
+                .borrow_mut()
+                .update_disc_shader(&shader_text_box.value());
+        }) as Box<dyn FnMut(_)>);
+        compile_button
+            .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
 

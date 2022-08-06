@@ -3,7 +3,7 @@ use std::collections::HashMap;
 pub struct SourceContext {
     raw_source: String,
     parameters: HashMap<String, String>,
-    code: String,
+    pub code: String,
 }
 
 impl SourceContext {
@@ -34,7 +34,7 @@ impl SourceContext {
 
     pub fn generate_source(&self) -> String {
         let mut source = self.generate_header();
-        source.push_str(&self.raw_source.replace("#version 300 es", ""));
+        source.push_str(&self.raw_source.replace("#version 300 es", "").clone());
         source = source.replace("// Disc code here!", &self.code);
         source
     }
