@@ -432,17 +432,6 @@ pub struct ImageCache<'a> {
 }
 
 impl<'a> ImageCache<'a> {
-    fn to_rgba(rgb: &Vec<u8>) -> Vec<u8> {
-        let mut rgba = Vec::new();
-        for i in 0..rgb.len() / 3 {
-            rgba.push(rgb[3 * i]);
-            rgba.push(rgb[3 * i + 1]);
-            rgba.push(rgb[3 * i + 2]);
-            rgba.push(255);
-        }
-        rgba
-    }
-
     pub async fn new(gl: &RenderContext) -> Result<ImageCache<'a>, JsValue> {
         let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
         let stars_tex = fetch_rgb_texture(gl, STARS_URL, "stars").await;
@@ -460,12 +449,11 @@ impl<'a> ImageCache<'a> {
             for x in 0..ray_width {
                 let final_dir = cache.cache[x].final_dir;
                 ray_vec_2.push(final_dir[0]);
-                ray_vec_2.push(final_dir[1]);
                 ray_vec_2.push(final_dir[2]);
             }
         }
         let ray_cache_tex =
-            generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32, Format::RGB);
+            generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32, Format::RG);
         let ray_cache_tex = UniformContext::new_from_allocated_val(
             ray_cache_tex,
             "cache",

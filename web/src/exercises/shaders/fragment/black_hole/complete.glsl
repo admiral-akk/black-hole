@@ -90,7 +90,7 @@ float get_cache_index(vec3 start_dir){
 }
 vec3 get_cached_dir(vec3 start_dir){
     float index=get_cache_index(start_dir);
-    return texture(cache,vec2(index-.5/float(cache_dim.x),(distance-5.)/15.)).xyz;
+    return texture(cache,vec2(index-.5/float(cache_dim.x),(distance-5.)/15.)).xzy;
 }
 vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
     float angle=PI/2.;
