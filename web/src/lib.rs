@@ -6,7 +6,6 @@ mod framework;
 use exercises::exercise_10;
 
 use framework::program_context::ProgramContext;
-use framework::texture_utils::generate_rgb_texture_from_u8;
 use framework::texture_utils::generate_texture_from_f32;
 use framework::texture_utils::Format;
 use glam::IVec2;
@@ -497,13 +496,8 @@ impl<'a> ImageCache<'a> {
             let cache = &angle_cache.angle_to_z_to_distance[x];
             min_z.push(cache.z_bounds.0 as f32);
             min_z.push(cache.z_bounds.1 as f32);
-            min_z.push(0.);
-            min_z.push(1.);
             for c in &cache.z_to_distance {
                 v.push(*c as f32);
-                v.push(0.);
-                v.push(0.);
-                v.push(1.);
             }
         }
         console_log!("min_z: {:?}", min_z);
@@ -512,17 +506,17 @@ impl<'a> ImageCache<'a> {
         console_log!("angle_cache: {:?}", v);
         console_log!("angle_cache length: {:?}", v.len());
 
-        let angle_height = (min_z.len() / 4) as i32;
-        let angle_width = (v.len() / 4) as i32 / angle_height;
+        let angle_height = (min_z.len() / 2) as i32;
+        let angle_width = v.len() as i32 / angle_height;
 
-        let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width, Format::RGBA);
+        let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width, Format::R);
         let angle_cache_tex = UniformContext::new_from_allocated_val(
             angle_cache_tex,
             "angle_cache",
             angle_width as i32,
             angle_height as i32,
         );
-        let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height, Format::RGBA);
+        let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height, Format::RG);
 
         let angle_min_z_tex = UniformContext::new_from_allocated_val(
             angle_min_z_tex,

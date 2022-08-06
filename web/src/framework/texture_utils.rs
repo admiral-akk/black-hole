@@ -1,5 +1,54 @@
 use web_sys::{WebGl2RenderingContext, WebGlTexture};
 
+pub enum Format {
+    R,
+    RG,
+    RGB,
+    RGBA,
+}
+
+impl Format {
+    pub fn dimension(&self) -> i32 {
+        match self {
+            Format::R => 1,
+            Format::RG => 2,
+            Format::RGB => 3,
+            Format::RGBA => 4,
+        }
+    }
+    pub fn external_format(&self) -> u32 {
+        match self {
+            Format::R => WebGl2RenderingContext::RED,
+            Format::RG => WebGl2RenderingContext::RG,
+            Format::RGB => WebGl2RenderingContext::RGB,
+            Format::RGBA => WebGl2RenderingContext::RGBA,
+        }
+    }
+}
+
+fn add_default_tex_parameters(gl: &WebGl2RenderingContext) {
+    gl.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
+        WebGl2RenderingContext::LINEAR as i32,
+    );
+    gl.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
+        WebGl2RenderingContext::LINEAR as i32,
+    );
+    gl.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_WRAP_S,
+        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
+    );
+    gl.tex_parameteri(
+        WebGl2RenderingContext::TEXTURE_2D,
+        WebGl2RenderingContext::TEXTURE_WRAP_T,
+        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
+    );
+}
+
 pub fn create_texture(
     gl: &WebGl2RenderingContext,
     width: i32,
@@ -74,78 +123,6 @@ pub fn generate_texture_from_f32(
     add_default_tex_parameters(gl);
     gl.bind_buffer(WebGl2RenderingContext::PIXEL_UNPACK_BUFFER, None);
     texture.unwrap()
-}
-
-fn add_default_tex_parameters(gl: &WebGl2RenderingContext) {
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-        WebGl2RenderingContext::LINEAR as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_S,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameteri(
-        WebGl2RenderingContext::TEXTURE_2D,
-        WebGl2RenderingContext::TEXTURE_WRAP_T,
-        WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-    );
-}
-
-pub fn generate_rgb_texture_from_u8(
-    gl: &WebGl2RenderingContext,
-    arr: &[u8],
-    width: i32,
-) -> WebGlTexture {
-    let texture = gl.create_texture();
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
-    gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-        WebGl2RenderingContext::TEXTURE_2D,
-        0,
-        WebGl2RenderingContext::RGB as i32,
-        width,
-        (arr.len() / (3 * width) as usize) as i32,
-        0,
-        WebGl2RenderingContext::RGB,
-        WebGl2RenderingContext::UNSIGNED_BYTE,
-        Some(arr),
-    )
-    .unwrap();
-    add_default_tex_parameters(gl);
-    texture.unwrap()
-}
-
-pub enum Format {
-    R,
-    RG,
-    RGB,
-    RGBA,
-}
-
-impl Format {
-    pub fn dimension(&self) -> i32 {
-        match self {
-            Format::R => 1,
-            Format::RG => 2,
-            Format::RGB => 3,
-            Format::RGBA => 4,
-        }
-    }
-    pub fn external_format(&self) -> u32 {
-        match self {
-            Format::R => WebGl2RenderingContext::RED,
-            Format::RG => WebGl2RenderingContext::RG,
-            Format::RGB => WebGl2RenderingContext::RGB,
-            Format::RGBA => WebGl2RenderingContext::RGBA,
-        }
-    }
 }
 
 pub fn generate_texture_from_u8(
