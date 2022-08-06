@@ -378,7 +378,6 @@ impl RenderParams {
     }
 }
 
-#[wasm_bindgen]
 pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
     let window = web_sys::window().unwrap(); // Browser window
     let promise = JsFuture::from(window.fetch_with_str(&url)); // File fetch promise
