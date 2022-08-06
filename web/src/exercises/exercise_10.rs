@@ -24,12 +24,7 @@ pub fn get_program(
         images.constellations_dim.0,
         images.constellations_dim.1,
     );
-    let galaxy = UniformContext::new_from_allocated_ref(
-        &images.galaxy_tex,
-        "galaxy",
-        images.galaxy_dim.0,
-        images.galaxy_dim.1,
-    );
+    let galaxy = &images.galaxy_tex;
     let cache = UniformContext::new_from_allocated_ref(
         &images.ray_cache_tex,
         "cache",
@@ -59,7 +54,7 @@ pub fn get_program(
     text.push(&angle_cache);
     text.push(&angle_z_max_cache);
     text.push(&stars);
-    text.push(&galaxy);
+    text.push(galaxy);
     text.push(&constellations);
 
     let frag = SourceContext::new(include_str!("shaders/fragment/black_hole/complete.glsl"));

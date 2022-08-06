@@ -13,6 +13,7 @@ pub enum UniformStore<'a> {
     Mat3x3(Mat3),
     ArrayF32(Vec<f32>),
     Texture2dRef(&'a WebGlTexture, i32, i32),
+    Texture2d(WebGlTexture, i32, i32),
 }
 
 pub struct UniformContext<'a> {
@@ -29,6 +30,17 @@ impl UniformContext<'_> {
     ) -> UniformContext<'a> {
         UniformContext {
             store: UniformStore::Texture2dRef(texture, width, height),
+            name: name.to_string(),
+        }
+    }
+    pub fn new_from_allocated_val<'a>(
+        texture: WebGlTexture,
+        name: &str,
+        width: i32,
+        height: i32,
+    ) -> UniformContext<'a> {
+        UniformContext {
+            store: UniformStore::Texture2d(texture, width, height),
             name: name.to_string(),
         }
     }
@@ -116,6 +128,9 @@ impl UniformContext<'_> {
                 gl.gl.uniform1fv_with_f32_array(loc.as_ref(), arr);
             }
             UniformStore::Texture2dRef(texture, width, height) => {
+                add_texture_to_program(&texture, gl, program, &self.name, *width, *height);
+            }
+            UniformStore::Texture2d(texture, width, height) => {
                 add_texture_to_program(&texture, gl, program, &self.name, *width, *height);
             }
         }

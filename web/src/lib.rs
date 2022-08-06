@@ -196,11 +196,11 @@ fn init_exercise(gl: &RenderContext, images: &ImageCache) -> ExerciseState {
     ExerciseState { params, program }
 }
 
-pub struct RenderState {
+pub struct RenderState<'a> {
     gl: RenderContext,
     prev_params: Cell<RenderParams>,
     exercise_state: RefCell<Box<ExerciseState>>,
-    images: ImageCache,
+    images: ImageCache<'a>,
 }
 
 fn update_params(exercise_state: &mut ExerciseState, new_params: &RenderParams) {
@@ -245,7 +245,7 @@ fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
     gl.run_program(&exercise_state.program, None);
 }
 
-impl RenderState {
+impl<'a> RenderState<'a> {
     fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
         console_log!("params: {:?}", params);
         let gl = &self.gl;
@@ -288,8 +288,8 @@ vec4 disc_color(float dist_01,float theta_01){
     return vec4(n,n,n,1.0);
 }";
 
-impl RenderState {
-    pub async fn new(width: u32, height: u32) -> Result<RenderState, JsValue> {
+impl<'a> RenderState<'a> {
+    pub async fn new(width: u32, height: u32) -> Result<RenderState<'a>, JsValue> {
         let gl = RenderContext::new(width, height);
 
         let images = ImageCache::new(&gl).await?;
@@ -386,7 +386,30 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
     let image_data = JsFuture::from(response.array_buffer()?).await?; // Get text
     Ok(Uint8Array::new(&image_data))
 }
+pub async fn fetch_rgb_texture<'a>(
+    gl: &RenderContext,
+    url: &str,
+    name: &str,
+) -> UniformContext<'a> {
+    let window = web_sys::window().unwrap(); // Browser window
+    let promise = JsFuture::from(window.fetch_with_str(&url)); // File fetch promise
+    let result = promise.await; // Await fulfillment of fetch
+    let response: web_sys::Response = result.unwrap().dyn_into().unwrap(); // Type casting
+    let image_data = JsFuture::from(response.array_buffer().unwrap()).await; // Get text
 
+    let image = to_image(Uint8Array::new(&image_data.unwrap()));
+    let image_tex = generate_texture_from_u8(
+        &gl.gl,
+        &ImageCache::to_rgba(image.as_rgb8().unwrap().as_raw()),
+        image.width() as i32,
+    );
+    UniformContext::new_from_allocated_val(
+        image_tex,
+        name,
+        image.width() as i32,
+        image.height() as i32,
+    )
+}
 const GALAXY_URL: &str = "http://localhost:8080/galaxy.jpg";
 const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
 const STARS_URL: &str = "http://localhost:8080/stars.jpg";
@@ -400,9 +423,8 @@ const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
-pub struct ImageCache {
-    galaxy_tex: WebGlTexture,
-    galaxy_dim: (i32, i32),
+pub struct ImageCache<'a> {
+    galaxy_tex: UniformContext<'a>,
     stars_tex: WebGlTexture,
     stars_dim: (i32, i32),
     constellations_tex: WebGlTexture,
@@ -417,7 +439,7 @@ pub struct ImageCache {
     angle_min_z_dim: (i32, i32),
 }
 
-impl ImageCache {
+impl<'a> ImageCache<'a> {
     fn to_rgba(rgb: &Vec<u8>) -> Vec<u8> {
         let mut rgba = Vec::new();
         for i in 0..rgb.len() / 3 {
@@ -429,14 +451,8 @@ impl ImageCache {
         rgba
     }
 
-    pub async fn new(gl: &RenderContext) -> Result<ImageCache, JsValue> {
-        let galaxy = fetch_url_binary(GALAXY_URL.to_string()).await?;
-        let galaxy = to_image(galaxy);
-        let galaxy_tex = generate_texture_from_u8(
-            &gl.gl,
-            &ImageCache::to_rgba(galaxy.as_rgb8().unwrap().as_raw()),
-            galaxy.width() as i32,
-        );
+    pub async fn new(gl: &RenderContext) -> Result<ImageCache<'a>, JsValue> {
+        let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
         let stars = fetch_url_binary(STARS_URL.to_string()).await?;
         let stars = to_image(stars);
         let stars_tex = generate_texture_from_u8(
@@ -509,7 +525,6 @@ impl ImageCache {
 
         Ok(ImageCache {
             galaxy_tex,
-            galaxy_dim: (galaxy.width() as i32, galaxy.height() as i32),
             stars_tex,
             stars_dim: (stars.width() as i32, stars.height() as i32),
             constellations_tex,
