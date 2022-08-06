@@ -1,5 +1,5 @@
 
-#define SPEED_UP.1
+#define SPEED_UP .1
 #define DIST_POINTS 14.
 #define REVOLUTION_COUNT 1.
 #define ARMS_COUNT 12.
