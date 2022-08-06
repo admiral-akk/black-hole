@@ -20,8 +20,8 @@ impl SourceContext {
         self.parameters.insert(key.to_string(), val.to_string());
     }
 
-    pub fn add_code(&mut self, code: &str) {
-        self.code = code.to_string();
+    pub fn add_code(&mut self, code: String) {
+        self.code = code;
     }
 
     fn generate_header(&self) -> String {

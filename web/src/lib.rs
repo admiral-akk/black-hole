@@ -6,6 +6,7 @@ mod framework;
 use exercises::exercise_10;
 
 use framework::program_context::ProgramContext;
+use framework::source_context::SourceContext;
 use framework::texture_utils::generate_texture_from_f32;
 use framework::texture_utils::Format;
 use glam::IVec2;
@@ -91,20 +92,6 @@ extern "C" {
     fn cancelAnimationFrame(id: u32);
 }
 
-fn get_selected_index() -> Result<u32, JsValue> {
-    let document = web_sys::window().unwrap().document().unwrap();
-    Ok(document
-        .get_element_by_id("input")
-        .unwrap()
-        .dyn_into::<web_sys::HtmlSelectElement>()?
-        .selected_index() as u32)
-}
-
-struct ExerciseState {
-    pub params: BlackHoleParams,
-    pub program: ProgramContext,
-}
-
 pub struct BlackHoleParams {
     pub dimensions: IVec2,
     pub distance: f32,
@@ -116,6 +103,29 @@ pub struct BlackHoleParams {
     pub normalized_up: Vec3,
     pub observer_mat: Mat3,
     pub time_s: f32,
+}
+
+impl Default for BlackHoleParams {
+    fn default() -> Self {
+        let distance = 17.0;
+        let vertical_fov_degrees = 50.0;
+        let black_hole_radius = 1.5;
+        let cache_width: i32 = 1024;
+        let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
+
+        let (dir, up) = (-pos.normalize(), Vec3::Y);
+        BlackHoleParams::new(
+            IVec2::new(1024, 1024),
+            distance,
+            vertical_fov_degrees,
+            black_hole_radius,
+            cache_width,
+            pos,
+            dir,
+            up,
+            0.0,
+        )
+    }
 }
 
 impl BlackHoleParams {
@@ -168,46 +178,60 @@ impl BlackHoleParams {
         v.push(UniformContext::f32(self.time_s, "time_s"));
         v
     }
+    pub fn update(&mut self, render_params: &RenderParams) {
+        self.distance = f32::clamp(
+            (17.0 + render_params.mouse_scroll / 100.0) as f32,
+            5.0,
+            20.0,
+        );
+
+        let mut pos = self.normalized_pos;
+        if render_params.mouse_pos.is_some() {
+            let x_angle =
+                std::f32::consts::TAU * (render_params.mouse_pos.unwrap().0 as f32) / 1024.;
+            let y_angle =
+                std::f32::consts::PI * (render_params.mouse_pos.unwrap().1 as f32 - 512.) / 1024.;
+
+            pos = self.distance
+                * (y_angle.cos() * x_angle.cos() * Vec3::Z
+                    + y_angle.cos() * x_angle.sin() * Vec3::X
+                    + y_angle.sin() * Vec3::Y);
+        }
+
+        self.normalized_pos = pos.normalize();
+        self.normalized_dir = -self.normalized_pos;
+        let right = Vec3::cross(Vec3::Y, self.normalized_dir).normalize();
+        self.normalized_up = Vec3::cross(right, self.normalized_dir);
+        let observer_quat = Quat::from_rotation_arc(pos.normalize(), -Vec3::Z);
+        let euler = Quat::to_euler(observer_quat, glam::EulerRot::XYZ);
+        self.observer_mat = Mat3::from_euler(glam::EulerRot::XYZ, euler.0, euler.1, euler.2);
+        self.time_s = render_params.seconds_since_start;
+    }
 }
 
-fn init_exercise(gl: &RenderContext, images: &ImageCache) -> ExerciseState {
-    let distance = 17.0;
-    let vertical_fov_degrees = 50.0;
-    let black_hole_radius = 1.5;
-    let cache_width: i32 = 1024;
-    let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
-
-    let (dir, up) = (-pos.normalize(), Vec3::Y);
-    let params = BlackHoleParams::new(
-        IVec2::new(1024, 1024),
-        distance,
-        vertical_fov_degrees,
-        black_hole_radius,
-        cache_width,
-        pos,
-        dir,
-        up,
-        0.0,
-    );
-    let program = exercise_10::get_program(gl, &params, images);
-
-    ExerciseState { params, program }
+fn compile_shader_program(
+    gl: &RenderContext,
+    frag: &SourceContext,
+    images: &ImageCache,
+) -> ProgramContext {
+    gl.get_program(None, frag, &images.textures)
 }
 
 pub struct RenderState {
     gl: RenderContext,
-    prev_params: Cell<RenderParams>,
-    exercise_state: RefCell<Box<ExerciseState>>,
+    source: SourceContext,
+    program: ProgramContext,
+    black_hole_params: BlackHoleParams,
     images: ImageCache,
 }
 
-fn update_params(exercise_state: &mut ExerciseState, new_params: &RenderParams) {
+fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderParams) {
     let distance = f32::clamp((17.0 + new_params.mouse_scroll / 100.0) as f32, 5.0, 20.0);
     let vertical_fov_degrees = 50.0;
     let black_hole_radius = 1.5;
     let cache_width: i32 = 1024;
 
-    let mut pos = exercise_state.params.normalized_pos;
+    let mut pos = black_hole_params.normalized_pos;
     if new_params.mouse_pos.is_some() {
         let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 1024.;
         let y_angle =
@@ -224,7 +248,7 @@ fn update_params(exercise_state: &mut ExerciseState, new_params: &RenderParams) 
     let right = Vec3::cross(Vec3::Y, dir).normalize();
     let up = Vec3::cross(right, dir);
 
-    exercise_state.params = BlackHoleParams::new(
+    *black_hole_params = BlackHoleParams::new(
         IVec2::new(1024, 1024),
         distance,
         vertical_fov_degrees,
@@ -236,23 +260,15 @@ fn update_params(exercise_state: &mut ExerciseState, new_params: &RenderParams) 
         new_params.seconds_since_start,
     );
 }
-fn render_exercise(gl: &RenderContext, exercise_state: &mut ExerciseState) {
-    for ele in exercise_state.params.uniform_context() {
-        ele.add_to_program(gl, &mut exercise_state.program);
+fn render(render_state: &mut RenderState, params: &RenderParams) -> Result<(), JsValue> {
+    console_log!("params: {:?}", params);
+    let gl = &render_state.gl;
+    update_params(&mut render_state.black_hole_params, params);
+    for ele in render_state.black_hole_params.uniform_context() {
+        ele.add_to_program(gl, &mut render_state.program);
     }
-    gl.run_program(&exercise_state.program, None);
-}
-
-impl RenderState {
-    fn render(&self, params: &RenderParams) -> Result<(), JsValue> {
-        console_log!("params: {:?}", params);
-        let gl = &self.gl;
-
-        update_params(&mut *self.exercise_state.borrow_mut(), params);
-        render_exercise(gl, &mut *self.exercise_state.borrow_mut());
-        self.prev_params.set(*params);
-        Ok(())
-    }
+    gl.run_program(&render_state.program, None);
+    Ok(())
 }
 
 const DEFAULT_DISC_FUNC: &str = "float random(in vec2 _st) {
@@ -291,11 +307,17 @@ impl RenderState {
         let gl = RenderContext::new(width, height);
 
         let images = ImageCache::new(&gl).await?;
-        let exercise_state = init_exercise(&gl, &images);
+        let source = SourceContext::new(include_str!(
+            "exercises/shaders/fragment/black_hole/complete.glsl"
+        ));
+        let black_hole_params = BlackHoleParams::default();
+        let program = compile_shader_program(&gl, &source, &images);
+
         Ok(RenderState {
             gl,
-            prev_params: Cell::default(),
-            exercise_state: RefCell::new(Box::new(exercise_state)),
+            source,
+            black_hole_params,
+            program,
             images,
         })
     }
@@ -306,25 +328,8 @@ impl RenderState {
             false => shader_func,
         }
         .replace("\n", "");
+        self.source.add_code(shader_code);
     }
-}
-
-fn generate_uv(width: u32, height: u32) -> Vec<u8> {
-    let mut uv = Vec::new();
-    for x in 0..width {
-        for y in 0..height {
-            let r = 255 * x / width;
-            let g = 255 * y / height;
-            let b = 0;
-            let a = 255;
-            uv.push(r as u8);
-            uv.push(g as u8);
-            uv.push(b as u8);
-            uv.push(a as u8);
-        }
-    }
-
-    uv
 }
 
 fn window() -> web_sys::Window {
@@ -344,28 +349,23 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-struct RenderParams {
+pub struct RenderParams {
     pub seconds_since_start: f32,
     pub mouse_pos: Option<(i32, i32)>,
     pub mouse_scroll: f64,
 }
 
 impl RenderParams {
-    pub fn update_time(&self, seconds_since_start: f32) -> RenderParams {
-        let mut c = self.clone();
-        c.seconds_since_start = seconds_since_start;
-        c
-    }
-    pub fn update_mouse_pos(&self, mouse_pos: Option<(i32, i32)>) -> RenderParams {
-        let mut c = self.clone();
-        c.mouse_pos = mouse_pos;
-        c
+    pub fn update_time(&mut self, seconds_since_start: f32) {
+        self.seconds_since_start = seconds_since_start;
     }
 
-    pub fn update_mouse_scroll(&self, delta: f64) -> RenderParams {
-        let mut c = self.clone();
-        c.mouse_scroll += delta;
-        c
+    pub fn update_mouse_pos(&mut self, mouse_pos: Option<(i32, i32)>) {
+        self.mouse_pos = mouse_pos;
+    }
+
+    pub fn update_mouse_scroll(&mut self, delta: f64) {
+        self.mouse_scroll += delta;
     }
 }
 
@@ -508,16 +508,12 @@ pub async fn start() -> Result<(), JsValue> {
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
 
     let start_time = Rc::new(Cell::new(SystemTime::now()));
-    let params = Rc::new(Cell::new(RenderParams::default()));
-    let renderer = Rc::new(RenderState::new(1024, 1024).await?);
+    let params = Rc::new(RefCell::new(RenderParams::default()));
+    let render_state = Rc::new(RefCell::new(RenderState::new(1024, 1024).await?));
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            params.set(
-                params
-                    .get()
-                    .update_mouse_pos(Some((event.offset_x(), event.offset_y()))),
-            );
+            params.borrow_mut().mouse_pos = Some((event.offset_x(), event.offset_y()));
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -525,7 +521,7 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
-            params.set(params.get().update_mouse_pos(None));
+            params.borrow_mut().mouse_pos = None;
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mouseleave", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -533,7 +529,7 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
-            params.set(params.get().update_mouse_scroll(_event.delta_y()));
+            params.borrow_mut().mouse_scroll += _event.delta_y();
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("wheel", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -542,17 +538,16 @@ pub async fn start() -> Result<(), JsValue> {
     let render_func: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
     let g = render_func.clone();
     {
-        let renderer = renderer.clone();
+        let render_state = render_state.clone();
         let start_time = start_time.clone();
         let params = params.clone();
-
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             let seconds_since_start = SystemTime::now()
                 .duration_since(start_time.get())
                 .unwrap()
                 .as_secs_f32();
-            params.set(params.get().update_time(seconds_since_start));
-            renderer.render(&params.get()).unwrap();
+            params.borrow_mut().seconds_since_start = seconds_since_start;
+            render(&mut render_state.borrow_mut(), &params.borrow()).unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
         request_animation_frame(g.borrow().as_ref().unwrap());
