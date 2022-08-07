@@ -9,6 +9,6 @@ module.exports = {
   },
   mode: "development",
   plugins: [
-    new CopyWebpackPlugin(['index.html', 'ray_cache.txt', 'fixed_distance_distance_cache.txt', 'constellations.jpg', 'stars.jpg', 'galaxy.jpg'])
+    new CopyWebpackPlugin(['index.html', 'ray_cache.txt', 'fixed_distance_distance_cache.txt', 'constellations.jpg', 'stars.jpg', 'galaxy.jpg', 'fixed_distance_distance_cache64_64.txt'])
   ],
 };

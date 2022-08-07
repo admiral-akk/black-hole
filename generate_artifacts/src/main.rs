@@ -48,7 +48,7 @@ fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
     buffer
 }
 fn generate_fixed_distance_distance_cache() {
-    let cache_dimensions = (512, 512);
+    let cache_dimensions = (64, 64);
     let camera_distance = 17.0;
     let black_hole_radius = 1.5;
     let disc_radius = (1.5, 12.0);
@@ -59,7 +59,14 @@ fn generate_fixed_distance_distance_cache() {
         disc_radius,
     );
     let data = serde_json::to_string(&angle_cache).unwrap();
-    fs::write(FIXED_DISTANCE_DISTANCE_CACHE, data).expect("Unable to write file");
+    fs::write(
+        FIXED_DISTANCE_DISTANCE_CACHE.replace(
+            ".txt",
+            format!("{}_{}.txt", cache_dimensions.0, cache_dimensions.1).as_str(),
+        ),
+        data,
+    )
+    .expect("Unable to write file");
 }
 
 fn write_file_as_byte_vec(filename: &String, bytes: Vec<u8>) {

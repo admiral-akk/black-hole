@@ -184,12 +184,13 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     
     float z=start_dir.z;
     float z_index=to_angle_index(angle_01.x,z);
+    vec4 total_disc_color = vec4(0.);
     if(z_index>=0.&&z_index<=1.){
         // return vec4(angle/(2.*PI),1.,0.,0.);
         float dist=texture(angle_cache,vec2(z_index,angle_01.x)).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
-            return disc_color(dist_01,angle_01.y);
+            total_disc_color= disc_color(dist_01,angle_01.y);
         }
     }
     vec2 other_angle_01=angle_01+.5;
@@ -198,10 +199,11 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
         float dist=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
-            return disc_color(dist_01,other_angle_01.y);
+            float alpha = 1.-total_disc_color.w;
+            total_disc_color += alpha* disc_color(dist_01,other_angle_01.y);
         }
     }
-    return vec4(0.,0.,0.,0.);
+    return total_disc_color;
 }
 
 //

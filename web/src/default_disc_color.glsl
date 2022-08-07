@@ -2,11 +2,11 @@
 #define SPEED_UP 1.*.1
 #define DIST_POINTS 14.
 #define REVOLUTION_COUNT 1.
-#define ARMS_COUNT 12.
+#define ARMS_COUNT 22.
 
 #define THETA_POINTS 35.*(1.+SPEED_UP)
 float random(in vec2 _st){
-    return fract(cos(dot(_st.xy,vec2(112.4,1./ARMS_COUNT)))*421.5453123);
+    return fract(cos(dot(_st.xy,vec2(TAU/ARMS_COUNT,1./1.)))*421.5453123);
 }
 
 // Based on Morgan McGuire @morgan3d
@@ -27,7 +27,7 @@ float noise(in vec2 _st){
     (c-a)*u.y*(1.-u.x)+
     (d-b)*u.x*u.y;
 }
-#define OCTAVES 4
+#define OCTAVES 10
 #define AMP_DROP 1.*.5
 
 float fbm(in vec2 st){
@@ -45,24 +45,19 @@ float fbm(in vec2 st){
     return value;
 }
 
+#define ARM_DIST_SCALE 1.5
+#define ARM_DIST_NORMALIZATION pow(TAU,ARM_DIST_SCALE)
+
 vec4 disc_color(float dist_01,float theta_01){
-    float arm=mod(ARMS_COUNT*(theta_01+time_s/15.+dist_01*REVOLUTION_COUNT),ARMS_COUNT);
-    float arm_weight=2.*abs(fract(arm)-.5);
-    float arm_dist_01=pow(dist_01,18.);
-    vec2 st=vec2(arm_dist_01-time_s,arm);
     
-    for(int i=0;i<0;i++){
-        st=st+vec2(fbm(st),fbm(st));
-    }
-    float n=fbm(st);
-    vec2 q=vec2(0.,0.);
-    q.x=fbm(st+0.*time_s);
-    q.y=fbm(st+vec2(1.,1.));
+    float arm=mod(ARMS_COUNT*(theta_01+mod((dist_01+.01/(.99-dist_01)),2./ARM_DIST_SCALE)*REVOLUTION_COUNT),ARMS_COUNT);
+    float theta_start=arm/ARMS_COUNT;
+    float theta_offset=mod(TAU*(1.+theta_01-theta_start),TAU);
+    float arm_dist=pow(theta_offset,ARM_DIST_SCALE)/ARM_DIST_NORMALIZATION+3.*time_s/ARM_DIST_NORMALIZATION;
+    vec2 show=vec2(1.,1.)*vec2(.9,dist_01/1.5);
     
-    vec2 r=vec2(0.);
-    r.x=fbm(st+1.*q+vec2(1.7,9.2)+.15*time_s);
-    r.y=fbm(st+1.*q+vec2(8.3,2.8)+.126*time_s);
-    float f=fbm(st+r);
-    vec2 show=vec2(1.,1.)*n;
-    return vec4(show.x,show.y,0.,1.);
+    float noi=clamp(2.*(fbm(vec2(arm,arm_dist*ARM_DIST_NORMALIZATION))-.5),0.,1.);
+    float alpha=smoothstep(0.,.35,dist_01)-smoothstep(.95,.99,dist_01)-noi;
+    
+    return vec4(show.x,show.y,0.,alpha);
 }

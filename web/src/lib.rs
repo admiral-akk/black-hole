@@ -342,7 +342,7 @@ const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
 const STARS_URL: &str = "http://localhost:8080/stars.jpg";
 const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
 const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
-    "http://localhost:8080/fixed_distance_distance_cache.txt";
+    "http://localhost:8080/fixed_distance_distance_cache64_64.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
