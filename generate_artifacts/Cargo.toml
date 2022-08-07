@@ -6,6 +6,10 @@ authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
 
 [dependencies]
 path-integration = { path = "../path_integration" }
+glam = "0.21.1"
 serde = "1.0"
 flexbuffers  = "2.0.0"
 serde_json = { version = "1.0.82", features = ["float_roundtrip"] }
+
+[dev-dependencies]
+test-utils = { path = "../test_utils" }

@@ -6,6 +6,9 @@ use path_integration::cache::{
 };
 use serde::Serialize;
 
+mod path_distance_cache;
+mod path_integration2;
+
 const FIXED_DISTANCE_DISTANCE_CACHE: &str =
     "generate_artifacts/output/fixed_distance_distance_cache.txt";
 const FIXED_DISTANCE_DISTANCE_CACHE_FLEX_BUFFER: &str =

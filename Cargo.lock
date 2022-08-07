@@ -619,9 +619,11 @@ name = "generate-artifacts"
 version = "0.1.0"
 dependencies = [
  "flexbuffers",
+ "glam",
  "path-integration",
  "serde",
  "serde_json",
+ "test-utils",
 ]
 
 [[package]]
