@@ -87,16 +87,13 @@ impl FixedDistanceDistanceCache {
 mod tests {
     use std::{f64::consts::TAU, fs};
 
-    
-    
     use serde::{Deserialize, Serialize};
-    
 
     use test_utils::plot_trajectories;
 
     use crate::cast_ray_steps_response;
 
-    use super::FixedDistanceDistanceCache;
+    use super::{FixedDistanceDistanceCache, MIN_ANGLE};
     #[test]
     fn fixed_distance_test_error() {
         let _cache_size = (512, 64);
@@ -109,12 +106,12 @@ mod tests {
             &fs::read_to_string("fixed_distance_distance_cache2.txt").unwrap(),
         )
         .unwrap();
-        let angle_iterations = 256;
+        let angle_iterations = 4;
         let distance_iterations = 1024;
         for j in 0..=angle_iterations {
             let mut line = Vec::new();
             let angle_01 = (j as f64) / (angle_iterations as f64);
-            let angle = TAU * angle_01;
+            let angle = (TAU - MIN_ANGLE) * angle_01 + MIN_ANGLE;
             let z_bounds = cache.get_z_bounds(angle_01);
             for i in 0..=distance_iterations {
                 let z_01 = (i as f64) / (distance_iterations as f64);
@@ -139,11 +136,13 @@ mod tests {
                     approx_dist
                 );
                 let true_dist = true_path.get_dist(angle).unwrap();
-                println!(
-                    "Angle: {}, data: {:?}",
-                    angle,
-                    (z_01 as f32, (true_dist - approx_dist).abs() as f32,)
-                );
+                if (true_dist - approx_dist).abs() > 0.1 {
+                    println!(
+                        "Angle: {}, data: {:?}",
+                        angle,
+                        (z_01 as f32, (true_dist - approx_dist).abs() as f32,)
+                    );
+                }
                 line.push((z_01 as f32, (true_dist - approx_dist).abs() as f32));
             }
             lines.push(line);
@@ -159,9 +158,9 @@ mod tests {
     #[test]
     fn serialization() {
         let cache_size = (16, 16);
-        let distance = 10.0;
+        let distance = 5.0;
         let black_hole_radius = 1.5;
-        let max_disc_radius = (3.0, 6.0);
+        let max_disc_radius = (1.5, 12.0);
         let cache = FixedDistanceDistanceCache::compute_new(
             cache_size,
             distance,

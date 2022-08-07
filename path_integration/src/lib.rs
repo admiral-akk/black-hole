@@ -50,10 +50,11 @@ fn find_z_bounds_for_angle(
         (-1., 1.),
         &bound_predicate,
     );
+    println!("valid z: {:?}", valid_z);
 
     let is_too_close = move |r: Response| {
         let dist = r.get_angle_dist().get_dist(target_angle);
-        return !dist.is_none() && dist.unwrap() <= distance_bounds.1;
+        return dist.is_some() && dist.unwrap() <= distance_bounds.1;
     };
     let lower_1 = find_optimal_z(
         camera_distance as f32,
@@ -62,6 +63,7 @@ fn find_z_bounds_for_angle(
         (-1., valid_z.0),
         &is_too_close,
     );
+    println!("Lower 1: {:?}", lower_1);
     let lower_test_1 =
         cast_ray_steps_response(lower_1.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -78,6 +80,7 @@ fn find_z_bounds_for_angle(
         (valid_z.0, 1.0),
         &is_too_close,
     );
+    println!("Lower 2: {:?}", lower_2);
     let lower_test_2 =
         cast_ray_steps_response(lower_2.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -111,6 +114,7 @@ fn find_z_bounds_for_angle(
         (-1., valid_z.0),
         &is_too_close,
     );
+    println!("Lower 2: {:?}", upper_1);
     let upper_test_1 =
         cast_ray_steps_response(upper_1.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -127,6 +131,7 @@ fn find_z_bounds_for_angle(
         (valid_z.0, 1.0),
         &is_too_close,
     );
+    println!("Lower 2: {:?}", upper_2);
     let upper_test_2 =
         cast_ray_steps_response(upper_2.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -150,7 +155,7 @@ pub fn cast_ray_steps_response(z: f64, camera_distance: f64, black_hole_radius: 
     let mut particle = Particle::new(&ray, &field);
     let mut distance = 0.0;
     let mut steps = Vec::new();
-    let escape_radius = 2. * camera_distance;
+    let escape_radius = 5. * camera_distance;
     let max_distance = 20. * escape_radius;
     while particle.p.length() < escape_radius && distance < max_distance {
         steps.push(particle.p);
