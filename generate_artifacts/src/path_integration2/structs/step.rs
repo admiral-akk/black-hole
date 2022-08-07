@@ -17,7 +17,7 @@ fn step_size(particle: &Particle, field: &Field) -> f64 {
     let diff = -1.0 * particle.p;
     let v = particle.v.length();
     let r = diff.length();
-    let m_4 = 4.0 * field.m;
+    let m_4 = 8.0 * field.m;
     let h = match r > m_4 {
         true => match diff.dot(particle.v) > 0. {
             true => (0.1 * (r - m_4) + MIN_STEP),

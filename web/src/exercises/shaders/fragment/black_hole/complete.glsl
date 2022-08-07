@@ -18,6 +18,7 @@ uniform ivec2 angle_z_max_cache_dim;
 out vec4 outColor;
 
 uniform ivec2 dimensions;
+uniform vec2 disc_dim;
 uniform float vertical_fov_degrees;
 uniform vec3 normalized_dir;
 uniform vec3 normalized_up;
@@ -149,17 +150,7 @@ vec3 get_true_start_dir(vec2 coord){
 
 float to_angle_index(float angle,float z){
     vec2 z_bounds=texture(angle_z_max_cache,vec2(angle,.5)).xy;
-    float z_01=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
-    if(z_01>.5){
-        z_01=2.*(z_01-.5);
-        z_01=z_01*z_01;
-        z_01=z_01/2.+.5;
-    }else{
-        z_01=2.*(.5-z_01);
-        z_01=z_01*z_01;
-        z_01=.5-z_01/2.;
-    }
-    return z_01;
+    return (z-z_bounds.x)/(z_bounds.y-z_bounds.x);
 }
 
 vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
@@ -196,8 +187,8 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     if(z_index>=0.&&z_index<=1.){
         // return vec4(angle/(2.*PI),1.,0.,0.);
         float dist=texture(angle_cache,vec2(z_index,angle_01.x)).x;
-        if(dist>3.&&dist<6.){
-            float dist_01=(6.-dist)/3.;
+        if(dist>disc_dim.x&&dist<disc_dim.y){
+            float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             return disc_color(dist_01,angle_01.y);
         }
     }
@@ -205,8 +196,8 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     z_index=to_angle_index(other_angle_01.x,z);
     if(z_index>=0.&&z_index<=1.){
         float dist=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
-        if(dist>3.&&dist<6.){
-            float dist_01=(6.-dist)/3.;
+        if(dist>disc_dim.x&&dist<disc_dim.y){
+            float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             return disc_color(dist_01,other_angle_01.y);
         }
     }

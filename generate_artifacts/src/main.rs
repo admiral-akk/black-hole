@@ -1,9 +1,7 @@
 use std::fs::{self};
 
-use path_integration::cache::{
-    angle_cache::AngleCache, fixed_distance_distance_cache::FixedDistanceDistanceCache,
-    ray_cache::RayCache,
-};
+use path_distance_cache::fixed_distance_distance_cache::FixedDistanceDistanceCache;
+use path_integration::cache::{angle_cache::AngleCache, ray_cache::RayCache};
 use serde::Serialize;
 
 mod path_distance_cache;
@@ -50,10 +48,10 @@ fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
     buffer
 }
 fn generate_fixed_distance_distance_cache() {
-    let cache_dimensions = (512, 64);
+    let cache_dimensions = (512, 512);
     let camera_distance = 17.0;
     let black_hole_radius = 1.5;
-    let disc_radius = (3.0, 6.0);
+    let disc_radius = (1.5, 12.0);
     let angle_cache = FixedDistanceDistanceCache::compute_new(
         cache_dimensions,
         camera_distance,
@@ -84,6 +82,6 @@ fn reserialize_fixed_distance_distance_cache() {
 fn main() {
     // generate_ray_cache();
     // generate_angle_cache();
-    // generate_fixed_distance_distance_cache();
-    reserialize_fixed_distance_distance_cache();
+    generate_fixed_distance_distance_cache();
+    // reserialize_fixed_distance_distance_cache();
 }

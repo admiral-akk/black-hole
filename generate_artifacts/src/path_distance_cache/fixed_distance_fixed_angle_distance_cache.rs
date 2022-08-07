@@ -6,7 +6,7 @@ use crate::path_integration2::{
     path::cast_ray_steps_response, path::find_optimal_z, response::Response,
 };
 
-const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
+pub const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {
@@ -20,19 +20,14 @@ pub struct FixedDistanceFixedAngleDistanceCache {
 
 const LINEAR_INDEX_WEIGHT: f64 = 0.5;
 
-fn float_01_to_left_index(mut float_01: f64, vec_len: usize) -> (usize, f64) {
-    let float_02 = float_01;
-    if float_01 > 0.5 {
-        float_01 = 2.0 * (float_01 - 0.5);
-        float_01 = float_01 * float_01;
-        float_01 = float_01 / 2.0 + 0.5;
-    } else {
-        float_01 = 2.0 * (0.5 - float_01);
-        float_01 = float_01 * float_01;
-        float_01 = 0.5 - float_01 / 2.0;
-    }
-    float_01 = float_02.sqrt();
-    let float_index = (vec_len - 1) as f64 * float_01;
+fn float_01_to_index_01(float_01: f64) -> f64 {
+    return float_01;
+    (1. - float_01) * (1. - float_01)
+    // float_01 //float_01.sqrt()
+}
+
+fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
+    let float_index = (vec_len - 1) as f64 * float_01_to_index_01(float_01);
     let mut index = float_index as usize;
     if index == vec_len - 1 {
         index -= 1;
@@ -41,16 +36,11 @@ fn float_01_to_left_index(mut float_01: f64, vec_len: usize) -> (usize, f64) {
     (index, t)
 }
 fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
-    let mut float_01 = (index as f64) / (vec_len - 1) as f64;
-    float_01 = float_01 * float_01;
+    let float_01 = (index as f64) / (vec_len - 1) as f64;
     return float_01;
-    if float_01 > 0.5 {
-        float_01 = (2. * (float_01 - 0.5)).sqrt() / 2. + 0.5;
-    } else {
-        float_01 = 0.5 - (2. * (0.5 - float_01)).sqrt() / 2.;
-    }
-    float_01
+    1. - float_01.sqrt() // float_01 * float_01
 }
+
 impl FixedDistanceFixedAngleDistanceCache {
     pub fn compute_new(
         cache_size: usize,
@@ -85,18 +75,18 @@ impl FixedDistanceFixedAngleDistanceCache {
                 )
             } else {
                 let dist = dist.unwrap();
-                if i == 0 {
+                if i > cache_size - 1 {
                     assert!(
-                        (dist - disc_bounds.1).abs() < 0.1,
+                        (dist - disc_bounds.0).abs() < 0.1,
                         "First ray doesn't hit outer edge!\nActual dist: {}\nDisc bounds: {:?}\nangle: {}\nz: {}\n",
                         dist,
                         disc_bounds,
                         angle,
                         z,
                     );
-                } else if i == cache_size - 1 {
+                } else if i < 0 {
                     assert!(
-                        (dist - disc_bounds.0).abs() < 0.1,
+                        (dist - disc_bounds.1).abs() < 0.1,
                         "Last ray doesn't hit inner edge!\nActual dist: {}\nDisc bounds: {:?}\nangle: {}\nz: {}\n",
                         dist,
                         disc_bounds,
@@ -245,22 +235,50 @@ mod tests {
 
     use test_utils::plot_trajectories;
 
-    use crate::{
-        path_distance_cache::fixed_distance_fixed_angle_distance_cache::index_to_float_01,
-        path_integration2::path::cast_ray_steps_response,
-    };
+    use crate::path_integration2::path::cast_ray_steps_response;
 
-    use super::{FixedDistanceFixedAngleDistanceCache, MIN_ANGLE};
+    use super::{float_01_to_index_01, FixedDistanceFixedAngleDistanceCache, MIN_ANGLE};
+
+    #[test]
+    fn show_index_distribution() {
+        let point_count = 1000;
+        let mut lines = Vec::new();
+        let mut line = Vec::new();
+        for i in 0..point_count {
+            let z_01 = i as f64 / (point_count - 1) as f64;
+            let i_01 = float_01_to_index_01(z_01);
+
+            line.push((z_01 as f32, i_01 as f32));
+        }
+        lines.push(line);
+        plot_trajectories(
+            "output/angle_cache/index_distribution.png",
+            &lines,
+            ((0., 1.), (0., 1.)),
+        )
+        .unwrap();
+    }
+
     #[test]
     fn fixed_angle_test_error() {
-        let cache_size = 1 << 12;
-        let distance = 3.0;
+        let cache_size = 1 << 10;
+        let distance = 17.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);
         let mut lines = Vec::new();
 
-        let mut angle = MIN_ANGLE;
-        while angle < TAU {
+        let mut samples = Vec::new();
+        for i in 0..(2 * cache_size) {
+            let z_01 = i as f64 / (2 * cache_size - 1) as f64;
+            samples.push(z_01);
+            if z_01 > 0. && z_01 < 1. {
+                samples.push(z_01 * z_01);
+                samples.push(z_01.sqrt());
+            }
+        }
+        samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        for angle in [MIN_ANGLE, FRAC_PI_2, PI, TAU] {
             let mut line = Vec::new();
             let cache = FixedDistanceFixedAngleDistanceCache::compute_new(
                 cache_size,
@@ -269,10 +287,8 @@ mod tests {
                 max_disc_radius,
                 angle,
             );
-            for i in 0..(cache_size - 1) {
-                let i_01 = index_to_float_01(i, cache_size);
-                let z_01 = i_01 + 1. / (2 * cache_size) as f64;
-                let approx_dist = cache.get_dist(z_01);
+            for z_01 in &samples {
+                let approx_dist = cache.get_dist(*z_01);
                 let z = (cache.z_bounds.1 - cache.z_bounds.0) * z_01 + cache.z_bounds.0;
                 let true_path =
                     cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius)
@@ -289,14 +305,12 @@ mod tests {
                     println!(
                         "Angle: {}, data: {:?}",
                         angle,
-                        (z_01 as f32, (true_dist - approx_dist).abs() as f32,)
+                        (*z_01 as f32, (true_dist - approx_dist).abs() as f32,)
                     );
                 }
-                line.push((z_01 as f32, (true_dist - approx_dist).abs() as f32));
+                line.push((*z_01 as f32, (true_dist - approx_dist).abs() as f32));
             }
             lines.push(line);
-
-            angle *= 2.0;
         }
         plot_trajectories(
             "output/angle_cache/fixed_angle_error_rates.png",

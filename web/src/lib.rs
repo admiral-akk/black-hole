@@ -11,6 +11,7 @@ use framework::texture_utils::Format;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
+use glam::Vec2;
 use glam::Vec3;
 
 use image::DynamicImage;
@@ -347,7 +348,7 @@ fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
 pub struct ImageCache {
-    textures: [UniformContext; 7],
+    textures: [UniformContext; 8],
 }
 
 impl ImageCache {
@@ -421,6 +422,13 @@ impl ImageCache {
             angle_height as i32,
             1 as i32,
         );
+        let disc_dim = UniformContext::vec2(
+            Vec2::new(
+                angle_cache.disc_bounds.0 as f32,
+                angle_cache.disc_bounds.1 as f32,
+            ),
+            "disc_dim",
+        );
         Ok(ImageCache {
             textures: [
                 galaxy_tex,
@@ -430,6 +438,7 @@ impl ImageCache {
                 z_max_cache_tex,
                 angle_cache_tex,
                 angle_min_z_tex,
+                disc_dim,
             ],
         })
     }
