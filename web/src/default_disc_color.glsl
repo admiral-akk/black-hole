@@ -1,10 +1,10 @@
 
-#define SPEED_UP .1
+#define SPEED_UP 1.*.1
 #define DIST_POINTS 14.
 #define REVOLUTION_COUNT 1.
 #define ARMS_COUNT 12.
 
-#define THETA_POINTS(1.+SPEED_UP)*35.
+#define THETA_POINTS 35.*(1.+SPEED_UP)
 float random(in vec2 _st){
     return fract(cos(dot(_st.xy,vec2(112.4,1./ARMS_COUNT)))*421.5453123);
 }
@@ -28,7 +28,7 @@ float noise(in vec2 _st){
     (d-b)*u.x*u.y;
 }
 #define OCTAVES 4
-#define AMP_DROP.5
+#define AMP_DROP 1.*.5
 
 float fbm(in vec2 st){
     // Initial values
