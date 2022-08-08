@@ -14,6 +14,7 @@ wasm-bindgen = "0.2.81"
 wasm-timer = "0.2.5"
 rendering = { path = "../rendering" }
 path-integration = { path = "../path_integration" }
+generate-artifacts = { path = "../generate_artifacts" }
 glam = "0.21.1"
 image = "0.24.2"
 wasm-bindgen-futures = "0.4.31"

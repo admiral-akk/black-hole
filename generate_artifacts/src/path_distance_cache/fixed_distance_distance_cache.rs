@@ -17,16 +17,13 @@ pub struct FixedDistanceDistanceCache {
 
 fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
     let float_index = (vec_len - 1) as f64 * float_01;
-    let mut index = float_index as usize;
-    if index == vec_len - 1 {
-        index -= 1;
-    }
+    let index = (float_index as usize).clamp(0, vec_len - 2);
     let t = float_index - index as f64;
     (index, t)
 }
 fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     let float_01 = (index as f64) / (vec_len - 1) as f64;
-    float_01
+    float_01.clamp(0., 1.)
 }
 impl FixedDistanceDistanceCache {
     pub fn compute_new(
@@ -59,7 +56,7 @@ impl FixedDistanceDistanceCache {
         }
     }
 
-    fn get_z_bounds(&self, angle_01: f64) -> (f64, f64) {
+    pub fn get_z_bounds(&self, angle_01: f64) -> (f64, f64) {
         let (index, t) = float_01_to_left_index(angle_01, self.angle_to_z_to_distance.len());
         let left = &self.angle_to_z_to_distance[index];
         let right = &self.angle_to_z_to_distance[index + 1];
@@ -74,10 +71,6 @@ impl FixedDistanceDistanceCache {
         let right = &self.angle_to_z_to_distance[index + 1];
         let z_bound = self.get_z_bounds(angle_01);
         let diff = z_bound.1 - z_bound.0;
-        if z > z_bound.1 + 0.0000001 * diff || z < z_bound.0 - 0.0000001 * diff {
-            println!("Out of bounds! z: {}, bound: {:?}", z, z_bound);
-            return None;
-        }
         let z_01 = (z - z_bound.0) / (z_bound.1 - z_bound.0);
         Some(t * right.get_dist(z_01) + (1. - t) * left.get_dist(z_01))
     }

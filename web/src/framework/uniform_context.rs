@@ -13,6 +13,7 @@ pub enum UniformStore {
     Mat3x3(Mat3),
     ArrayF32(Vec<f32>),
     Texture2d(WebGlTexture, i32, i32),
+    Texture3d(WebGlTexture, i32, i32, i32),
 }
 
 pub struct UniformContext {
@@ -29,6 +30,18 @@ impl UniformContext {
     ) -> UniformContext {
         UniformContext {
             store: UniformStore::Texture2d(texture, width, height),
+            name: name.to_string(),
+        }
+    }
+    pub fn texture_3d(
+        texture: WebGlTexture,
+        name: &str,
+        width: i32,
+        height: i32,
+        depth: i32,
+    ) -> UniformContext {
+        UniformContext {
+            store: UniformStore::Texture3d(texture, width, height, depth),
             name: name.to_string(),
         }
     }
@@ -118,6 +131,11 @@ impl UniformContext {
             UniformStore::Texture2d(texture, width, height) => {
                 add_texture_to_program(&texture, gl, program, &self.name, *width, *height);
             }
+            UniformStore::Texture3d(texture, width, height, depth) => {
+                add_3d_texture_to_program(
+                    &texture, gl, program, &self.name, *width, *height, *depth,
+                );
+            }
         }
         gl.gl.use_program(None);
     }
@@ -140,4 +158,24 @@ fn add_texture_to_program(
 
     let loc = gl.get_uniform_location(&program.program, &(name.to_string() + "_dim"));
     gl.uniform2i(loc.as_ref(), width, height);
+}
+
+fn add_3d_texture_to_program(
+    texture: &WebGlTexture,
+    gl: &RenderContext,
+    program: &mut ProgramContext,
+    name: &str,
+    width: i32,
+    height: i32,
+    depth: i32,
+) {
+    let gl = &gl.gl;
+    let texture_count = program.get_and_increment_texture_count();
+    gl.active_texture(WebGl2RenderingContext::TEXTURE0 + texture_count);
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_3D, Some(texture));
+    let loc = gl.get_uniform_location(&program.program, name);
+    gl.uniform1i(loc.as_ref(), texture_count as i32);
+
+    let loc = gl.get_uniform_location(&program.program, &(name.to_string() + "_dim"));
+    gl.uniform3i(loc.as_ref(), width, height, depth);
 }

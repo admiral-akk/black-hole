@@ -21,23 +21,20 @@ pub struct FixedDistanceFixedAngleDistanceCache {
 const LINEAR_INDEX_WEIGHT: f64 = 0.5;
 
 fn float_01_to_index_01(float_01: f64) -> f64 {
-    return float_01;
+    return float_01.clamp(0., 1.);
     (1. - float_01) * (1. - float_01)
     // float_01 //float_01.sqrt()
 }
 
 fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
     let float_index = (vec_len - 1) as f64 * float_01_to_index_01(float_01);
-    let mut index = float_index as usize;
-    if index == vec_len - 1 {
-        index -= 1;
-    }
+    let index = (float_index as usize).clamp(0, vec_len - 2);
     let t = float_index - index as f64;
     (index, t)
 }
 fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     let float_01 = (index as f64) / (vec_len - 1) as f64;
-    return float_01;
+    return float_01.clamp(0., 1.);
     1. - float_01.sqrt() // float_01 * float_01
 }
 
@@ -130,7 +127,6 @@ fn find_z_bounds_for_angle(
         (-1., 1.),
         &bound_predicate,
     );
-    println!("valid z: {:?}", valid_z);
 
     let is_too_close = move |r: Response| {
         let dist = r.get_angle_dist().get_dist(target_angle);
@@ -143,7 +139,6 @@ fn find_z_bounds_for_angle(
         (-1., valid_z.0),
         &is_too_close,
     );
-    println!("Lower 1: {:?}", lower_1);
     let lower_test_1 =
         cast_ray_steps_response(lower_1.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -160,7 +155,6 @@ fn find_z_bounds_for_angle(
         (valid_z.0, 1.0),
         &is_too_close,
     );
-    println!("Lower 2: {:?}", lower_2);
     let lower_test_2 =
         cast_ray_steps_response(lower_2.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -194,7 +188,6 @@ fn find_z_bounds_for_angle(
         (-1., valid_z.0),
         &is_too_close,
     );
-    println!("Lower 2: {:?}", upper_1);
     let upper_test_1 =
         cast_ray_steps_response(upper_1.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -211,7 +204,6 @@ fn find_z_bounds_for_angle(
         (valid_z.0, 1.0),
         &is_too_close,
     );
-    println!("Lower 2: {:?}", upper_2);
     let upper_test_2 =
         cast_ray_steps_response(upper_2.1, camera_distance as f64, black_hole_radius as f64)
             .get_angle_dist()
@@ -224,7 +216,6 @@ fn find_z_bounds_for_angle(
     }
 
     let bounds = (lower, upper);
-    println!("Bounds: {:?}", bounds);
 
     bounds
 }

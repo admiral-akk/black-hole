@@ -1,6 +1,7 @@
 #version 300 es
 
 precision mediump float;
+precision mediump sampler3D;
 uniform sampler2D stars;
 uniform ivec2 stars_dim;
 uniform sampler2D constellations;
@@ -15,7 +16,13 @@ uniform sampler2D angle_cache;
 uniform ivec2 angle_cache_dim;
 uniform sampler2D angle_z_max_cache;
 uniform ivec2 angle_z_max_cache_dim;
+uniform sampler3D distance_cache_tex;
+uniform ivec3 distance_cache_tex_dim;
+uniform sampler3D distance_cache_z_bounds;
+uniform ivec2 distance_cache_z_bounds_dim;
 out vec4 outColor;
+
+uniform float min_angle;
 
 uniform ivec2 dimensions;
 uniform vec2 disc_dim;

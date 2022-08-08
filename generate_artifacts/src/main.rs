@@ -1,5 +1,6 @@
 use std::fs::{self};
 
+use path_distance_cache::distance_cache::DistanceCache;
 use path_distance_cache::fixed_distance_distance_cache::FixedDistanceDistanceCache;
 use path_integration::cache::{angle_cache::AngleCache, ray_cache::RayCache};
 use serde::Serialize;
@@ -9,6 +10,7 @@ mod path_integration2;
 
 const FIXED_DISTANCE_DISTANCE_CACHE: &str =
     "generate_artifacts/output/fixed_distance_distance_cache.txt";
+const DISTANCE_DISTANCE_CACHE: &str = "generate_artifacts/output/distance_cache.txt";
 const FIXED_DISTANCE_DISTANCE_CACHE_FLEX_BUFFER: &str =
     "generate_artifacts/output/fixed_distance_distance_cache.flex";
 const RAY_CACHE_PATH: &str = "generate_artifacts/output/ray_cache.txt";
@@ -21,6 +23,24 @@ fn generate_ray_cache() {
     let ray_cache = RayCache::compute_new(cache_dimensions, black_hole_radius, distance_bounds);
     let data = serde_json::to_string(&ray_cache).unwrap();
     fs::write(RAY_CACHE_PATH, data).expect("Unable to write file");
+}
+
+fn generate_distance_cache() {
+    let cache_size = (16, 64, 64);
+    let black_hole_radius = 1.5;
+    let distance = (5., 20.0);
+    let max_disc_radius = (1.5, 12.0);
+    let angle_cache =
+        DistanceCache::compute_new(cache_size, distance, black_hole_radius, max_disc_radius);
+    let data = serde_json::to_string(&angle_cache).unwrap();
+    fs::write(
+        DISTANCE_DISTANCE_CACHE.replace(
+            ".txt",
+            format!("{}_{}_{}.txt", cache_size.0, cache_size.1, cache_size.2).as_str(),
+        ),
+        data,
+    )
+    .expect("Unable to write file");
 }
 fn generate_angle_cache() {
     let cache_dimensions = (1, 1024, 128);
@@ -89,6 +109,6 @@ fn reserialize_fixed_distance_distance_cache() {
 fn main() {
     // generate_ray_cache();
     // generate_angle_cache();
-    generate_fixed_distance_distance_cache();
+    generate_distance_cache();
     // reserialize_fixed_distance_distance_cache();
 }

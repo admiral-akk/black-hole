@@ -6,8 +6,10 @@ mod framework;
 
 use framework::program_context::ProgramContext;
 use framework::source_context::SourceContext;
+use framework::texture_utils::generate_3d_texture_from_f32;
 use framework::texture_utils::generate_texture_from_f32;
 use framework::texture_utils::Format;
+use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
@@ -343,12 +345,13 @@ const STARS_URL: &str = "http://localhost:8080/stars.jpg";
 const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
 const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
     "http://localhost:8080/fixed_distance_distance_cache64_64.txt";
+const DISTANCE_CACHE_URL: &str = "http://localhost:8080/distance_cache16_64_64.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
 }
 pub struct ImageCache {
-    textures: [UniformContext; 8],
+    textures: Vec<UniformContext>,
 }
 
 impl ImageCache {
@@ -429,8 +432,54 @@ impl ImageCache {
             ),
             "disc_dim",
         );
+        let distance_cache = fetch_url_binary(DISTANCE_CACHE_URL.to_string()).await?;
+        let distance_cache =
+            serde_json::from_slice::<DistanceCache>(&distance_cache.to_vec()).unwrap();
+
+        let mut distance_cache_vec = Vec::new();
+        let mut z_bounds_vec = Vec::new();
+
+        let min_angle = UniformContext::f32(
+            distance_cache.distance_angle_to_z_to_distance[0].min_angle as f32,
+            "min_angle",
+        );
+        for fixed_distance in distance_cache.distance_angle_to_z_to_distance {
+            for fixed_angle in fixed_distance.angle_to_z_to_distance {
+                let z_bounds = fixed_angle.z_bounds;
+                z_bounds_vec.push(z_bounds.0 as f32);
+                z_bounds_vec.push(z_bounds.1 as f32);
+                for fixed_z in fixed_angle.z_to_distance {
+                    distance_cache_vec.push(fixed_z as f32);
+                }
+            }
+        }
+
+        let (width, height, depth) = distance_cache.cache_size;
+        let distance_cache_tex = generate_3d_texture_from_f32(
+            &gl.gl,
+            &distance_cache_vec,
+            width as i32,
+            height as i32,
+            Format::R,
+        );
+        let distance_cache_tex = UniformContext::texture_3d(
+            distance_cache_tex,
+            "distance_cache_tex",
+            width as i32,
+            height as i32,
+            depth as i32,
+        );
+        let distance_cache_z_bounds =
+            generate_texture_from_f32(&gl.gl, &z_bounds_vec, height as i32, Format::RG);
+        let distance_cache_z_bounds = UniformContext::new_from_allocated_val(
+            distance_cache_z_bounds,
+            "distance_cache_z_bounds",
+            height as i32,
+            depth as i32,
+        );
+
         Ok(ImageCache {
-            textures: [
+            textures: Vec::from([
                 galaxy_tex,
                 stars_tex,
                 constellations_tex,
@@ -439,7 +488,10 @@ impl ImageCache {
                 angle_cache_tex,
                 angle_min_z_tex,
                 disc_dim,
-            ],
+                distance_cache_z_bounds,
+                distance_cache_tex,
+                min_angle,
+            ]),
         })
     }
 }
