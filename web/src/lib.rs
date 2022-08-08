@@ -443,6 +443,13 @@ impl ImageCache {
             distance_cache.distance_angle_to_z_to_distance[0].min_angle as f32,
             "min_angle",
         );
+        let distance_bounds = UniformContext::vec2(
+            Vec2::new(
+                distance_cache.distance_bounds.0 as f32,
+                distance_cache.distance_bounds.1 as f32,
+            ),
+            "distance_bounds",
+        );
         for fixed_distance in distance_cache.distance_angle_to_z_to_distance {
             for fixed_angle in fixed_distance.angle_to_z_to_distance {
                 let z_bounds = fixed_angle.z_bounds;
@@ -491,6 +498,7 @@ impl ImageCache {
                 distance_cache_z_bounds,
                 distance_cache_tex,
                 min_angle,
+                distance_bounds,
             ]),
         })
     }

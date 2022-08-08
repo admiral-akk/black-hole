@@ -18,7 +18,7 @@ uniform sampler2D angle_z_max_cache;
 uniform ivec2 angle_z_max_cache_dim;
 uniform sampler3D distance_cache_tex;
 uniform ivec3 distance_cache_tex_dim;
-uniform sampler3D distance_cache_z_bounds;
+uniform sampler2D distance_cache_z_bounds;
 uniform ivec2 distance_cache_z_bounds_dim;
 out vec4 outColor;
 
@@ -32,6 +32,7 @@ uniform vec3 normalized_up;
 uniform vec3 normalized_pos;
 uniform mat3x3 observer_mat;
 uniform float distance;
+uniform vec2 distance_bounds;
 uniform float time_s;
 
 #define PI_2 1.5707963269
@@ -179,6 +180,11 @@ vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
     }
 }
 
+float to_z_index(float camera_dist_01, float angle_01, float z) {
+    vec2 z_bounds = texture(distance_cache_z_bounds, vec2(angle_01,camera_dist_01)).xy;
+    return (z - z_bounds.x)/(z_bounds.y-z_bounds.x);
+}
+
 
 vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     float is_top=1.;
@@ -187,10 +193,11 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     }
     vec3 close_color=vec3(is_top,1.-is_top,0.);
     vec3 far_color=vec3(1.-is_top,is_top,0.);
+    float camera_dist_01 = (distance - distance_bounds.x) / (distance_bounds.y - distance_bounds.x);
     vec2 angle_01=get_disc_angle(true_start_dir,coord);
     
     float z=start_dir.z;
-    float z_index=to_angle_index(angle_01.x,z);
+    float z_index=to_z_index(camera_dist_01,angle_01.x,z);
     vec4 total_disc_color = vec4(0.);
     if(z_index>=0.&&z_index<=1.){
         // return vec4(angle/(2.*PI),1.,0.,0.);
@@ -201,13 +208,13 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
         }
     }
     vec2 other_angle_01=angle_01+.5;
-    z_index=to_angle_index(other_angle_01.x,z);
+    z_index=to_z_index(camera_dist_01,other_angle_01.x,z);
     if(z_index>=0.&&z_index<=1.){
         float dist=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             float alpha = 1.-total_disc_color.w;
-            total_disc_color += alpha* disc_color(dist_01,other_angle_01.y);
+            total_disc_color += alpha * disc_color(dist_01,other_angle_01.y);
         }
     }
     return total_disc_color;
