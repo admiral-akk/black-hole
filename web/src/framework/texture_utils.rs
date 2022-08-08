@@ -158,6 +158,7 @@ pub fn generate_3d_texture_from_f32(
     arr: &[f32],
     width: i32,
     height: i32,
+    depth: i32,
     format: Format,
 ) -> WebGlTexture {
     let internal_format = match format {
@@ -188,12 +189,13 @@ pub fn generate_3d_texture_from_f32(
             &positions_array_buf_view,
             WebGl2RenderingContext::STATIC_DRAW,
         );
-        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_array_buffer_view(
+        gl.tex_image_3d_with_opt_array_buffer_view(
             WebGl2RenderingContext::TEXTURE_3D,
             0,
             internal_format as i32,
-            width,
+            depth,
             height,
+            width,
             0,
             format.external_format(),
             WebGl2RenderingContext::FLOAT,

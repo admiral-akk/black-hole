@@ -409,22 +409,6 @@ impl ImageCache {
 
         let angle_height = (min_z.len() / 2) as i32;
         let angle_width = v.len() as i32 / angle_height;
-
-        let angle_cache_tex = generate_texture_from_f32(&gl.gl, &v, angle_width, Format::R);
-        let angle_cache_tex = UniformContext::new_from_allocated_val(
-            angle_cache_tex,
-            "angle_cache",
-            angle_width as i32,
-            angle_height as i32,
-        );
-        let angle_min_z_tex = generate_texture_from_f32(&gl.gl, &min_z, angle_height, Format::RG);
-
-        let angle_min_z_tex = UniformContext::new_from_allocated_val(
-            angle_min_z_tex,
-            "angle_z_max_cache",
-            angle_height as i32,
-            1 as i32,
-        );
         let disc_dim = UniformContext::vec2(
             Vec2::new(
                 angle_cache.disc_bounds.0 as f32,
@@ -467,6 +451,7 @@ impl ImageCache {
             &distance_cache_vec,
             width as i32,
             height as i32,
+            depth as i32,
             Format::R,
         );
         let distance_cache_tex = UniformContext::texture_3d(
@@ -492,8 +477,6 @@ impl ImageCache {
                 constellations_tex,
                 ray_cache_tex,
                 z_max_cache_tex,
-                angle_cache_tex,
-                angle_min_z_tex,
                 disc_dim,
                 distance_cache_z_bounds,
                 distance_cache_tex,

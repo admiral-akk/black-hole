@@ -2,7 +2,7 @@
 #define SPEED_UP 1.*.1
 #define DIST_POINTS 14.
 #define REVOLUTION_COUNT 1.
-#define ARMS_COUNT 22.
+#define ARMS_COUNT 12.
 
 #define THETA_POINTS 35.*(1.+SPEED_UP)
 float random(in vec2 _st){
@@ -27,39 +27,66 @@ float noise(in vec2 _st){
     (c-a)*u.y*(1.-u.x)+
     (d-b)*u.x*u.y;
 }
-#define OCTAVES 10
-#define AMP_DROP 1.*.5
+#define OCTAVES 20
 
 float fbm(in vec2 st){
     // Initial values
     float value=0.;
-    float amplitude=1.-AMP_DROP;
+    float amplitude=.5;
     float frequency=0.;
     //
     // Loop of octaves
     for(int i=0;i<OCTAVES;i++){
         value+=amplitude*noise(st);
         st*=2.;
-        amplitude*=AMP_DROP;
+        amplitude*=.5;
     }
     return value;
 }
 
-#define ARM_DIST_SCALE 1.5
+// https://stackoverflow.com/questions/141855/programmatically-lighten-a-color
+vec3 scale_color(vec3 color,float scale){
+    vec3 color_n=scale*color;
+    float m=max(max(color_n.x,color_n.y),color_n.z);
+    
+    if(m<=1.){
+        return color_n;
+    }
+    float total=color_n.x+color_n.y+color_n.z;
+    if(total>=3.){
+        return vec3(1.);
+    }
+    
+    float x=(3.*1.-total)/(3.*m-total);
+    float gray=1.-x*m;
+    return vec3(gray+x*color_n.x,gray+x*color_n.y,gray+x*color_n.z);
+}
+#define ARM_DIST_SCALE 2.5
+#define INNER_SPEED_SCALE.03
 #define ARM_DIST_NORMALIZATION pow(TAU,ARM_DIST_SCALE)
+#define CLOUD_DENSITY.1
 
 vec4 disc_color(float dist_01,float theta_01){
-    
-    float arm=mod(ARMS_COUNT*(theta_01+mod((dist_01+.01/(.99-dist_01)),2./ARM_DIST_SCALE)*REVOLUTION_COUNT),ARMS_COUNT);
+    float dist_rescaled=((dist_01+INNER_SPEED_SCALE/(.99-dist_01))-INNER_SPEED_SCALE/.99)/(1.98-INNER_SPEED_SCALE/.99);
+    float arm=mod(ARMS_COUNT*(theta_01+dist_rescaled*REVOLUTION_COUNT),ARMS_COUNT);
     float theta_start=arm/ARMS_COUNT;
     float theta_offset=mod(TAU*(1.+theta_01-theta_start),TAU);
-    float arm_dist=pow(theta_offset,ARM_DIST_SCALE)/ARM_DIST_NORMALIZATION+3.*time_s/ARM_DIST_NORMALIZATION;
+    float arm_dist=pow(theta_offset,ARM_DIST_SCALE)/ARM_DIST_NORMALIZATION;
     vec2 show=vec2(1.,1.)*vec2(.9,dist_01/1.5);
     
-    float noi=clamp(2.*(fbm(vec2(arm,arm_dist*ARM_DIST_NORMALIZATION))-.5),0.,1.);
-    float alpha=smoothstep(0.,.35,dist_01)-smoothstep(.95,.99,dist_01)-noi;
+    float density=clamp(1.-dist_rescaled/1.1,0.,1.);
     
-    return vec4(show.x,show.y,0.,alpha);
+    float noi=smoothstep(0.,.25,dist_01)*clamp((1./density)*(fbm(vec2(arm,arm_dist*ARM_DIST_NORMALIZATION*CLOUD_DENSITY+time_s*CLOUD_DENSITY*20.))-(1.-density)),0.,1.);
+    
+    vec3 hard_red=vec3(.9,0.,0.)/2.;
+    vec3 orange=vec3(1.,.5176,0.)/2.;
+    vec3 white=vec3(1.);
+    float brightness=2.*clamp(1.-density,0.,1.);
+    
+    float alpha=smoothstep(.3,.55,dist_01)-smoothstep(.95,.99,dist_01)-noi;
+    vec3 color=smoothstep(.05,.1,brightness)*hard_red+smoothstep(.1,.5,brightness)*(orange-hard_red)+smoothstep(.95,1.,brightness)*(white-orange);
+    
+    return vec4(scale_color(vec3(show,0.),3.*(1.-density)),clamp(alpha,0.,1.));
 }
 
 //
@@ -77,11 +104,6 @@ vec3 get_true_start_dir(vec2 coord){
     float view_width=2.*tan(PI*vertical_fov_degrees/360.);
     
     return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
-}
-
-float to_angle_index(float angle,float z){
-    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle,.5)).xy;
-    return(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
 }
 
 vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
@@ -125,7 +147,7 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     float z_index=to_z_index(camera_dist_01,angle_01.x,z);
     vec4 total_disc_color=vec4(0.);
     if(z_index>=0.&&z_index<=1.){
-        float dist=texture(angle_cache,vec2(z_index,angle_01.x)).x;
+        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             total_disc_color=disc_color(dist_01,angle_01.y);
@@ -134,7 +156,7 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     vec2 other_angle_01=angle_01+.5;
     z_index=to_z_index(camera_dist_01,other_angle_01.x,z);
     if(z_index>=0.&&z_index<=1.){
-        float dist=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
+        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             float alpha=1.-total_disc_color.w;
