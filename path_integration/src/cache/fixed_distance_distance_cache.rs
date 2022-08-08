@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDistanceCache;
 
-const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
+const MIN_ANGLE: f64 = TAU * (0.5 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]

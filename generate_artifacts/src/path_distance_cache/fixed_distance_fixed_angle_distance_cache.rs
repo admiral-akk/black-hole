@@ -6,7 +6,7 @@ use crate::path_integration2::{
     path::cast_ray_steps_response, path::find_optimal_z, response::Response,
 };
 
-pub const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
+pub const MIN_ANGLE: f64 = TAU * (0.5 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {

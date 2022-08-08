@@ -67,7 +67,6 @@ vec3 star_sample(vec3 final_dir){
     return texture(stars,vec2(phi/(2.*PI),theta/PI)).xyz;
 }
 vec3 constellation_sample(vec3 final_dir){
-    return vec3(0.,0.,0.);
     float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
     float phi=4.*PI+atan(final_dir.z,final_dir.x);
     
@@ -138,87 +137,6 @@ vec3 get_background_color(vec3 start_dir){
 
 // this is a temporary marker to get the code to appear here.
 // Disc code here!
-
-//
-/* Disc distance/angle calculations */
-//
-
-vec3 get_true_start_dir(vec2 coord){
-    // todo(CPU pre-compute)
-    vec3 forward=normalized_dir;
-    // todo(CPU pre-compute)
-    vec3 up=normalized_up;
-    // todo(CPU pre-compute)
-    vec3 right=cross(forward,up);
-    // todo(CPU pre-compute)
-    float view_width=2.*tan(PI*vertical_fov_degrees/360.);
-    
-    return normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
-}
-
-float to_angle_index(float angle,float z){
-    vec2 z_bounds=texture(angle_z_max_cache,vec2(angle,.5)).xy;
-    return (z-z_bounds.x)/(z_bounds.y-z_bounds.x);
-}
-
-vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
-    vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
-    vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
-    float dist=dot(intersection,-normalized_pos);
-    
-    // there are two angles that matter;
-    // which to use depends on whether the ray is going "under" or "over"
-    float angle_01=acos(dist)/TAU;
-    float alt_angle_01=.5-angle_01;
-    bool above=normalized_pos.y>0.;
-    bool top_coord=coord.y>.5;
-    float theta_01=atan(intersection.z,intersection.x)/TAU+.5;
-    if(above==top_coord){
-        return vec2(max(angle_01,alt_angle_01),theta_01);
-    }else{
-        return vec2(min(angle_01,alt_angle_01),theta_01);
-    }
-}
-
-float to_z_index(float camera_dist_01, float angle_01, float z) {
-    vec2 z_bounds = texture(distance_cache_z_bounds, vec2(angle_01,camera_dist_01)).xy;
-    return (z - z_bounds.x)/(z_bounds.y-z_bounds.x);
-}
-
-
-vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
-    float is_top=1.;
-    if(normalized_pos.y<0.){
-        is_top=0.;
-    }
-    vec3 close_color=vec3(is_top,1.-is_top,0.);
-    vec3 far_color=vec3(1.-is_top,is_top,0.);
-    float camera_dist_01 = (distance - distance_bounds.x) / (distance_bounds.y - distance_bounds.x);
-    vec2 angle_01=get_disc_angle(true_start_dir,coord);
-    
-    float z=start_dir.z;
-    float z_index=to_z_index(camera_dist_01,angle_01.x,z);
-    vec4 total_disc_color = vec4(0.);
-    if(z_index>=0.&&z_index<=1.){
-        // return vec4(angle/(2.*PI),1.,0.,0.);
-        float dist=texture(angle_cache,vec2(z_index,angle_01.x)).x;
-        if(dist>disc_dim.x&&dist<disc_dim.y){
-            float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
-            total_disc_color= disc_color(dist_01,angle_01.y);
-        }
-    }
-    vec2 other_angle_01=angle_01+.5;
-    z_index=to_z_index(camera_dist_01,other_angle_01.x,z);
-    if(z_index>=0.&&z_index<=1.){
-        float dist=texture(angle_cache,vec2(z_index,other_angle_01.x)).x;
-        if(dist>disc_dim.x&&dist<disc_dim.y){
-            float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
-            float alpha = 1.-total_disc_color.w;
-            total_disc_color += alpha * disc_color(dist_01,other_angle_01.y);
-        }
-    }
-    return total_disc_color;
-}
 
 //
 /* Main methods */

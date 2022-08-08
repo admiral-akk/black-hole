@@ -26,7 +26,7 @@ fn generate_ray_cache() {
 }
 
 fn generate_distance_cache() {
-    let cache_size = (16, 64, 64);
+    let cache_size = (16, 256, 64);
     let black_hole_radius = 1.5;
     let distance = (5., 20.0);
     let max_disc_radius = (1.5, 12.0);
