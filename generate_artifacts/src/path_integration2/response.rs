@@ -7,6 +7,10 @@ pub struct Response {
     pub final_dir: Option<DVec3>,
 }
 
+pub trait ToAngle<T> {
+    fn get_angle(&self) -> T;
+}
+
 impl Response {
     pub fn new(path: Vec<DVec3>, final_dir: Option<DVec3>) -> Self {
         Response { path, final_dir }
@@ -31,19 +35,22 @@ impl Response {
 pub struct AnglePath {
     angle_dist: Vec<AngleDist>,
 }
-fn get_angle(pos: &DVec3) -> f64 {
-    let mut angle = f64::atan2(pos.x, -pos.z);
-    if angle < 0.0 {
-        angle += std::f64::consts::TAU;
+
+impl ToAngle<f64> for DVec3 {
+    fn get_angle(&self) -> f64 {
+        let mut angle = f64::atan2(self.x, -self.z);
+        if angle < 0.0 {
+            angle += std::f64::consts::TAU;
+        }
+        angle
     }
-    angle
 }
 impl AnglePath {
     pub fn new(path: &Vec<DVec3>) -> Self {
         let mut angle_dist: Vec<AngleDist> = path
             .iter()
             .map(|pos| AngleDist {
-                angle: get_angle(pos),
+                angle: pos.get_angle(),
                 distance: pos.length(),
             })
             .collect();

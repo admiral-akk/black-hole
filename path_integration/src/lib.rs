@@ -35,6 +35,18 @@ pub fn cast_ray_steps(
     (steps, Some(particle.v))
 }
 
+pub fn find_closest_z(camera_distance: f64, black_hole_radius: f64, epsilon: f64) -> f64 {
+    let bound_predicate = |r: Response| r.hits_black_hole();
+    find_optimal_z(
+        camera_distance as f32,
+        black_hole_radius as f32,
+        epsilon,
+        (-1., 1.),
+        &bound_predicate,
+    )
+    .0
+}
+
 fn find_z_bounds_for_angle(
     camera_distance: f64,
     black_hole_radius: f64,

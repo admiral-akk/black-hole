@@ -24,7 +24,7 @@ fn step_size(particle: &Particle, field: &Field) -> f64 {
             false => (0.1 * r + MIN_STEP),
         },
         false => MIN_STEP,
-    } / v;
+    } / (v * v);
     h
 }
 

@@ -9,6 +9,7 @@ use framework::source_context::SourceContext;
 use framework::texture_utils::generate_3d_texture_from_f32;
 use framework::texture_utils::generate_texture_from_f32;
 use framework::texture_utils::Format;
+use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 use glam::IVec2;
 use glam::Mat3;
@@ -346,6 +347,7 @@ const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
 const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
     "http://localhost:8080/fixed_distance_distance_cache64_64.txt";
 const DISTANCE_CACHE_URL: &str = "http://localhost:8080/distance_cache16_256_64.txt";
+const DIRECTION_CACHE_URL: &str = "http://localhost:8080/direction_cache.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -469,6 +471,45 @@ impl ImageCache {
             height as i32,
             depth as i32,
         );
+        let direction_cache = fetch_url_binary(DIRECTION_CACHE_URL.to_string()).await?;
+        let direction_cache =
+            serde_json::from_slice::<DirectionCache>(&direction_cache.to_vec()).unwrap();
+        let mut direction_vec = Vec::new();
+        let mut direction_z_max_vec = Vec::new();
+
+        let direction_height = direction_cache.distance_angle_to_z_to_distance.len();
+        let direction_width = direction_cache.distance_angle_to_z_to_distance[0]
+            .z_to_final_dir
+            .len();
+        for y in 0..direction_height {
+            let cache = &direction_cache.distance_angle_to_z_to_distance[y];
+            direction_z_max_vec.push(cache.max_z as f32);
+            for x in 0..direction_width {
+                let final_dir = cache.z_to_final_dir[x].1;
+                direction_vec.push(final_dir.0 as f32);
+                direction_vec.push(final_dir.1 as f32);
+            }
+        }
+        let direction_tex =
+            generate_texture_from_f32(&gl.gl, &direction_vec, direction_width as i32, Format::RG);
+        let direction_tex = UniformContext::new_from_allocated_val(
+            direction_tex,
+            "direction_cache",
+            ray_width as i32,
+            ray_height as i32,
+        );
+        let direction_z_max_tex = generate_texture_from_f32(
+            &gl.gl,
+            &direction_z_max_vec,
+            direction_height as i32,
+            Format::R,
+        );
+        let direction_z_max_tex = UniformContext::new_from_allocated_val(
+            direction_z_max_tex,
+            "direction_z_max_cache",
+            ray_height as i32,
+            1 as i32,
+        );
 
         Ok(ImageCache {
             textures: Vec::from([
@@ -482,6 +523,8 @@ impl ImageCache {
                 distance_cache_tex,
                 min_angle,
                 distance_bounds,
+                direction_tex,
+                direction_z_max_tex,
             ]),
         })
     }

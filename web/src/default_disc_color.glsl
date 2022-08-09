@@ -109,9 +109,6 @@ vec3 get_true_start_dir(vec2 coord){
 vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
     vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
     vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
-    if(abs(travel_normal.y)>.999999){
-        intersection=normalized_pos;
-    }
     float dist=dot(intersection,-normalized_pos);
     
     // there are two angles that matter;
@@ -129,7 +126,8 @@ vec2 get_disc_angle(vec3 true_start_dir,vec2 coord){
 }
 
 float to_z_index(float camera_dist_01,float angle_01,float z){
-    vec2 z_bounds=texture(distance_cache_z_bounds,vec2(angle_01,camera_dist_01)).xy;
+    vec2 offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
+    vec2 z_bounds=texture(distance_cache_z_bounds,vec2(angle_01,camera_dist_01)+offset).xy;
     return(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
 }
 
@@ -144,10 +142,11 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     vec2 angle_01=get_disc_angle(true_start_dir,coord);
     
     float z=start_dir.z;
+    vec3 dist_offset=.5/vec3(float(distance_cache_tex_dim.x),float(distance_cache_tex_dim.y),float(distance_cache_tex_dim.z));
     float z_index=to_z_index(camera_dist_01,angle_01.x,z);
     vec4 total_disc_color=vec4(0.);
     if(z_index>=0.&&z_index<=1.){
-        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)).x;
+        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)+dist_offset).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             total_disc_color=disc_color(dist_01,angle_01.y);
@@ -156,7 +155,7 @@ vec4 get_disc_color(vec3 start_dir,vec3 true_start_dir,vec2 coord){
     vec2 other_angle_01=angle_01+.5;
     z_index=to_z_index(camera_dist_01,other_angle_01.x,z);
     if(z_index>=0.&&z_index<=1.){
-        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)).x;
+        float dist=texture(distance_cache_tex,vec3(z_index,other_angle_01.x,camera_dist_01)+dist_offset).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             float alpha=1.-total_disc_color.w;

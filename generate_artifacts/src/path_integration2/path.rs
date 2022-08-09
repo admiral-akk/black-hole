@@ -61,7 +61,7 @@ pub fn cast_ray_steps_response(z: f64, camera_distance: f64, black_hole_radius: 
         return Response::new(steps, None);
     }
     steps.push(particle.p);
-    Response::new(steps, Some(particle.v))
+    Response::new(steps, Some(particle.v.normalize()))
 }
 
 pub fn find_optimal_z(

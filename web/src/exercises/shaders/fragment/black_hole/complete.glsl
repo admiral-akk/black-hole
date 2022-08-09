@@ -16,6 +16,10 @@ uniform sampler3D distance_cache_tex;
 uniform ivec3 distance_cache_tex_dim;
 uniform sampler2D distance_cache_z_bounds;
 uniform ivec2 distance_cache_z_bounds_dim;
+uniform sampler2D direction_cache;
+uniform ivec2 direction_cache_dim;
+uniform sampler2D direction_z_max_cache;
+uniform ivec2 direction_z_max_cache_dim;
 out vec4 outColor;
 
 uniform float min_angle;
@@ -60,7 +64,7 @@ vec3 star_sample(vec3 final_dir){
     
     phi=mod(phi,2.*PI);
     theta=mod(theta,PI);
-    return texture(stars,vec2(phi/(2.*PI),theta/PI)).xyz;
+    return texture(stars,vec2(phi/(2.*PI),theta/PI)+0.5/vec2(stars_dim)).xyz;
 }
 vec3 constellation_sample(vec3 final_dir){
     float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
@@ -70,7 +74,7 @@ vec3 constellation_sample(vec3 final_dir){
     
     phi=mod(phi,2.*PI);
     theta=mod(theta,PI);
-    return texture(constellations,vec2(phi/(2.*PI),theta/PI)).xyz;
+    return texture(constellations,vec2(phi/(2.*PI),theta/PI)+0.5/vec2(constellations_dim)).xyz;
 }
 vec3 galaxy_sample(vec3 final_dir){
     float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
@@ -80,22 +84,27 @@ vec3 galaxy_sample(vec3 final_dir){
     
     phi=mod(phi,2.*PI);
     theta=mod(theta,PI);
-    return texture(galaxy,vec2(phi/(2.*PI),theta/PI)).xyz;
+    return texture(galaxy,vec2(phi/(2.*PI),theta/PI)+0.5/vec2(galaxy_dim)).xyz;
 }
 bool black_hole_hit(vec3 start_dir){
-    float z=texture(z_max_cache,vec2((distance-5.)/15.,.5)).x;
+    float z=texture(z_max_cache,vec2((distance-5.)/15.,.0) + 0.5/vec2(z_max_cache_dim)).x;
     return start_dir.z>=z;
 }
 
 float get_cache_index(vec3 start_dir){
     // todo(CPU pre-compute)
-    float z=texture(z_max_cache,vec2((distance-5.)/15.,.5)).x;
-    float val=(start_dir.z+1.)/(z+1.);
-    return val*val;
+    float max_z=texture(direction_z_max_cache,vec2((distance-5.)/15.,.0)+ 0.5/vec2(z_max_cache_dim)).x;
+    float val_1=(start_dir.z+1.)/(max_z+1.);
+    float i_0 = val_1;
+    for (int i =0; i <5; i++) {
+        i_0 = i_0 * i_0;
+    }
+    float i_1 = val_1 / 20.;
+    return clamp(max(i_0,i_1),0.,1.);
 }
 vec3 get_cached_dir(vec3 start_dir){
     float index=get_cache_index(start_dir);
-    return texture(cache,vec2(index-.5/float(cache_dim.x),(distance-5.)/15.)).xzy;
+    return texture(direction_cache,vec2(index,(distance-5.)/15.)+.5/vec2(cache_dim)).xzy;
 }
 vec3 get_final_dir(vec3 start_dir,vec3 cached_dir){
     float angle=PI/2.;

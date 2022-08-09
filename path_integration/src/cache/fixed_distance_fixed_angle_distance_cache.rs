@@ -4,7 +4,7 @@ use crate::{cast_ray_steps_response, find_z_bounds_for_angle};
 
 use serde::{Deserialize, Serialize};
 
-const MIN_ANGLE: f64 = TAU * (0.5 / 360.);
+const MIN_ANGLE: f64 = TAU * (0.05 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {

@@ -6,7 +6,7 @@ use crate::path_integration2::{
     path::cast_ray_steps_response, path::find_optimal_z, response::Response,
 };
 
-pub const MIN_ANGLE: f64 = TAU * (0.5 / 360.);
+pub const MIN_ANGLE: f64 = TAU * (0.001 / 360.);
 const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {
@@ -18,12 +18,8 @@ pub struct FixedDistanceFixedAngleDistanceCache {
     pub z_to_distance: Vec<f64>,
 }
 
-const LINEAR_INDEX_WEIGHT: f64 = 0.5;
-
 fn float_01_to_index_01(float_01: f64) -> f64 {
     return float_01.clamp(0., 1.);
-    (1. - float_01) * (1. - float_01)
-    // float_01 //float_01.sqrt()
 }
 
 fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
@@ -35,7 +31,6 @@ fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
 fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     let float_01 = (index as f64) / (vec_len - 1) as f64;
     return float_01.clamp(0., 1.);
-    1. - float_01.sqrt() // float_01 * float_01
 }
 
 impl FixedDistanceFixedAngleDistanceCache {
@@ -252,8 +247,8 @@ mod tests {
 
     #[test]
     fn fixed_angle_test_error() {
-        let cache_size = 1 << 10;
-        let distance = 17.0;
+        let cache_size = 1 << 9;
+        let distance = 5.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);
         let mut lines = Vec::new();
