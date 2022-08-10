@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn fixed_angle_test_error() {
         let cache_size = 1 << 9;
-        let distance = 5.0;
+        let distance = 2.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);
         let mut lines = Vec::new();

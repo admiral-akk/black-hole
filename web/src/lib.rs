@@ -24,6 +24,7 @@ use path_integration::cache::ray_cache::RayCache as PathRayCache;
 
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
+use web_sys::TouchEvent;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -110,7 +111,7 @@ pub struct BlackHoleParams {
 impl Default for BlackHoleParams {
     fn default() -> Self {
         let distance = 17.0;
-        let vertical_fov_degrees = 50.0;
+        let vertical_fov_degrees = 90.0;
         let black_hole_radius = 1.5;
         let cache_width: i32 = 1024;
         let pos = distance * (Vec3::Z + 0.5 * Vec3::X);
@@ -181,11 +182,7 @@ impl BlackHoleParams {
         v
     }
     pub fn update(&mut self, render_params: &RenderParams) {
-        self.distance = f32::clamp(
-            (17.0 + render_params.mouse_scroll / 100.0) as f32,
-            5.0,
-            20.0,
-        );
+        self.distance = f32::clamp(render_params.mouse_scroll as f32, 5.0, 20.0);
 
         let mut pos = self.normalized_pos;
         if render_params.mouse_pos.is_some() {
@@ -220,8 +217,8 @@ pub struct RenderState {
 }
 
 fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderParams) {
-    let distance = f32::clamp((17.0 + new_params.mouse_scroll / 100.0) as f32, 5.0, 20.0);
-    let vertical_fov_degrees = 50.0;
+    let distance = f32::clamp(new_params.mouse_scroll as f32, 5.0, 20.0);
+    let vertical_fov_degrees = 90.0;
     let black_hole_radius = 1.5;
     let cache_width: i32 = 1024;
 
@@ -340,14 +337,13 @@ pub async fn fetch_rgb_texture(gl: &RenderContext, url: &str, name: &str) -> Uni
     )
 }
 
-const GALAXY_URL: &str = "http://localhost:8080/galaxy.jpg";
-const CONSTELLATIONS_URL: &str = "http://localhost:8080/constellations.jpg";
-const STARS_URL: &str = "http://localhost:8080/stars.jpg";
-const RAY_CACHE_2_URL: &str = "http://localhost:8080/ray_cache.txt";
-const FIXED_DISTANCE_ANGLE_CACHE_URL: &str =
-    "http://localhost:8080/fixed_distance_distance_cache64_64.txt";
-const DISTANCE_CACHE_URL: &str = "http://localhost:8080/distance_cache16_256_64.txt";
-const DIRECTION_CACHE_URL: &str = "http://localhost:8080/direction_cache.txt";
+const GALAXY_URL: &str = "galaxy.jpg";
+const CONSTELLATIONS_URL: &str = "constellations.jpg";
+const STARS_URL: &str = "stars.jpg";
+const RAY_CACHE_2_URL: &str = "ray_cache.txt";
+const FIXED_DISTANCE_ANGLE_CACHE_URL: &str = "fixed_distance_distance_cache64_64.txt";
+const DISTANCE_CACHE_URL: &str = "distance_cache16_256_64.txt";
+const DIRECTION_CACHE_URL: &str = "direction_cache.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -549,6 +545,9 @@ pub async fn start() -> Result<(), JsValue> {
 
     let start_time = Rc::new(RefCell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
+    {
+        params.borrow_mut().mouse_scroll = 17.0;
+    }
     let render_state = Rc::new(RefCell::new(RenderState::new(1024, 1024).await?));
     {
         let params = params.clone();
@@ -571,9 +570,41 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
-            params.borrow_mut().mouse_scroll += _event.delta_y();
+            let mut scroll;
+            {
+                scroll = params.borrow().mouse_scroll.clone();
+            }
+            {
+                params.borrow_mut().mouse_scroll =
+                    (scroll + _event.delta_y() / 150.).clamp(5., 20.);
+            }
+            console_log!("Scroll: {}", params.borrow_mut().mouse_scroll);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("wheel", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
+            for i in 0..event.touches().length() {
+                let touch = event.touches().item(i).unwrap();
+                params.borrow_mut().mouse_pos = Some((touch.client_x(), touch.client_y()));
+            }
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("touchstart", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
+            for i in 0..event.touches().length() {
+                let touch = event.touches().item(i).unwrap();
+                params.borrow_mut().mouse_pos = Some((touch.client_x(), touch.client_y()));
+            }
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("touchmove", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
 

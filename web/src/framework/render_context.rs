@@ -130,10 +130,6 @@ impl RenderContext {
     pub fn run_program(&self, program: &ProgramContext, out_buffer: Option<&WebGlFramebuffer>) {
         let gl = &self.gl;
         gl.use_program(Some(&program.program));
-
-        gl.clear_color(0.0, 0.0, 0.0, 1.0);
-        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-
         if out_buffer.is_some() {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, out_buffer);
         }
@@ -144,5 +140,6 @@ impl RenderContext {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
         }
         gl.use_program(None);
+        gl.flush();
     }
 }

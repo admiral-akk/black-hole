@@ -150,7 +150,7 @@ mod tests {
         let black_hole_radius = 1.5;
 
         let mut errors = Vec::new();
-        for camera_distance in [5., 10., 15., 20.] {
+        for camera_distance in [2., 5., 10., 15., 20.] {
             let cache = FixedDistanceDirectionCache::compute_new(
                 cache_size,
                 camera_distance,
@@ -180,8 +180,8 @@ mod tests {
 
     #[test]
     fn fixed_distance_show_paths_test() {
-        let cache_size = 1 << 11;
-        let camera_distance = 5.0;
+        let cache_size = 1 << 10;
+        let camera_distance = 2.0;
         let black_hole_radius = 1.5;
 
         let cache = FixedDistanceDirectionCache::compute_new(
@@ -215,7 +215,7 @@ mod tests {
     #[test]
     fn fixed_distance_direction_test() {
         let cache_size = 1 << 11;
-        let camera_distance = 5.0;
+        let camera_distance = 3.0;
         let black_hole_radius = 1.5;
         let mut lines = Vec::new();
         let mut samples = Vec::new();
@@ -263,7 +263,7 @@ mod tests {
         plot_trajectories(
             "output/final_direction_cache/fixed_distance_error_rates.png",
             &lines,
-            ((0., 1.), (0., 0.05)),
+            ((0., 1.), (0., 1.0)),
         )
         .unwrap();
     }

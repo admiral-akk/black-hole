@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn all_distance_direction_test() {
         let cache_size = (1 << 6, 1 << 10);
-        let distance = (5.0, 20.);
+        let distance = (2.0, 30.);
         let black_hole_radius = 1.5;
         let cache = DirectionCache::compute_new(cache_size, distance, black_hole_radius);
 
@@ -111,7 +111,7 @@ mod tests {
                     continue;
                 }
 
-                let dist = 15. * d_01 + 5.;
+                let dist = (distance.1 - distance.0) * d_01 + distance.0;
                 let approx_final_dir = cache.get_final_dir(*d_01, z);
                 let response = cast_ray_steps_response(z, dist, cache.black_hole_radius);
 

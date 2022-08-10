@@ -38,7 +38,7 @@ uniform float time_s;
 #define PI_2 1.5707963269
 #define PI 3.1415926538
 #define TAU 6.2831853076
-#define AA_LEVEL 4.
+#define AA_LEVEL 1.
 
 //
 /* Background color calculations */
@@ -96,7 +96,7 @@ float get_cache_index(vec3 start_dir){
     float max_z=texture(direction_z_max_cache,vec2((distance-5.)/15.,.0)+ 0.5/vec2(z_max_cache_dim)).x;
     float val_1=(start_dir.z+1.)/(max_z+1.);
     float i_0 = val_1;
-    for (int i =0; i <5; i++) {
+    for (int i =0; i <4; i++) {
         i_0 = i_0 * i_0;
     }
     float i_1 = val_1 / 20.;
