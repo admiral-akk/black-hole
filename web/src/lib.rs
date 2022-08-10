@@ -27,6 +27,7 @@ use wasm_timer::SystemTime;
 use web_sys::TouchEvent;
 
 use std::cell::RefCell;
+use std::f32::consts::PI;
 use std::rc::Rc;
 
 use cfg_if::cfg_if;
@@ -168,6 +169,10 @@ impl BlackHoleParams {
         v.push(UniformContext::f32(
             self.vertical_fov_degrees,
             "vertical_fov_degrees",
+        ));
+        v.push(UniformContext::f32(
+            2. * f32::tan(PI * self.vertical_fov_degrees / 360.),
+            "vertical_fov_magnitude",
         ));
         v.push(UniformContext::f32(
             self.black_hole_radius,
@@ -543,6 +548,12 @@ pub async fn start() -> Result<(), JsValue> {
         .unwrap()
         .dyn_into::<web_sys::HtmlButtonElement>()?;
 
+    let fps_counter = d
+        .get_element_by_id("fps-counter")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlDivElement>()?;
+
+    let last_200_frame_times = Rc::new(RefCell::new(Vec::from([0.0_f32])));
     let start_time = Rc::new(RefCell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
     {
@@ -611,12 +622,15 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let start_time = start_time.clone();
         let render_state = render_state.clone();
+        let last_200_frame_times = last_200_frame_times.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
             *start_time.borrow_mut() = SystemTime::now();
+            last_200_frame_times.borrow_mut().clear();
             render_state
                 .borrow_mut()
                 .update_disc_shader(&shader_text_box.value());
         }) as Box<dyn FnMut(_)>);
+
         compile_button
             .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -628,11 +642,26 @@ pub async fn start() -> Result<(), JsValue> {
         let render_state = render_state.clone();
         let start_time = start_time.clone();
         let params = params.clone();
+        let last_200_frame_times = last_200_frame_times.clone();
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            params.borrow_mut().seconds_since_start = SystemTime::now()
-                .duration_since(*start_time.borrow())
-                .unwrap()
-                .as_secs_f32();
+            {
+                params.borrow_mut().seconds_since_start = SystemTime::now()
+                    .duration_since(*start_time.borrow())
+                    .unwrap()
+                    .as_secs_f32();
+            }
+            let mut frame_times = last_200_frame_times.borrow_mut();
+            {
+                frame_times.push(params.borrow().seconds_since_start);
+            }
+            if frame_times.len() > 200 {
+                frame_times.remove(0);
+            }
+            fps_counter.set_inner_text(&format!(
+                "FPS: {:.1}",
+                (frame_times.len() as f32)
+                    / (frame_times.last().unwrap() - frame_times.first().unwrap()),
+            ));
             render(&mut render_state.borrow_mut(), &params.borrow()).unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));

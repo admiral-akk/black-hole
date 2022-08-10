@@ -34,6 +34,7 @@ uniform mat3x3 observer_mat;
 uniform float distance;
 uniform vec2 distance_bounds;
 uniform float time_s;
+uniform float vertical_fov_magnitude;
 
 #define PI_2 1.5707963269
 #define PI 3.1415926538
