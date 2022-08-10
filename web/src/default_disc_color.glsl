@@ -6,7 +6,7 @@
 
 #define THETA_POINTS 35.*(1.+SPEED_UP)
 
-#define AA_LEVEL 32.
+#define AA_LEVEL 2.
 
 //
 /* Background color calculations */
