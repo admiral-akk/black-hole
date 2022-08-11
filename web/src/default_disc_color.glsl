@@ -167,34 +167,34 @@ vec4 get_disc_color(vec2 coord){
         angle_01=vec2(min(temp_angle_01,alt_angle_01),theta_01);
     }
     
-    float alpha_mod=smoothstep(.001,.003,angle_01.x);
+    float alpha_mod=smoothstep(.03*(1.-camera_dist_01),.06*(1.-camera_dist_01),angle_01.x);
     
     vec3 dist_offset=.5/vec3(float(distance_cache_tex_dim.x),float(distance_cache_tex_dim.y),float(distance_cache_tex_dim.z));
     
-    vec2 z_bounds=texture(distance_cache_z_bounds,vec2(angle_01.x,camera_dist_01)+offset).xy;
-    float z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
-    
     vec4 total_disc_color=vec4(0.);
+    vec2 other_angle_01=angle_01+.5;
+    offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
+    vec2 z_bounds=texture(distance_cache_z_bounds,vec2(other_angle_01.x,camera_dist_01)+offset).xy;
+    float z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
     if(z_index>=0.&&z_index<=1.){
-        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)+dist_offset).x;
+        float dist=texture(distance_cache_tex,vec3(z_index,other_angle_01.x,camera_dist_01)+dist_offset).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             total_disc_color=disc_color(dist_01,angle_01.y);
         }
     }
-    vec2 other_angle_01=angle_01+.5;
-    offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
-    z_bounds=texture(distance_cache_z_bounds,vec2(other_angle_01.x,camera_dist_01)+offset).xy;
+    z_bounds=texture(distance_cache_z_bounds,vec2(angle_01.x,camera_dist_01)+offset).xy;
     z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
     if(z_index>=0.&&z_index<=1.){
-        float dist=texture(distance_cache_tex,vec3(z_index,other_angle_01.x,camera_dist_01)+dist_offset).x;
+        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)+dist_offset).x;
         if(dist>disc_dim.x&&dist<disc_dim.y){
             float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
             float alpha=1.-total_disc_color.w;
-            total_disc_color+=alpha*disc_color(dist_01,other_angle_01.y);
+            vec4 d_color=disc_color(dist_01,other_angle_01.y);
+            d_color*=alpha_mod;
+            total_disc_color+=alpha*d_color;
         }
     }
-    total_disc_color.w*=alpha_mod;
     return total_disc_color;
     
 }
