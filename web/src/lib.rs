@@ -194,7 +194,7 @@ impl BlackHoleParams {
         v
     }
     pub fn update(&mut self, render_params: &RenderParams) {
-        self.distance = f32::clamp(render_params.mouse_scroll as f32, 5.0, 20.0);
+        self.distance = f32::clamp(render_params.mouse_scroll as f32, 3.0, 30.0);
 
         let mut pos = self.normalized_pos;
         if render_params.mouse_pos.is_some() {
@@ -229,7 +229,7 @@ pub struct RenderState {
 }
 
 fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderParams) {
-    let distance = f32::clamp(new_params.mouse_scroll as f32, 5.0, 20.0);
+    let distance = f32::clamp(new_params.mouse_scroll as f32, 3.0, 30.0);
     let vertical_fov_degrees = 90.0;
     let black_hole_radius = 1.5;
     let cache_width: i32 = 1024;
@@ -564,7 +564,7 @@ pub async fn start() -> Result<(), JsValue> {
             }
             {
                 params.borrow_mut().mouse_scroll =
-                    (scroll + _event.delta_y() / 150.).clamp(5., 20.);
+                    (scroll + _event.delta_y() / 150.).clamp(3.0, 30.0);
             }
             console_log!("Scroll: {}", params.borrow_mut().mouse_scroll);
         }) as Box<dyn FnMut(_)>);

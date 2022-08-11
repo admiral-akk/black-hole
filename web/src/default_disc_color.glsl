@@ -6,7 +6,7 @@
 
 #define THETA_POINTS 35.*(1.+SPEED_UP)
 
-#define AA_LEVEL 4.
+#define AA_LEVEL 2.
 
 //
 /* Background color calculations */
@@ -167,6 +167,8 @@ vec4 get_disc_color(vec2 coord){
         angle_01=vec2(min(temp_angle_01,alt_angle_01),theta_01);
     }
     
+    float alpha_mod=smoothstep(.001,.003,angle_01.x);
+    
     vec3 dist_offset=.5/vec3(float(distance_cache_tex_dim.x),float(distance_cache_tex_dim.y),float(distance_cache_tex_dim.z));
     
     vec2 z_bounds=texture(distance_cache_z_bounds,vec2(angle_01.x,camera_dist_01)+offset).xy;
@@ -192,6 +194,7 @@ vec4 get_disc_color(vec2 coord){
             total_disc_color+=alpha*disc_color(dist_01,other_angle_01.y);
         }
     }
+    total_disc_color.w*=alpha_mod;
     return total_disc_color;
     
 }
@@ -268,31 +271,46 @@ vec3 get_color(vec2 coord){
         float z=normalize(vec3(view_width*(coord-.5),1.)).z;
         vec2 z_bounds=texture(direction_z_max_cache,vec2((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),.0)+.5/vec2(direction_z_max_cache_dim)).xy;
         
-        vec4 disc_color_f=get_disc_color(coord);
+        vec4 disc_color_f=vec4(0.);
         if(z<z_bounds.x||AA_LEVEL==1.){
+            disc_color_f=get_disc_color(coord);
             color=get_color(coord+.5*delta);
         }else{
             bool hit=false;
             bool miss=false;
             float aa_half_delta=delta.x/(2.*AA_LEVEL);
+            float aa_half_delta2=delta.x*(1.-1./(2.*AA_LEVEL));
             vec2 s=coord+vec2(aa_half_delta);
             z=normalize(vec3(view_width*(s-.5),1.)).z;
             hit=hit||(z>=z_bounds.y);
             miss=miss||(z<z_bounds.y);
-            s=coord+vec2(aa_half_delta,1.-aa_half_delta);
+            s=coord+vec2(aa_half_delta,aa_half_delta2);
             z=normalize(vec3(view_width*(s-.5),1.)).z;
             hit=hit||(z>=z_bounds.y);
             miss=miss||(z<z_bounds.y);
-            s=coord+vec2(1.-aa_half_delta,aa_half_delta);
+            s=coord+vec2(aa_half_delta2,aa_half_delta);
             z=normalize(vec3(view_width*(s-.5),1.)).z;
             hit=hit||(z>=z_bounds.y);
             miss=miss||(z<z_bounds.y);
-            s=coord+vec2(1.-aa_half_delta);
+            s=coord+vec2(aa_half_delta2);
             z=normalize(vec3(view_width*(s-.5),1.)).z;
             hit=hit||(z>=z_bounds.y);
             miss=miss||(z<z_bounds.y);
             if(hit&&(!miss)){
                 color=get_color(coord+.5*delta);
+                disc_color_f=get_disc_color(coord);
+            }else if(hit&&miss){
+                float aa_level2=AA_LEVEL+10.;
+                aa_half_delta=delta.x/(2.*aa_level2);
+                for(float x=0.;x<aa_level2;x=x+1.){
+                    for(float y=0.;y<aa_level2;y=y+1.){
+                        vec2 tar=coord+aa_half_delta*vec2(1.+2.*x,1.+2.*y);
+                        color+=get_color(tar);
+                        disc_color_f+=get_disc_color(tar);
+                    }
+                }
+                color/=aa_level2*aa_level2;
+                disc_color_f/=aa_level2*aa_level2;
             }else{
                 for(float x=0.;x<AA_LEVEL;x=x+1.){
                     for(float y=0.;y<AA_LEVEL;y=y+1.){
@@ -300,6 +318,8 @@ vec3 get_color(vec2 coord){
                     }
                 }
                 color/=AA_LEVEL*AA_LEVEL;
+                disc_color_f=get_disc_color(coord);
+                
             }
             
         }

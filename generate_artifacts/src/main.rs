@@ -120,6 +120,7 @@ fn reserialize_fixed_distance_distance_cache() {
 }
 
 fn regenerate_black_hole_cache() {
+    println!("Attempting to load existing black hole cache.");
     let curr_cache_vec = get_file_as_byte_vec(BLACK_HOLE_CACHE_PATH);
     let mut curr_cache = None;
     if curr_cache_vec.is_ok() {
@@ -137,8 +138,11 @@ fn regenerate_black_hole_cache() {
     let mut distance_cache: DistanceCache;
 
     if curr_cache.is_none() {
+        println!("Black hole cache not found.");
+        println!("Generating direction cache.");
         direction_cache =
             DirectionCache::compute_new(direction_cache_size, distance_bounds, black_hole_radius);
+        println!("Generating distance cache.");
         distance_cache = DistanceCache::compute_new(
             distance_cache_size,
             distance_bounds,
@@ -146,18 +150,21 @@ fn regenerate_black_hole_cache() {
             disc_bounds,
         );
     } else {
+        println!("Black hole cache found.");
         let curr_cache = curr_cache.unwrap();
         let curr_direction_cache = curr_cache.direction_cache;
         if curr_direction_cache.black_hole_radius != black_hole_radius
             || curr_direction_cache.cache_size != direction_cache_size
             || curr_direction_cache.distance_bounds != distance_bounds
         {
+            println!("Generating direction cache.");
             direction_cache = DirectionCache::compute_new(
                 direction_cache_size,
                 distance_bounds,
                 black_hole_radius,
             );
         } else {
+            println!("Using existing direction cache.");
             direction_cache = curr_direction_cache;
         }
 
@@ -166,7 +173,9 @@ fn regenerate_black_hole_cache() {
             || curr_distance_cache.cache_size != distance_cache_size
             || curr_distance_cache.distance_bounds != distance_bounds
             || curr_distance_cache.disc_bounds != disc_bounds
+            || true
         {
+            println!("Generating distance cache.");
             distance_cache = DistanceCache::compute_new(
                 distance_cache_size,
                 distance_bounds,
@@ -174,12 +183,14 @@ fn regenerate_black_hole_cache() {
                 disc_bounds,
             );
         } else {
+            println!("Using existing distance cache.");
             distance_cache = curr_distance_cache;
         }
     }
 
     let new_cache = BlackHoleCache::new(distance_cache, direction_cache);
     let data = serde_json::to_string(&new_cache).unwrap();
+    println!("Writing black hole cache out.");
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
 }
 

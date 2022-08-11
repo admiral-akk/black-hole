@@ -6,7 +6,7 @@ use crate::path_integration2::{
     path::cast_ray_steps_response, path::find_optimal_z, response::Response,
 };
 
-pub const MIN_ANGLE: f64 = TAU * (0.001 / 360.);
+pub const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {
     pub camera_distance: f64,
@@ -236,7 +236,7 @@ mod tests {
     #[test]
     fn fixed_angle_test_error() {
         let cache_size = 1 << 9;
-        let distance = 2.0;
+        let distance = 20.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);
         let mut lines = Vec::new();
