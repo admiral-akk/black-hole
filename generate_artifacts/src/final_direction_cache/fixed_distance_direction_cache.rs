@@ -1,15 +1,14 @@
-use std::{
-    f64::consts::FRAC_PI_2,
-    f64::consts::{PI, TAU},
-};
+use std::f64::consts::TAU;
 
-use glam::{DVec2, DVec3, Vec2};
-use serde::{Deserialize, Serialize};
-const Z_EPSILON: f64 = 0.000000001;
 use crate::path_integration2::{
-    path::cast_ray_steps_response, path::find_optimal_z, response::Response,
+    path::cast_ray_steps_response,
+    path::find_optimal_z,
+    response::{Response, ToAngle},
 };
+use glam::DVec3;
+use serde::{Deserialize, Serialize};
 
+const ANGLE_EPSILON: f64 = 0.001;
 const LINEAR_SCALE: f64 = 20.;
 const MAX_ANGLE: f64 = TAU;
 const POW_F: f64 = 16.0;
@@ -44,19 +43,34 @@ fn z_to_left_index(max_z: f64, z: f64, cache_size: usize) -> (usize, f64) {
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceDirectionCache {
     pub max_z: f64,
+    pub min_z: f64,
     pub camera_distance: f64,
     pub black_hole_radius: f64,
     pub z_to_final_dir: Vec<(f64, (f64, f64))>,
 }
 
-fn find_closest_z(camera_distance: f64, black_hole_radius: f64, epsilon: f64) -> f64 {
+fn find_closest_z(camera_distance: f64, black_hole_radius: f64) -> f64 {
     let too_close =
         |r: Response| r.hits_black_hole() || r.get_angle_dist().get_max_angle() > MAX_ANGLE;
     find_optimal_z(
         camera_distance as f32,
         black_hole_radius as f32,
-        epsilon,
         (-1., 1.),
+        &too_close,
+    )
+    .0
+}
+
+// use this find z values where we don't have to apply anti-aliasing
+fn find_minimum_pertubation_z(camera_distance: f64, black_hole_radius: f64, max_z: f64) -> f64 {
+    let too_close = |r: Response| {
+        let initial_dir = (r.path[1] - r.path[0]).get_angle();
+        r.hits_black_hole() || r.get_angle_dist().get_max_angle() - initial_dir > ANGLE_EPSILON
+    };
+    find_optimal_z(
+        camera_distance as f32,
+        black_hole_radius as f32,
+        (-1., max_z),
         &too_close,
     )
     .0
@@ -64,7 +78,8 @@ fn find_closest_z(camera_distance: f64, black_hole_radius: f64, epsilon: f64) ->
 
 impl FixedDistanceDirectionCache {
     pub fn compute_new(cache_size: usize, camera_distance: f64, black_hole_radius: f64) -> Self {
-        let max_z = find_closest_z(camera_distance, black_hole_radius, Z_EPSILON);
+        let max_z = find_closest_z(camera_distance, black_hole_radius);
+        let min_z = find_minimum_pertubation_z(camera_distance, black_hole_radius, max_z);
         let mut z_to_final_dir = Vec::new();
         for i in 0..cache_size {
             let z = index_to_z(max_z, i, cache_size);
@@ -76,8 +91,10 @@ impl FixedDistanceDirectionCache {
             let final_dir = final_dir.unwrap().normalize();
             z_to_final_dir.push((z, (final_dir.x, final_dir.z)));
         }
+        println!("dist:{}\nMin_z: {}", camera_distance, min_z);
         FixedDistanceDirectionCache {
             max_z,
+            min_z,
             camera_distance,
             black_hole_radius,
             z_to_final_dir,
@@ -99,20 +116,14 @@ impl FixedDistanceDirectionCache {
 #[cfg(test)]
 mod tests {
 
-    use std::{
-        f32::consts::{FRAC_PI_2, PI},
-        f64::consts::TAU,
-    };
-
-    use glam::DVec3;
     use test_utils::plot_trajectories;
 
     use crate::{
         final_direction_cache::fixed_distance_direction_cache::{index_to_z, index_to_z_01},
-        path_integration2::{path::cast_ray_steps_response, response::ToAngle},
+        path_integration2::path::cast_ray_steps_response,
     };
 
-    use super::{z_01_to_left_index, FixedDistanceDirectionCache};
+    use super::FixedDistanceDirectionCache;
 
     #[test]
     fn fixed_distance_show_index_distribution() {
@@ -215,7 +226,6 @@ mod tests {
     #[test]
     fn fixed_distance_direction_test() {
         let cache_size = 1 << 11;
-        let camera_distance = 3.0;
         let black_hole_radius = 1.5;
         let mut lines = Vec::new();
         let mut samples = Vec::new();

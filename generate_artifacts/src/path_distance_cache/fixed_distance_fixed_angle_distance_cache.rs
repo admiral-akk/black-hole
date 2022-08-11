@@ -7,7 +7,6 @@ use crate::path_integration2::{
 };
 
 pub const MIN_ANGLE: f64 = TAU * (0.001 / 360.);
-const Z_EPSILON: f64 = 0.000000001;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {
     pub camera_distance: f64,
@@ -41,13 +40,8 @@ impl FixedDistanceFixedAngleDistanceCache {
         disc_bounds: (f64, f64),
         angle: f64,
     ) -> Self {
-        let z_bounds = find_z_bounds_for_angle(
-            camera_distance,
-            black_hole_radius,
-            Z_EPSILON,
-            disc_bounds,
-            angle,
-        );
+        let z_bounds =
+            find_z_bounds_for_angle(camera_distance, black_hole_radius, disc_bounds, angle);
 
         let mut z_to_distance = Vec::new();
         for i in 0..cache_size {
@@ -110,7 +104,6 @@ impl FixedDistanceFixedAngleDistanceCache {
 fn find_z_bounds_for_angle(
     camera_distance: f64,
     black_hole_radius: f64,
-    epsilon: f64,
     distance_bounds: (f64, f64),
     target_angle: f64,
 ) -> (f64, f64) {
@@ -118,7 +111,6 @@ fn find_z_bounds_for_angle(
     let valid_z = find_optimal_z(
         camera_distance as f32,
         black_hole_radius as f32,
-        epsilon,
         (-1., 1.),
         &bound_predicate,
     );
@@ -130,7 +122,6 @@ fn find_z_bounds_for_angle(
     let lower_1 = find_optimal_z(
         camera_distance as f32,
         black_hole_radius as f32,
-        epsilon,
         (-1., valid_z.0),
         &is_too_close,
     );
@@ -146,7 +137,6 @@ fn find_z_bounds_for_angle(
     let lower_2 = find_optimal_z(
         camera_distance as f32,
         black_hole_radius as f32,
-        epsilon,
         (valid_z.0, 1.0),
         &is_too_close,
     );
@@ -179,7 +169,6 @@ fn find_z_bounds_for_angle(
     let upper_1 = find_optimal_z(
         camera_distance as f32,
         black_hole_radius as f32,
-        epsilon,
         (-1., valid_z.0),
         &is_too_close,
     );
@@ -195,7 +184,6 @@ fn find_z_bounds_for_angle(
     let upper_2 = find_optimal_z(
         camera_distance as f32,
         black_hole_radius as f32,
-        epsilon,
         (valid_z.0, 1.0),
         &is_too_close,
     );

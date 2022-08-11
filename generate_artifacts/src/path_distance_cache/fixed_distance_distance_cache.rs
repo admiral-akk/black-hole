@@ -2,17 +2,44 @@ use std::f64::consts::TAU;
 
 use serde::{Deserialize, Serialize};
 
-use crate::path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE;
+use crate::{
+    path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE,
+    path_integration2::response::Response,
+};
 
 use super::fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDistanceCache;
 
+use crate::path_integration2::path::find_optimal_z;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceDistanceCache {
     pub min_angle: f64,
+    pub min_z: f64,
     pub camera_distance: f64,
     pub black_hole_radius: f64,
     pub disc_bounds: (f64, f64),
     pub angle_to_z_to_distance: Vec<FixedDistanceFixedAngleDistanceCache>,
+}
+// use this find z values where we don't have to apply anti-aliasing
+fn find_grazing_z(camera_distance: f64, black_hole_radius: f64, target_dist: f64) -> f64 {
+    // if we're too close, any direction could hit the disc.
+    if camera_distance < target_dist {
+        return -1.;
+    }
+    let too_close = move |r: Response| {
+        r.hits_black_hole()
+            || r.path
+                .iter()
+                .map(|p| p.length())
+                .fold(f64::INFINITY, f64::min)
+                < target_dist
+    };
+    find_optimal_z(
+        camera_distance as f32,
+        black_hole_radius as f32,
+        (-1., 1.),
+        &too_close,
+    )
+    .0
 }
 
 fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
@@ -47,8 +74,10 @@ impl FixedDistanceDistanceCache {
             );
             angle_to_z_to_distance.push(z_to_distance_cache);
         }
+        let min_z = find_grazing_z(camera_distance, black_hole_radius, disc_bounds.1);
         FixedDistanceDistanceCache {
             min_angle: MIN_ANGLE,
+            min_z,
             camera_distance,
             black_hole_radius,
             disc_bounds,

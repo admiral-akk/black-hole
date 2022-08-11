@@ -72,11 +72,11 @@ fn generate_angle_cache() {
 use std::fs::File;
 use std::io::Read;
 
-fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, &str> {
-    let mut f = File::open(&filename).expect("no file found");
-    let metadata = fs::metadata(&filename).expect("unable to read metadata");
+fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, std::io::Error> {
+    let mut f = File::open(&filename)?;
+    let metadata = fs::metadata(&filename)?;
     let mut buffer = vec![0; metadata.len() as usize];
-    f.read(&mut buffer).expect("buffer overflow");
+    f.read(&mut buffer)?;
 
     Ok(buffer)
 }

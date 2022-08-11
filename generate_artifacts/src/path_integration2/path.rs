@@ -63,16 +63,16 @@ pub fn cast_ray_steps_response(z: f64, camera_distance: f64, black_hole_radius: 
     steps.push(particle.p);
     Response::new(steps, Some(particle.v.normalize()))
 }
+const Z_EPSILON: f64 = 0.000000001;
 
 pub fn find_optimal_z(
     camera_distance: f32,
     black_hole_radius: f32,
-    epsilon: f64,
     z_bounds: (f64, f64),
     is_too_close: &TooClosePredicate,
 ) -> (f64, f64) {
     let mut z_bounds = z_bounds;
-    while z_bounds.1 - z_bounds.0 > epsilon {
+    while z_bounds.1 - z_bounds.0 > Z_EPSILON {
         let z = 0.5 * (z_bounds.0 + z_bounds.1);
         let response = cast_ray_steps_response(z, camera_distance as f64, black_hole_radius as f64);
         if is_too_close(response) {

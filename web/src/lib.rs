@@ -9,7 +9,10 @@ use framework::source_context::SourceContext;
 use framework::texture_utils::generate_3d_texture_from_f32;
 use framework::texture_utils::generate_texture_from_f32;
 use framework::texture_utils::Format;
+use generate_artifacts::black_hole_cache;
+use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
+use generate_artifacts::path_distance_cache::distance_cache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 use glam::IVec2;
 use glam::Mat3;
@@ -183,6 +186,10 @@ impl BlackHoleParams {
         v.push(UniformContext::vec3(self.normalized_dir, "normalized_dir"));
         v.push(UniformContext::vec3(self.normalized_up, "normalized_up"));
         v.push(UniformContext::mat3x3(self.observer_mat, "observer_mat"));
+        v.push(UniformContext::mat3x3(
+            self.observer_mat.inverse(),
+            "inv_observer_mat",
+        ));
         v.push(UniformContext::f32(self.time_s, "time_s"));
         v
     }
@@ -349,6 +356,7 @@ const RAY_CACHE_2_URL: &str = "ray_cache.txt";
 const FIXED_DISTANCE_ANGLE_CACHE_URL: &str = "fixed_distance_distance_cache64_64.txt";
 const DISTANCE_CACHE_URL: &str = "distance_cache16_256_64.txt";
 const DIRECTION_CACHE_URL: &str = "direction_cache.txt";
+const BLACK_HOLE_CACHE_URL: &str = "black_hole_cache.txt";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -362,37 +370,6 @@ impl ImageCache {
         let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
         let stars_tex = fetch_rgb_texture(gl, STARS_URL, "stars").await;
         let constellations_tex = fetch_rgb_texture(gl, CONSTELLATIONS_URL, "constellations").await;
-
-        let ray_cache_2 = fetch_url_binary(RAY_CACHE_2_URL.to_string()).await?;
-        let ray_cache_2 = serde_json::from_slice::<PathRayCache>(&ray_cache_2.to_vec()).unwrap();
-        let (ray_width, ray_height) = (ray_cache_2.caches[0].cache.len(), ray_cache_2.caches.len());
-        let mut ray_vec_2 = Vec::new();
-        let mut z_max_vec = Vec::new();
-        for y in 0..ray_height {
-            let cache = &ray_cache_2.caches[y];
-            z_max_vec.push(cache.max_z);
-            for x in 0..ray_width {
-                let final_dir = cache.cache[x].final_dir;
-                ray_vec_2.push(final_dir[0]);
-                ray_vec_2.push(final_dir[2]);
-            }
-        }
-        let ray_cache_tex =
-            generate_texture_from_f32(&gl.gl, &ray_vec_2, ray_width as i32, Format::RG);
-        let ray_cache_tex = UniformContext::new_from_allocated_val(
-            ray_cache_tex,
-            "cache",
-            ray_width as i32,
-            ray_height as i32,
-        );
-        let z_max_cache_tex =
-            generate_texture_from_f32(&gl.gl, &z_max_vec, ray_height as i32, Format::R);
-        let z_max_cache_tex = UniformContext::new_from_allocated_val(
-            z_max_cache_tex,
-            "z_max_cache",
-            ray_height as i32,
-            1 as i32,
-        );
 
         let angle_cache = fetch_url_binary(FIXED_DISTANCE_ANGLE_CACHE_URL.to_string()).await?;
         let angle_cache =
@@ -419,9 +396,11 @@ impl ImageCache {
             ),
             "disc_dim",
         );
-        let distance_cache = fetch_url_binary(DISTANCE_CACHE_URL.to_string()).await?;
-        let distance_cache =
-            serde_json::from_slice::<DistanceCache>(&distance_cache.to_vec()).unwrap();
+        let black_hole_cache = fetch_url_binary(BLACK_HOLE_CACHE_URL.to_string()).await?;
+        let black_hole_cache =
+            serde_json::from_slice::<BlackHoleCache>(&black_hole_cache.to_vec()).unwrap();
+        let direction_cache = black_hole_cache.direction_cache;
+        let distance_cache = black_hole_cache.distance_cache;
 
         let mut distance_cache_vec = Vec::new();
         let mut z_bounds_vec = Vec::new();
@@ -472,9 +451,6 @@ impl ImageCache {
             height as i32,
             depth as i32,
         );
-        let direction_cache = fetch_url_binary(DIRECTION_CACHE_URL.to_string()).await?;
-        let direction_cache =
-            serde_json::from_slice::<DirectionCache>(&direction_cache.to_vec()).unwrap();
         let mut direction_vec = Vec::new();
         let mut direction_z_max_vec = Vec::new();
 
@@ -484,6 +460,7 @@ impl ImageCache {
             .len();
         for y in 0..direction_height {
             let cache = &direction_cache.distance_angle_to_z_to_distance[y];
+            direction_z_max_vec.push(cache.min_z as f32);
             direction_z_max_vec.push(cache.max_z as f32);
             for x in 0..direction_width {
                 let final_dir = cache.z_to_final_dir[x].1;
@@ -496,19 +473,19 @@ impl ImageCache {
         let direction_tex = UniformContext::new_from_allocated_val(
             direction_tex,
             "direction_cache",
-            ray_width as i32,
-            ray_height as i32,
+            direction_width as i32,
+            direction_height as i32,
         );
         let direction_z_max_tex = generate_texture_from_f32(
             &gl.gl,
             &direction_z_max_vec,
             direction_height as i32,
-            Format::R,
+            Format::RG,
         );
         let direction_z_max_tex = UniformContext::new_from_allocated_val(
             direction_z_max_tex,
             "direction_z_max_cache",
-            ray_height as i32,
+            direction_height as i32,
             1 as i32,
         );
 
@@ -517,8 +494,6 @@ impl ImageCache {
                 galaxy_tex,
                 stars_tex,
                 constellations_tex,
-                ray_cache_tex,
-                z_max_cache_tex,
                 disc_dim,
                 distance_cache_z_bounds,
                 distance_cache_tex,
@@ -581,7 +556,7 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
-            let mut scroll;
+            let scroll;
             {
                 scroll = params.borrow().mouse_scroll.clone();
             }
