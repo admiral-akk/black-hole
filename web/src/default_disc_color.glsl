@@ -6,7 +6,7 @@
 
 #define THETA_POINTS 35.*(1.+SPEED_UP)
 
-#define AA_LEVEL 2.
+#define AA_LEVEL 4.
 
 //
 /* Background color calculations */
@@ -116,6 +116,86 @@ vec4 disc_color(float dist_01,float theta_01){
 /* Main methods */
 //
 
+vec4 get_disc_color(vec2 coord){
+    // todo(CPU pre-compute)
+    vec3 forward=observer_mat*normalized_dir;
+    // todo(CPU pre-compute)
+    vec3 up=observer_mat*normalized_up;
+    // todo(CPU pre-compute)
+    vec3 right=cross(forward,up);
+    // todo(CPU pre-compute)
+    float view_width=2.*tan(PI*vertical_fov_degrees/360.);
+    vec3 start_dir=normalize(view_width*((coord.x-.5)*right+(coord.y-.5)*up)+forward);
+    vec3 forward2=normalized_dir;
+    // todo(CPU pre-compute)
+    vec3 up2=normalized_up;
+    // todo(CPU pre-compute)
+    vec3 right2=cross(forward2,up2);
+    // todo(CPU pre-compute)
+    float camera_dist_01=(distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x);
+    float view_width2=2.*tan(PI*vertical_fov_degrees/360.);
+    vec2 offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
+    float min_z=texture(distance_cache_z_bounds,vec2(.25,camera_dist_01)+offset).x;
+    float z=start_dir.z;
+    if(z<min_z){
+        return vec4(0.);
+    }
+    
+    vec3 true_start_dir=normalize(view_width2*((coord.x-.5)*right2+(coord.y-.5)*up2)+forward2);
+    float is_top=1.;
+    if(normalized_pos.y<0.){
+        is_top=0.;
+    }
+    vec3 close_color=vec3(is_top,1.-is_top,0.);
+    vec3 far_color=vec3(1.-is_top,is_top,0.);
+    
+    vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
+    vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
+    float dist=dot(intersection,-normalized_pos);
+    
+    // there are two angles that matter;
+    // which to use depends on whether the ray is going "under" or "over"
+    float temp_angle_01=acos(clamp(dist,-1.,1.))/TAU;
+    float alt_angle_01=.5-temp_angle_01;
+    bool above=normalized_pos.y>0.;
+    bool top_coord=coord.y>.5;
+    float theta_01=atan(intersection.z,intersection.x)/TAU+.5;
+    vec2 angle_01;
+    if(above==top_coord){
+        angle_01=vec2(max(temp_angle_01,alt_angle_01),theta_01);
+    }else{
+        angle_01=vec2(min(temp_angle_01,alt_angle_01),theta_01);
+    }
+    
+    vec3 dist_offset=.5/vec3(float(distance_cache_tex_dim.x),float(distance_cache_tex_dim.y),float(distance_cache_tex_dim.z));
+    
+    vec2 z_bounds=texture(distance_cache_z_bounds,vec2(angle_01.x,camera_dist_01)+offset).xy;
+    float z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+    
+    vec4 total_disc_color=vec4(0.);
+    if(z_index>=0.&&z_index<=1.){
+        float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)+dist_offset).x;
+        if(dist>disc_dim.x&&dist<disc_dim.y){
+            float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
+            total_disc_color=disc_color(dist_01,angle_01.y);
+        }
+    }
+    vec2 other_angle_01=angle_01+.5;
+    offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
+    z_bounds=texture(distance_cache_z_bounds,vec2(other_angle_01.x,camera_dist_01)+offset).xy;
+    z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+    if(z_index>=0.&&z_index<=1.){
+        float dist=texture(distance_cache_tex,vec3(z_index,other_angle_01.x,camera_dist_01)+dist_offset).x;
+        if(dist>disc_dim.x&&dist<disc_dim.y){
+            float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
+            float alpha=1.-total_disc_color.w;
+            total_disc_color+=alpha*disc_color(dist_01,other_angle_01.y);
+        }
+    }
+    return total_disc_color;
+    
+}
+
 vec3 get_color(vec2 coord){
     // todo(CPU pre-compute)
     vec3 forward=observer_mat*normalized_dir;
@@ -174,62 +254,7 @@ vec3 get_color(vec2 coord){
             texture(constellations,phi_theta+.5/vec2(constellations_dim)).xyz+
             texture(galaxy,phi_theta+.5/vec2(galaxy_dim)).xyz,0.,1.);
         }
-        
-        float is_top=1.;
-        if(normalized_pos.y<0.){
-            is_top=0.;
-        }
-        vec3 close_color=vec3(is_top,1.-is_top,0.);
-        vec3 far_color=vec3(1.-is_top,is_top,0.);
-        float camera_dist_01=(distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x);
-        
-        vec3 travel_normal=normalize(cross(normalized_dir,true_start_dir));
-        vec3 intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
-        float dist=dot(intersection,-normalized_pos);
-        
-        // there are two angles that matter;
-        // which to use depends on whether the ray is going "under" or "over"
-        float temp_angle_01=acos(clamp(dist,-1.,1.))/TAU;
-        float alt_angle_01=.5-temp_angle_01;
-        bool above=normalized_pos.y>0.;
-        bool top_coord=coord.y>.5;
-        float theta_01=atan(intersection.z,intersection.x)/TAU+.5;
-        vec2 angle_01;
-        if(above==top_coord){
-            angle_01=vec2(max(temp_angle_01,alt_angle_01),theta_01);
-        }else{
-            angle_01=vec2(min(temp_angle_01,alt_angle_01),theta_01);
-        }
-        
-        float z=start_dir.z;
-        vec3 dist_offset=.5/vec3(float(distance_cache_tex_dim.x),float(distance_cache_tex_dim.y),float(distance_cache_tex_dim.z));
-        
-        vec2 offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
-        vec2 z_bounds=texture(distance_cache_z_bounds,vec2(angle_01.x,camera_dist_01)+offset).xy;
-        float z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
-        
-        vec4 total_disc_color=vec4(0.);
-        if(z_index>=0.&&z_index<=1.){
-            float dist=texture(distance_cache_tex,vec3(z_index,angle_01.x,camera_dist_01)+dist_offset).x;
-            if(dist>disc_dim.x&&dist<disc_dim.y){
-                float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
-                total_disc_color=disc_color(dist_01,angle_01.y);
-            }
-        }
-        vec2 other_angle_01=angle_01+.5;
-        offset=.5/vec2(float(distance_cache_z_bounds_dim.x),float(distance_cache_z_bounds_dim.y));
-        z_bounds=texture(distance_cache_z_bounds,vec2(other_angle_01.x,camera_dist_01)+offset).xy;
-        z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
-        if(z_index>=0.&&z_index<=1.){
-            float dist=texture(distance_cache_tex,vec3(z_index,other_angle_01.x,camera_dist_01)+dist_offset).x;
-            if(dist>disc_dim.x&&dist<disc_dim.y){
-                float dist_01=(disc_dim.y-dist)/(disc_dim.y-disc_dim.x);
-                float alpha=1.-total_disc_color.w;
-                total_disc_color+=alpha*disc_color(dist_01,other_angle_01.y);
-            }
-        }
-        vec4 disc_color_f=total_disc_color;
-        return disc_color_f.w*disc_color_f.xyz+(1.-disc_color_f.w)*background_color.xyz;
+        return background_color.xyz;
     }
     
     void main(){
@@ -243,6 +268,7 @@ vec3 get_color(vec2 coord){
         float z=normalize(vec3(view_width*(coord-.5),1.)).z;
         vec2 z_bounds=texture(direction_z_max_cache,vec2((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),.0)+.5/vec2(direction_z_max_cache_dim)).xy;
         
+        vec4 disc_color_f=get_disc_color(coord);
         if(z<z_bounds.x||AA_LEVEL==1.){
             color=get_color(coord+.5*delta);
         }else{
@@ -277,5 +303,6 @@ vec3 get_color(vec2 coord){
             }
             
         }
+        color=disc_color_f.xyz*disc_color_f.w+(1.-disc_color_f.w)*color;
         outColor=vec4(color.xyz,1.);
     }

@@ -404,6 +404,7 @@ impl ImageCache {
 
         let mut distance_cache_vec = Vec::new();
         let mut z_bounds_vec = Vec::new();
+        let mut min_z_vec = Vec::new();
 
         let min_angle = UniformContext::f32(
             distance_cache.distance_angle_to_z_to_distance[0].min_angle as f32,
@@ -417,6 +418,7 @@ impl ImageCache {
             "distance_bounds",
         );
         for fixed_distance in distance_cache.distance_angle_to_z_to_distance {
+            min_z_vec.push(fixed_distance.min_z);
             for fixed_angle in fixed_distance.angle_to_z_to_distance {
                 let z_bounds = fixed_angle.z_bounds;
                 z_bounds_vec.push(z_bounds.0 as f32);
