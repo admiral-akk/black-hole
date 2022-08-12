@@ -27,6 +27,7 @@ use path_integration::cache::ray_cache::RayCache as PathRayCache;
 
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
+use web_sys::MouseEvent;
 use web_sys::TouchEvent;
 
 use std::cell::RefCell;
@@ -236,15 +237,13 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
     let cache_width: i32 = 1024;
 
     let mut pos = black_hole_params.normalized_pos;
-    if new_params.mouse_pos.is_some() {
-        let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32);
-        let y_angle = std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 0.5);
+    let x_angle = std::f32::consts::TAU * (new_params.ui_params.mouse_position.0 as f32);
+    let y_angle = std::f32::consts::PI * (new_params.ui_params.mouse_position.1 as f32 - 0.5);
 
-        pos = distance
-            * (y_angle.cos() * x_angle.cos() * Vec3::Z
-                + y_angle.cos() * x_angle.sin() * Vec3::X
-                + y_angle.sin() * Vec3::Y);
-    }
+    pos = distance
+        * (y_angle.cos() * x_angle.cos() * Vec3::Z
+            + y_angle.cos() * x_angle.sin() * Vec3::X
+            + y_angle.sin() * Vec3::Y);
 
     pos = pos.normalize();
     let dir = -pos;
@@ -327,6 +326,7 @@ pub struct RenderParams {
     pub mouse_pos: Option<(f64, f64)>,
     pub mouse_scroll: f64,
     pub dimensions: (u32, u32),
+    pub ui_params: UIParams,
 }
 
 pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
@@ -513,6 +513,49 @@ impl ImageCache {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct UIParams {
+    pub seconds_since_start: f32,
+    pub pixel_dimensions: (u32, u32),
+    pub css_dimensions: (u32, u32),
+    pub mouse_position: (f64, f64),
+    pub touch_diff: Option<f64>,
+    pub zoom_sum: f64,
+}
+
+impl Default for UIParams {
+    fn default() -> Self {
+        let window = window();
+        let pixel_ratio = window.device_pixel_ratio();
+        let (width, height) = (
+            window.inner_width().unwrap().as_f64().unwrap(),
+            window.inner_height().unwrap().as_f64().unwrap(),
+        );
+        Self {
+            seconds_since_start: 0.0,
+            pixel_dimensions: ((width * pixel_ratio) as u32, (height * pixel_ratio) as u32),
+            css_dimensions: (width as u32, height as u32),
+            mouse_position: (0.5, 0.5),
+            touch_diff: None,
+            zoom_sum: 0.5,
+        }
+    }
+}
+impl UIParams {
+    pub fn mouse_delta(&mut self, move_event: &MouseEvent) {
+        if move_event.buttons() & 1 == 0 {
+            return;
+        }
+
+        let delta = (
+            (move_event.movement_x() as f64 / self.css_dimensions.0 as f64),
+            (move_event.movement_y() as f64 / self.css_dimensions.1 as f64),
+        );
+        self.mouse_position.0 += delta.0;
+        self.mouse_position.1 = (self.mouse_position.1 + delta.1).clamp(0., 1.);
+    }
+}
+
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
     let d = document();
@@ -555,10 +598,13 @@ pub async fn start() -> Result<(), JsValue> {
         );
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            params.borrow_mut().mouse_pos = Some((
-                (event.offset_x() as f64 / width),
-                (event.offset_y() as f64 / height),
-            ));
+            params.borrow_mut().ui_params.mouse_delta(&event);
+            {
+                params.borrow_mut().mouse_pos = Some((
+                    (event.offset_x() as f64 / width),
+                    (event.offset_y() as f64 / height),
+                ));
+            }
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -577,6 +623,7 @@ pub async fn start() -> Result<(), JsValue> {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
             let scroll;
+
             {
                 scroll = params.borrow().mouse_scroll.clone();
             }
@@ -598,13 +645,23 @@ pub async fn start() -> Result<(), JsValue> {
                 window.inner_width().unwrap().as_f64().unwrap(),
                 window.inner_height().unwrap().as_f64().unwrap(),
             );
-            for i in 0..event.touches().length() {
+            let mut average_touch = (0, 0);
+            let touch_count = u32::min(event.touches().length(), 2);
+            for i in 0..touch_count {
                 let touch = event.touches().item(i).unwrap();
-                params.borrow_mut().mouse_pos = Some((
-                    (touch.client_x() as f64 / width),
-                    (touch.client_y() as f64 / height),
-                ));
+                average_touch = (
+                    average_touch.0 + touch.client_x(),
+                    average_touch.1 + touch.client_y(),
+                );
             }
+            average_touch = (
+                average_touch.0 / touch_count as i32,
+                average_touch.1 / touch_count as i32,
+            );
+            params.borrow_mut().mouse_pos = Some((
+                (average_touch.0 as f64 / width),
+                (average_touch.1 as f64 / height),
+            ));
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchstart", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -618,13 +675,51 @@ pub async fn start() -> Result<(), JsValue> {
                 window.inner_width().unwrap().as_f64().unwrap(),
                 window.inner_height().unwrap().as_f64().unwrap(),
             );
+            let mut average_touch = (0, 0);
             for i in 0..event.touches().length() {
                 let touch = event.touches().item(i).unwrap();
-                params.borrow_mut().mouse_pos = Some((
-                    (touch.client_x() as f64 / width),
-                    (touch.client_y() as f64 / height),
-                ));
+                average_touch = (
+                    average_touch.0 + touch.client_x(),
+                    average_touch.1 + touch.client_y(),
+                );
             }
+            average_touch = (
+                average_touch.0 / event.touches().length() as i32,
+                average_touch.1 / event.touches().length() as i32,
+            );
+            params.borrow_mut().mouse_pos = Some((
+                (average_touch.0 as f64 / width),
+                (average_touch.1 as f64 / height),
+            ));
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("touchend", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
+            let window = window();
+            let (width, height) = (
+                window.inner_width().unwrap().as_f64().unwrap(),
+                window.inner_height().unwrap().as_f64().unwrap(),
+            );
+            let mut average_touch = (0, 0);
+            for i in 0..event.touches().length() {
+                let touch = event.touches().item(i).unwrap();
+                average_touch = (
+                    average_touch.0 + touch.client_x(),
+                    average_touch.1 + touch.client_y(),
+                );
+            }
+            average_touch = (
+                average_touch.0 / event.touches().length() as i32,
+                average_touch.1 / event.touches().length() as i32,
+            );
+            params.borrow_mut().mouse_pos = Some((
+                (average_touch.0 as f64 / width),
+                (average_touch.1 as f64 / height),
+            ));
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchmove", closure.as_ref().unchecked_ref())?;
         closure.forget();
