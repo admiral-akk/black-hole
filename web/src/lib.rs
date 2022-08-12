@@ -551,9 +551,17 @@ pub async fn start() -> Result<(), JsValue> {
     }
     let render_state = Rc::new(RefCell::new(RenderState::new(1024, 1024).await?));
     {
+        let window = window();
+        let (width, height) = (
+            window.inner_width().unwrap().as_f64().unwrap(),
+            window.inner_height().unwrap().as_f64().unwrap(),
+        );
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            params.borrow_mut().mouse_pos = Some((event.offset_x(), event.offset_y()));
+            params.borrow_mut().mouse_pos = Some((
+                (event.offset_x() as f64 / width) as i32,
+                (event.offset_y() as f64 / height) as i32,
+            ));
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -588,9 +596,17 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
+            let window = window();
+            let (width, height) = (
+                window.inner_width().unwrap().as_f64().unwrap(),
+                window.inner_height().unwrap().as_f64().unwrap(),
+            );
             for i in 0..event.touches().length() {
                 let touch = event.touches().item(i).unwrap();
-                params.borrow_mut().mouse_pos = Some((touch.client_x(), touch.client_y()));
+                params.borrow_mut().mouse_pos = Some((
+                    (touch.client_x() as f64 / width) as i32,
+                    (touch.client_y() as f64 / height) as i32,
+                ));
             }
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchstart", closure.as_ref().unchecked_ref())?;
@@ -600,9 +616,17 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
+            let window = window();
+            let (width, height) = (
+                window.inner_width().unwrap().as_f64().unwrap(),
+                window.inner_height().unwrap().as_f64().unwrap(),
+            );
             for i in 0..event.touches().length() {
                 let touch = event.touches().item(i).unwrap();
-                params.borrow_mut().mouse_pos = Some((touch.client_x(), touch.client_y()));
+                params.borrow_mut().mouse_pos = Some((
+                    (touch.client_x() as f64 / width) as i32,
+                    (touch.client_y() as f64 / height) as i32,
+                ));
             }
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchmove", closure.as_ref().unchecked_ref())?;
