@@ -263,8 +263,28 @@ vec3 get_color(vec2 coord){
     void main(){
         // Sample
         
-        vec2 delta=vec2(1./float(dimensions.x),1./float(dimensions.y));
-        vec2 coord=gl_FragCoord.xy*delta;
+        float min_dim=min(float(dimensions.x),float(dimensions.y));
+        float max_dim=max(float(dimensions.x),float(dimensions.y));
+        float diff=max_dim-min_dim;
+        float lower=diff/2.;
+        float upper=min_dim+lower;
+        vec2 offset=vec2((max_dim-min_dim)/2.);
+        vec2 delta=1./vec2(min_dim);
+        if(dimensions.x>dimensions.y){
+            if(gl_FragCoord.x<lower||gl_FragCoord.x>upper){
+                outColor=vec4(vec3(0.),1.);
+                return;
+            }
+            offset.y=0.;
+        }else{
+            if(gl_FragCoord.y<lower||gl_FragCoord.y>upper){
+                outColor=vec4(vec3(0.),1.);
+                return;
+            }
+            offset.x=0.;
+        }
+        
+        vec2 coord=(gl_FragCoord.xy-offset)*delta;
         
         vec3 color=vec3(0.,0.,0.);
         float view_width=2.*tan(PI*vertical_fov_degrees/360.);
@@ -319,9 +339,7 @@ vec3 get_color(vec2 coord){
                 }
                 color/=AA_LEVEL*AA_LEVEL;
                 disc_color_f=get_disc_color(coord);
-                
             }
-            
         }
         color=disc_color_f.xyz*disc_color_f.w+(1.-disc_color_f.w)*color;
         outColor=vec4(color.xyz,1.);
