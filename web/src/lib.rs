@@ -237,11 +237,8 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
 
     let mut pos = black_hole_params.normalized_pos;
     if new_params.mouse_pos.is_some() {
-        let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32)
-            / new_params.dimensions.0 as f32;
-        let y_angle = std::f32::consts::PI
-            * (new_params.mouse_pos.unwrap().1 as f32 - new_params.dimensions.1 as f32 / 2.)
-            / new_params.dimensions.1 as f32;
+        let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32);
+        let y_angle = std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 0.5);
 
         pos = distance
             * (y_angle.cos() * x_angle.cos() * Vec3::Z
@@ -327,7 +324,7 @@ fn document() -> web_sys::Document {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct RenderParams {
     pub seconds_since_start: f32,
-    pub mouse_pos: Option<(i32, i32)>,
+    pub mouse_pos: Option<(f64, f64)>,
     pub mouse_scroll: f64,
     pub dimensions: (u32, u32),
 }
@@ -559,8 +556,8 @@ pub async fn start() -> Result<(), JsValue> {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
             params.borrow_mut().mouse_pos = Some((
-                (event.offset_x() as f64 / width) as i32,
-                (event.offset_y() as f64 / height) as i32,
+                (event.offset_x() as f64 / width),
+                (event.offset_y() as f64 / height),
             ));
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
@@ -604,8 +601,8 @@ pub async fn start() -> Result<(), JsValue> {
             for i in 0..event.touches().length() {
                 let touch = event.touches().item(i).unwrap();
                 params.borrow_mut().mouse_pos = Some((
-                    (touch.client_x() as f64 / width) as i32,
-                    (touch.client_y() as f64 / height) as i32,
+                    (touch.client_x() as f64 / width),
+                    (touch.client_y() as f64 / height),
                 ));
             }
         }) as Box<dyn FnMut(_)>);
@@ -624,8 +621,8 @@ pub async fn start() -> Result<(), JsValue> {
             for i in 0..event.touches().length() {
                 let touch = event.touches().item(i).unwrap();
                 params.borrow_mut().mouse_pos = Some((
-                    (touch.client_x() as f64 / width) as i32,
-                    (touch.client_y() as f64 / height) as i32,
+                    (touch.client_x() as f64 / width),
+                    (touch.client_y() as f64 / height),
                 ));
             }
         }) as Box<dyn FnMut(_)>);
