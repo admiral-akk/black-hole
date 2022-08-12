@@ -237,9 +237,11 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
 
     let mut pos = black_hole_params.normalized_pos;
     if new_params.mouse_pos.is_some() {
-        let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32) / 1024.;
-        let y_angle =
-            std::f32::consts::PI * (new_params.mouse_pos.unwrap().1 as f32 - 512.) / 1024.;
+        let x_angle = std::f32::consts::TAU * (new_params.mouse_pos.unwrap().0 as f32)
+            / new_params.dimensions.0 as f32;
+        let y_angle = std::f32::consts::PI
+            * (new_params.mouse_pos.unwrap().1 as f32 - new_params.dimensions.1 as f32 / 2.)
+            / new_params.dimensions.1 as f32;
 
         pos = distance
             * (y_angle.cos() * x_angle.cos() * Vec3::Z
@@ -634,22 +636,25 @@ pub async fn start() -> Result<(), JsValue> {
         let canvas_ref = canvas_ref.clone();
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             {
+                let window = window();
+                let pixel_ratio = window.device_pixel_ratio();
+                let (width, height) = (
+                    window.inner_width().unwrap().as_f64().unwrap(),
+                    window.inner_height().unwrap().as_f64().unwrap(),
+                );
                 {
-                    params.borrow_mut().dimensions = (
-                        window().inner_width().unwrap().as_f64().unwrap() as u32,
-                        window().inner_height().unwrap().as_f64().unwrap() as u32,
-                    );
+                    params.borrow_mut().dimensions =
+                        ((width * pixel_ratio) as u32, (height * pixel_ratio) as u32);
                 }
-                {
-                    canvas_ref
-                        .borrow_mut()
-                        .set_width(params.borrow().dimensions.0);
-                }
-                {
-                    canvas_ref
-                        .borrow_mut()
-                        .set_height(params.borrow().dimensions.1);
-                }
+                let mut_canvas = canvas_ref.borrow();
+                mut_canvas
+                    .style()
+                    .set_property("width", &(width as u32).to_string())
+                    .unwrap();
+                mut_canvas
+                    .style()
+                    .set_property("height", &(height as u32).to_string())
+                    .unwrap();
                 params.borrow_mut().seconds_since_start = SystemTime::now()
                     .duration_since(*start_time.borrow())
                     .unwrap()
