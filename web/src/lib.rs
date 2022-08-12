@@ -28,9 +28,12 @@ use path_integration::cache::ray_cache::RayCache as PathRayCache;
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
 use web_sys::MouseEvent;
+use web_sys::Touch;
 use web_sys::TouchEvent;
+use web_sys::WheelEvent;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::f32::consts::PI;
 use std::rc::Rc;
 
@@ -196,20 +199,16 @@ impl BlackHoleParams {
         v
     }
     pub fn update(&mut self, render_params: &RenderParams) {
-        self.distance = f32::clamp(render_params.mouse_scroll as f32, 3.0, 30.0);
-
+        self.distance = 27. * render_params.ui_params.zoom_sum as f32 + 3.0;
         let mut pos = self.normalized_pos;
-        if render_params.mouse_pos.is_some() {
-            let x_angle =
-                std::f32::consts::TAU * (render_params.mouse_pos.unwrap().0 as f32) / 1024.;
-            let y_angle =
-                std::f32::consts::PI * (render_params.mouse_pos.unwrap().1 as f32 - 512.) / 1024.;
+        let x_angle = std::f32::consts::TAU * (render_params.ui_params.mouse_position.0 as f32);
+        let y_angle =
+            std::f32::consts::PI * (render_params.ui_params.mouse_position.1 as f32 - 0.5);
 
-            pos = self.distance
-                * (y_angle.cos() * x_angle.cos() * Vec3::Z
-                    + y_angle.cos() * x_angle.sin() * Vec3::X
-                    + y_angle.sin() * Vec3::Y);
-        }
+        pos = self.distance
+            * (y_angle.cos() * x_angle.cos() * Vec3::Z
+                + y_angle.cos() * x_angle.sin() * Vec3::X
+                + y_angle.sin() * Vec3::Y);
 
         self.normalized_pos = pos.normalize();
         self.normalized_dir = -self.normalized_pos;
@@ -231,7 +230,9 @@ pub struct RenderState {
 }
 
 fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderParams) {
-    let distance = f32::clamp(new_params.mouse_scroll as f32, 3.0, 30.0);
+    let target_distance = 27. * new_params.ui_params.zoom_sum as f32 + 3.0;
+    let current_distance = black_hole_params.distance;
+    let distance = (0.9 * current_distance + 0.1 * target_distance);
     let vertical_fov_degrees = 90.0;
     let black_hole_radius = 1.5;
     let cache_width: i32 = 1024;
@@ -320,11 +321,9 @@ fn document() -> web_sys::Document {
         .expect("should have a document on window")
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct RenderParams {
     pub seconds_since_start: f32,
-    pub mouse_pos: Option<(f64, f64)>,
-    pub mouse_scroll: f64,
     pub dimensions: (u32, u32),
     pub ui_params: UIParams,
 }
@@ -513,11 +512,13 @@ impl ImageCache {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 pub struct UIParams {
     pub seconds_since_start: f32,
     pub pixel_dimensions: (u32, u32),
     pub css_dimensions: (u32, u32),
+    pub touch_id_to_last_pos: HashMap<i32, IVec2>,
+    pub curr_touch_center: IVec2,
     pub mouse_position: (f64, f64),
     pub touch_diff: Option<f64>,
     pub zoom_sum: f64,
@@ -532,27 +533,113 @@ impl Default for UIParams {
             window.inner_height().unwrap().as_f64().unwrap(),
         );
         Self {
-            seconds_since_start: 0.0,
+            seconds_since_start: Default::default(),
             pixel_dimensions: ((width * pixel_ratio) as u32, (height * pixel_ratio) as u32),
             css_dimensions: (width as u32, height as u32),
+            touch_id_to_last_pos: HashMap::new(),
+            curr_touch_center: Default::default(),
             mouse_position: (0.5, 0.5),
-            touch_diff: None,
+            touch_diff: Default::default(),
             zoom_sum: 0.5,
         }
     }
 }
 impl UIParams {
-    pub fn mouse_delta(&mut self, move_event: &MouseEvent) {
+    fn move_view(&mut self, movement: (i32, i32)) {
+        let delta = (
+            (movement.0 as f64 / self.css_dimensions.0 as f64),
+            (movement.1 as f64 / self.css_dimensions.1 as f64),
+        );
+        self.mouse_position.0 += delta.0;
+        self.mouse_position.1 = (self.mouse_position.1 + delta.1).clamp(0., 1.);
+    }
+
+    fn zoom_view(&mut self, delta: f64) {
+        self.zoom_sum = (self.zoom_sum + delta).clamp(0., 1.);
+    }
+
+    pub fn mouse_move(&mut self, move_event: &MouseEvent) {
         if move_event.buttons() & 1 == 0 {
             return;
         }
 
-        let delta = (
-            (move_event.movement_x() as f64 / self.css_dimensions.0 as f64),
-            (move_event.movement_y() as f64 / self.css_dimensions.1 as f64),
-        );
-        self.mouse_position.0 += delta.0;
-        self.mouse_position.1 = (self.mouse_position.1 + delta.1).clamp(0., 1.);
+        self.move_view((move_event.movement_x(), move_event.movement_y()));
+    }
+    pub fn mouse_scroll(&mut self, event: &WheelEvent) {
+        self.zoom_view(event.delta_y() / 3000.);
+    }
+
+    pub fn handle_touch(&mut self, event: &TouchEvent) {
+        let touch_list: Vec<Touch> = (0..event.touches().length())
+            .map(|i| event.touches().get(i).unwrap())
+            .collect();
+
+        let mut changes = false;
+        // Check whether any touches were added
+        for touch in &touch_list {
+            if !self.touch_id_to_last_pos.contains_key(&touch.identifier()) {
+                self.touch_id_to_last_pos.insert(
+                    touch.identifier(),
+                    IVec2::new(touch.client_x(), touch.client_y()),
+                );
+                changes = true;
+            }
+        }
+
+        // Check whether any touches were removed
+        let existing_touch_ids: Vec<i32> = self.touch_id_to_last_pos.keys().map(|k| *k).collect();
+        for touch_id in existing_touch_ids {
+            if touch_list
+                .iter()
+                .find(|touch| touch.identifier() == touch_id)
+                .is_none()
+            {
+                self.touch_id_to_last_pos.remove(&touch_id);
+                changes = true;
+            }
+        }
+
+        // Panning
+        let new_center = self
+            .touch_id_to_last_pos
+            .values()
+            .map(|v| *v)
+            .fold(IVec2::ZERO, |a, b| a + b);
+
+        // adding/removing touches doesn't change the view
+        let center_diff = (new_center - self.curr_touch_center);
+        if !changes {
+            // Pan
+            self.move_view((center_diff.x, center_diff.y));
+
+            // Zoom
+            if self.touch_id_to_last_pos.len() >= 2 {
+                let old_average_dist = self
+                    .touch_id_to_last_pos
+                    .values()
+                    .map(|touch_pos| (*touch_pos - new_center).as_dvec2().length())
+                    .fold(0., |a, b| a + b);
+                let new_average_dist = touch_list
+                    .iter()
+                    .map(|touch| IVec2::new(touch.client_x(), touch.client_y()))
+                    .map(|touch_pos| (touch_pos - new_center).as_dvec2().length())
+                    .fold(0., |a, b| a + b);
+
+                self.zoom_view(
+                    -(new_average_dist - old_average_dist)
+                        / (100. * self.touch_id_to_last_pos.len() as f64),
+                );
+            }
+        }
+
+        // Update map positions
+        for touch in &touch_list {
+            self.touch_id_to_last_pos.insert(
+                touch.identifier(),
+                IVec2::new(touch.client_x(), touch.client_y()),
+            );
+        }
+        self.curr_touch_center = new_center;
     }
 }
 
@@ -586,52 +673,19 @@ pub async fn start() -> Result<(), JsValue> {
     let last_200_frame_times = Rc::new(RefCell::new(Vec::from([0.0_f32])));
     let start_time = Rc::new(RefCell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
-    {
-        params.borrow_mut().mouse_scroll = 17.0;
-    }
     let render_state = Rc::new(RefCell::new(RenderState::new(1024, 1024).await?));
     {
-        let window = window();
-        let (width, height) = (
-            window.inner_width().unwrap().as_f64().unwrap(),
-            window.inner_height().unwrap().as_f64().unwrap(),
-        );
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            params.borrow_mut().ui_params.mouse_delta(&event);
-            {
-                params.borrow_mut().mouse_pos = Some((
-                    (event.offset_x() as f64 / width),
-                    (event.offset_y() as f64 / height),
-                ));
-            }
+            params.borrow_mut().ui_params.mouse_move(&event);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-
     {
         let params = params.clone();
-        let closure = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
-            params.borrow_mut().mouse_pos = None;
-        }) as Box<dyn FnMut(_)>);
-        canvas.add_event_listener_with_callback("mouseleave", closure.as_ref().unchecked_ref())?;
-        closure.forget();
-    }
-
-    {
-        let params = params.clone();
-        let closure = Closure::wrap(Box::new(move |_event: web_sys::WheelEvent| {
-            let scroll;
-
-            {
-                scroll = params.borrow().mouse_scroll.clone();
-            }
-            {
-                params.borrow_mut().mouse_scroll =
-                    (scroll + _event.delta_y() / 150.).clamp(3.0, 30.0);
-            }
-            console_log!("Scroll: {}", params.borrow_mut().mouse_scroll);
+        let closure = Closure::wrap(Box::new(move |event: web_sys::WheelEvent| {
+            params.borrow_mut().ui_params.mouse_scroll(&event);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("wheel", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -640,91 +694,35 @@ pub async fn start() -> Result<(), JsValue> {
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
-            let window = window();
-            let (width, height) = (
-                window.inner_width().unwrap().as_f64().unwrap(),
-                window.inner_height().unwrap().as_f64().unwrap(),
-            );
-            let mut average_touch = (0, 0);
-            let touch_count = u32::min(event.touches().length(), 2);
-            for i in 0..touch_count {
-                let touch = event.touches().item(i).unwrap();
-                average_touch = (
-                    average_touch.0 + touch.client_x(),
-                    average_touch.1 + touch.client_y(),
-                );
-            }
-            average_touch = (
-                average_touch.0 / touch_count as i32,
-                average_touch.1 / touch_count as i32,
-            );
-            params.borrow_mut().mouse_pos = Some((
-                (average_touch.0 as f64 / width),
-                (average_touch.1 as f64 / height),
-            ));
+            params.borrow_mut().ui_params.handle_touch(&event);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchstart", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
-            let window = window();
-            let (width, height) = (
-                window.inner_width().unwrap().as_f64().unwrap(),
-                window.inner_height().unwrap().as_f64().unwrap(),
-            );
-            let mut average_touch = (0, 0);
-            for i in 0..event.touches().length() {
-                let touch = event.touches().item(i).unwrap();
-                average_touch = (
-                    average_touch.0 + touch.client_x(),
-                    average_touch.1 + touch.client_y(),
-                );
-            }
-            average_touch = (
-                average_touch.0 / event.touches().length() as i32,
-                average_touch.1 / event.touches().length() as i32,
-            );
-            params.borrow_mut().mouse_pos = Some((
-                (average_touch.0 as f64 / width),
-                (average_touch.1 as f64 / height),
-            ));
+            params.borrow_mut().ui_params.handle_touch(&event);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchend", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-
     {
         let params = params.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
-            let window = window();
-            let (width, height) = (
-                window.inner_width().unwrap().as_f64().unwrap(),
-                window.inner_height().unwrap().as_f64().unwrap(),
-            );
-            let mut average_touch = (0, 0);
-            for i in 0..event.touches().length() {
-                let touch = event.touches().item(i).unwrap();
-                average_touch = (
-                    average_touch.0 + touch.client_x(),
-                    average_touch.1 + touch.client_y(),
-                );
-            }
-            average_touch = (
-                average_touch.0 / event.touches().length() as i32,
-                average_touch.1 / event.touches().length() as i32,
-            );
-            params.borrow_mut().mouse_pos = Some((
-                (average_touch.0 as f64 / width),
-                (average_touch.1 as f64 / height),
-            ));
+            params.borrow_mut().ui_params.handle_touch(&event);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("touchmove", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-
+    {
+        let params = params.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::TouchEvent| {
+            params.borrow_mut().ui_params.handle_touch(&event);
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("touchcancel", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
     {
         let start_time = start_time.clone();
         let render_state = render_state.clone();
@@ -736,7 +734,6 @@ pub async fn start() -> Result<(), JsValue> {
                 .borrow_mut()
                 .update_disc_shader(&shader_text_box.value());
         }) as Box<dyn FnMut(_)>);
-
         compile_button
             .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
         closure.forget();

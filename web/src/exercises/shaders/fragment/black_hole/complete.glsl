@@ -1,7 +1,12 @@
 #version 300 es
 
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+precision highp sampler3D;
+#else
 precision mediump float;
 precision mediump sampler3D;
+#endif
 uniform sampler2D stars;
 uniform ivec2 stars_dim;
 uniform sampler2D constellations;
