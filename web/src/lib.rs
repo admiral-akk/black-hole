@@ -662,11 +662,14 @@ pub async fn start() -> Result<(), JsValue> {
             if frame_times.len() > 200 {
                 frame_times.remove(0);
             }
-            fps_counter.set_inner_text(&format!(
-                "FPS: {:.1}",
-                (frame_times.len() as f32)
-                    / (frame_times.last().unwrap() - frame_times.first().unwrap()),
-            ));
+            {
+                fps_counter.set_inner_text(&format!(
+                    "FPS: {:.1}\n{:?}",
+                    (frame_times.len() as f32)
+                        / (frame_times.last().unwrap() - frame_times.first().unwrap()),
+                    params.borrow().dimensions,
+                ));
+            }
             render(&mut render_state.borrow_mut(), &params.borrow()).unwrap();
             requestAnimationFrame(render_func.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
