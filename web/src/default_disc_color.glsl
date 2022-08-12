@@ -342,5 +342,7 @@ vec3 get_color(vec2 coord){
             }
         }
         color=disc_color_f.xyz*disc_color_f.w+(1.-disc_color_f.w)*color;
+        color=mix(color,vec3(0.),pow(length(coord-.5)/.5,1.5));
+        
         outColor=vec4(color.xyz,1.);
     }
