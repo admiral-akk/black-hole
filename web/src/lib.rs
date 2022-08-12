@@ -168,6 +168,7 @@ impl BlackHoleParams {
     fn uniform_context(&self) -> Vec<UniformContext> {
         let mut v = Vec::new();
         v.push(UniformContext::ivec2(self.dimensions, "dimensions"));
+        console_log!("Dimensions: {:?}", self.dimensions);
         v.push(UniformContext::f32(self.distance, "distance"));
         v.push(UniformContext::f32(
             self.vertical_fov_degrees,
@@ -252,7 +253,10 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
     let up = Vec3::cross(right, dir);
 
     *black_hole_params = BlackHoleParams::new(
-        IVec2::new(1024, 1024),
+        IVec2::new(
+            new_params.dimensions.0 as i32,
+            new_params.dimensions.1 as i32,
+        ),
         distance,
         vertical_fov_degrees,
         black_hole_radius,
@@ -266,6 +270,7 @@ fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderPar
 fn render(render_state: &mut RenderState, params: &RenderParams) -> Result<(), JsValue> {
     let gl = &render_state.gl;
     update_params(&mut render_state.black_hole_params, params);
+    gl.update_dimensions(params.dimensions.0, params.dimensions.1);
     for ele in render_state.black_hole_params.uniform_context() {
         ele.add_to_program(gl, &mut render_state.program);
     }
@@ -322,6 +327,7 @@ pub struct RenderParams {
     pub seconds_since_start: f32,
     pub mouse_pos: Option<(i32, i32)>,
     pub mouse_scroll: f64,
+    pub dimensions: (u32, u32),
 }
 
 pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
@@ -530,6 +536,11 @@ pub async fn start() -> Result<(), JsValue> {
         .unwrap()
         .dyn_into::<web_sys::HtmlDivElement>()?;
 
+    let canvas_ref = Rc::new(RefCell::new(
+        d.get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into::<web_sys::HtmlCanvasElement>()?,
+    ));
     let last_200_frame_times = Rc::new(RefCell::new(Vec::from([0.0_f32])));
     let start_time = Rc::new(RefCell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
@@ -620,8 +631,25 @@ pub async fn start() -> Result<(), JsValue> {
         let start_time = start_time.clone();
         let params = params.clone();
         let last_200_frame_times = last_200_frame_times.clone();
+        let canvas_ref = canvas_ref.clone();
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             {
+                {
+                    params.borrow_mut().dimensions = (
+                        window().inner_width().unwrap().as_f64().unwrap() as u32,
+                        window().inner_height().unwrap().as_f64().unwrap() as u32,
+                    );
+                }
+                {
+                    canvas_ref
+                        .borrow_mut()
+                        .set_width(params.borrow().dimensions.0);
+                }
+                {
+                    canvas_ref
+                        .borrow_mut()
+                        .set_height(params.borrow().dimensions.1);
+                }
                 params.borrow_mut().seconds_since_start = SystemTime::now()
                     .duration_since(*start_time.borrow())
                     .unwrap()
