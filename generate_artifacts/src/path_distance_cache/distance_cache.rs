@@ -10,12 +10,12 @@ use super::{
 };
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct DistanceCache {
+pub struct DistanceCache<T> {
     pub cache_size: (usize, usize, usize),
-    pub distance_bounds: (f64, f64),
-    pub black_hole_radius: f64,
-    pub disc_bounds: (f64, f64),
-    pub distance_angle_to_z_to_distance: Vec<FixedDistanceDistanceCache>,
+    pub distance_bounds: (T, T),
+    pub black_hole_radius: T,
+    pub disc_bounds: (T, T),
+    pub distance_angle_to_z_to_distance: Vec<FixedDistanceDistanceCache<T>>,
 }
 
 fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
@@ -28,7 +28,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     let float_01 = (index as f64) / (vec_len - 1) as f64;
     return float_01.clamp(0., 1.);
 }
-impl DistanceCache {
+impl DistanceCache<f64> {
     pub fn compute_new(
         cache_size: (usize, usize, usize),
         distance_bounds: (f64, f64),

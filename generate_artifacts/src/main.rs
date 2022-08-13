@@ -109,7 +109,7 @@ fn write_file_as_byte_vec(filename: &str, bytes: Vec<u8>) {
 fn reserialize_fixed_distance_distance_cache() {
     let angle_cache_u8 = get_file_as_byte_vec(&FIXED_DISTANCE_DISTANCE_CACHE.to_string()).unwrap();
     let fixed_distance_distance_cache =
-        serde_json::from_slice::<FixedDistanceDistanceCache>(&angle_cache_u8).unwrap();
+        serde_json::from_slice::<FixedDistanceDistanceCache<f64>>(&angle_cache_u8).unwrap();
 
     let mut s = flexbuffers::FlexbufferSerializer::new();
     fixed_distance_distance_cache.serialize(&mut s).unwrap();
@@ -125,7 +125,7 @@ fn regenerate_black_hole_cache() {
     let mut curr_cache = None;
     if curr_cache_vec.is_ok() {
         curr_cache =
-            Some(serde_json::from_slice::<BlackHoleCache>(&curr_cache_vec.unwrap()).unwrap());
+            Some(serde_json::from_slice::<BlackHoleCache<f64>>(&curr_cache_vec.unwrap()).unwrap());
     }
 
     let direction_cache_size = (1 << 6, 1 << 10);
@@ -134,8 +134,8 @@ fn regenerate_black_hole_cache() {
     let black_hole_radius = 1.5;
     let disc_bounds = (1.5, 12.0);
 
-    let mut direction_cache: DirectionCache;
-    let mut distance_cache: DistanceCache;
+    let mut direction_cache: DirectionCache<f64>;
+    let mut distance_cache: DistanceCache<f64>;
 
     if curr_cache.is_none() {
         println!("Black hole cache not found.");

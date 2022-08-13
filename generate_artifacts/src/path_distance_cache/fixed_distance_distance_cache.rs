@@ -11,13 +11,13 @@ use super::fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDis
 
 use crate::path_integration2::path::find_optimal_z;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct FixedDistanceDistanceCache {
-    pub min_angle: f64,
-    pub min_z: f64,
-    pub camera_distance: f64,
-    pub black_hole_radius: f64,
-    pub disc_bounds: (f64, f64),
-    pub angle_to_z_to_distance: Vec<FixedDistanceFixedAngleDistanceCache>,
+pub struct FixedDistanceDistanceCache<T> {
+    pub min_angle: T,
+    pub min_z: T,
+    pub camera_distance: T,
+    pub black_hole_radius: T,
+    pub disc_bounds: (T, T),
+    pub angle_to_z_to_distance: Vec<FixedDistanceFixedAngleDistanceCache<T>>,
 }
 // use this find z values where we don't have to apply anti-aliasing
 fn find_grazing_z(camera_distance: f64, black_hole_radius: f64, target_dist: f64) -> f64 {
@@ -33,13 +33,7 @@ fn find_grazing_z(camera_distance: f64, black_hole_radius: f64, target_dist: f64
                 .fold(f64::INFINITY, f64::min)
                 < target_dist
     };
-    find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
-        (-1., 1.),
-        &too_close,
-    )
-    .0
+    find_optimal_z(camera_distance, black_hole_radius, (-1., 1.), &too_close).0
 }
 
 fn float_01_to_left_index(float_01: f64, vec_len: usize) -> (usize, f64) {
@@ -52,7 +46,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     let float_01 = (index as f64) / (vec_len - 1) as f64;
     float_01.clamp(0., 1.)
 }
-impl FixedDistanceDistanceCache {
+impl FixedDistanceDistanceCache<f64> {
     pub fn compute_new(
         cache_size: (usize, usize),
         camera_distance: f64,
@@ -121,15 +115,17 @@ mod tests {
     #[test]
     fn fixed_distance_test_error() {
         let cache_size = (64, 64);
-        let distance = 3.0;
+        let camera_distance = 3.0;
         let black_hole_radius = 1.5;
-        let max_disc_radius = (1.5, 12.0);
+        let disc_bounds = (1.5, 12.0);
         let mut lines = Vec::new();
+        let cache = FixedDistanceDistanceCache::compute_new(
+            cache_size,
+            camera_distance,
+            black_hole_radius,
+            disc_bounds,
+        );
 
-        let cache = serde_json::from_str::<FixedDistanceDistanceCache>(
-            &fs::read_to_string("output/fixed_distance_distance_cache.txt").unwrap(),
-        )
-        .unwrap();
         let angle_iterations = 2 * cache_size.0;
         let distance_iterations = 2 * cache_size.1;
         for j in 0..=angle_iterations {
@@ -203,7 +199,7 @@ mod tests {
         // Serialization is similar to JSON. Field names are stored in the buffer but are reused
         // between all maps and structs.
 
-        let deserialized = FixedDistanceDistanceCache::deserialize(r);
+        let deserialized = FixedDistanceDistanceCache::<f64>::deserialize(r);
         assert!(deserialized.is_ok());
         assert_eq!(cache, deserialized.unwrap());
     }

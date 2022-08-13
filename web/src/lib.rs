@@ -378,7 +378,7 @@ impl ImageCache {
 
         let black_hole_cache = fetch_url_binary(BLACK_HOLE_CACHE_URL.to_string()).await?;
         let black_hole_cache =
-            serde_json::from_slice::<BlackHoleCache>(&black_hole_cache.to_vec()).unwrap();
+            serde_json::from_slice::<BlackHoleCache<f64>>(&black_hole_cache.to_vec()).unwrap();
         let direction_cache = black_hole_cache.direction_cache;
         let distance_cache = black_hole_cache.distance_cache;
 

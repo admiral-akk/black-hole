@@ -66,8 +66,8 @@ pub fn cast_ray_steps_response(z: f64, camera_distance: f64, black_hole_radius: 
 const Z_EPSILON: f64 = 0.000000001;
 
 pub fn find_optimal_z(
-    camera_distance: f32,
-    black_hole_radius: f32,
+    camera_distance: f64,
+    black_hole_radius: f64,
     z_bounds: (f64, f64),
     is_too_close: &TooClosePredicate,
 ) -> (f64, f64) {
@@ -86,7 +86,7 @@ pub fn find_optimal_z(
 }
 
 fn find_bound_with_grazing_distance(
-    camera_distance: f32,
+    camera_distance: f64,
     field: &Field,
     epsilon: f64,
     max_distance: f64,
@@ -115,7 +115,7 @@ fn find_bound_with_grazing_distance(
     far_z
 }
 
-fn find_bound(camera_distance: f32, field: &Field, epsilon: f64, max_distance: f64) -> f64 {
+fn find_bound(camera_distance: f64, field: &Field, epsilon: f64, max_distance: f64) -> f64 {
     let (mut miss_z, mut hit_z) = (-1.0, 1.0);
     while hit_z - miss_z > epsilon {
         let z = 0.5 * (hit_z + miss_z);

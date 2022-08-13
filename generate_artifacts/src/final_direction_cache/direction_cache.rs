@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 
 use super::fixed_distance_direction_cache::FixedDistanceDirectionCache;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct DirectionCache {
+pub struct DirectionCache<T> {
     pub cache_size: (usize, usize),
-    pub distance_bounds: (f64, f64),
-    pub black_hole_radius: f64,
-    pub distance_angle_to_z_to_distance: Vec<FixedDistanceDirectionCache>,
+    pub distance_bounds: (T, T),
+    pub black_hole_radius: T,
+    pub distance_angle_to_z_to_distance: Vec<FixedDistanceDirectionCache<T>>,
 }
 
 fn d_01_to_left_index(d_01: f64, vec_len: usize) -> (usize, f64) {
@@ -23,7 +23,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     return float_01.clamp(0., 1.);
 }
 
-impl DirectionCache {
+impl DirectionCache<f64> {
     pub fn compute_new(
         cache_size: (usize, usize),
         distance_bounds: (f64, f64),
@@ -149,7 +149,7 @@ mod tests {
 
         assert!(serialized.is_ok());
 
-        let deserialized: Result<DirectionCache, serde_json::Error> =
+        let deserialized: Result<DirectionCache<f64>, serde_json::Error> =
             serde_json::from_str(serialized.unwrap().as_str());
 
         assert!(deserialized.is_ok());

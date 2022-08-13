@@ -41,24 +41,18 @@ fn z_to_left_index(max_z: f64, z: f64, cache_size: usize) -> (usize, f64) {
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct FixedDistanceDirectionCache {
-    pub max_z: f64,
-    pub min_z: f64,
-    pub camera_distance: f64,
-    pub black_hole_radius: f64,
-    pub z_to_final_dir: Vec<(f64, (f64, f64))>,
+pub struct FixedDistanceDirectionCache<T> {
+    pub max_z: T,
+    pub min_z: T,
+    pub camera_distance: T,
+    pub black_hole_radius: T,
+    pub z_to_final_dir: Vec<(T, (T, T))>,
 }
 
 fn find_closest_z(camera_distance: f64, black_hole_radius: f64) -> f64 {
     let too_close =
         |r: Response| r.hits_black_hole() || r.get_angle_dist().get_max_angle() > MAX_ANGLE;
-    find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
-        (-1., 1.),
-        &too_close,
-    )
-    .0
+    find_optimal_z(camera_distance, black_hole_radius, (-1., 1.), &too_close).0
 }
 
 // use this find z values where we don't have to apply anti-aliasing
@@ -67,16 +61,10 @@ fn find_minimum_pertubation_z(camera_distance: f64, black_hole_radius: f64, max_
         let initial_dir = (r.path[1] - r.path[0]).get_angle();
         r.hits_black_hole() || r.get_angle_dist().get_max_angle() - initial_dir > ANGLE_EPSILON
     };
-    find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
-        (-1., max_z),
-        &too_close,
-    )
-    .0
+    find_optimal_z(camera_distance, black_hole_radius, (-1., max_z), &too_close).0
 }
 
-impl FixedDistanceDirectionCache {
+impl FixedDistanceDirectionCache<f64> {
     pub fn compute_new(cache_size: usize, camera_distance: f64, black_hole_radius: f64) -> Self {
         let max_z = find_closest_z(camera_distance, black_hole_radius);
         let min_z = find_minimum_pertubation_z(camera_distance, black_hole_radius, max_z);
@@ -290,7 +278,7 @@ mod tests {
 
         assert!(serialized.is_ok());
 
-        let deserialized: Result<FixedDistanceDirectionCache, serde_json::Error> =
+        let deserialized: Result<FixedDistanceDirectionCache<f64>, serde_json::Error> =
             serde_json::from_str(serialized.unwrap().as_str());
 
         assert!(deserialized.is_ok());

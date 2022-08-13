@@ -8,13 +8,13 @@ use crate::path_integration2::{
 
 pub const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct FixedDistanceFixedAngleDistanceCache {
-    pub camera_distance: f64,
-    pub black_hole_radius: f64,
-    pub disc_bounds: (f64, f64),
-    pub z_bounds: (f64, f64),
-    pub angle: f64,
-    pub z_to_distance: Vec<f64>,
+pub struct FixedDistanceFixedAngleDistanceCache<T> {
+    pub camera_distance: T,
+    pub black_hole_radius: T,
+    pub disc_bounds: (T, T),
+    pub z_bounds: (T, T),
+    pub angle: T,
+    pub z_to_distance: Vec<T>,
 }
 
 fn float_01_to_index_01(float_01: f64) -> f64 {
@@ -32,7 +32,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
     return float_01.clamp(0., 1.);
 }
 
-impl FixedDistanceFixedAngleDistanceCache {
+impl FixedDistanceFixedAngleDistanceCache<f64> {
     pub fn compute_new(
         cache_size: usize,
         camera_distance: f64,
@@ -101,6 +101,20 @@ impl FixedDistanceFixedAngleDistanceCache {
     }
 }
 
+fn find_z_bounds_for_angle_f32(
+    camera_distance: f32,
+    black_hole_radius: f32,
+    distance_bounds: (f32, f32),
+    target_angle: f32,
+) -> (f32, f32) {
+    let result = find_z_bounds_for_angle(
+        camera_distance as f64,
+        black_hole_radius as f64,
+        (distance_bounds.0 as f64, distance_bounds.1 as f64),
+        target_angle as f64,
+    );
+    (result.0 as f32, result.1 as f32)
+}
 fn find_z_bounds_for_angle(
     camera_distance: f64,
     black_hole_radius: f64,
@@ -109,8 +123,8 @@ fn find_z_bounds_for_angle(
 ) -> (f64, f64) {
     let bound_predicate = |r: Response| r.hits_black_hole();
     let valid_z = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
+        camera_distance,
+        black_hole_radius,
         (-1., 1.),
         &bound_predicate,
     );
@@ -120,8 +134,8 @@ fn find_z_bounds_for_angle(
         return dist.is_some() && dist.unwrap() <= distance_bounds.1;
     };
     let lower_1 = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
+        camera_distance,
+        black_hole_radius,
         (-1., valid_z.0),
         &is_too_close,
     );
@@ -135,8 +149,8 @@ fn find_z_bounds_for_angle(
         dist.is_none() || dist.unwrap() <= distance_bounds.1
     };
     let lower_2 = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
+        camera_distance,
+        black_hole_radius,
         (valid_z.0, 1.0),
         &is_too_close,
     );
@@ -167,8 +181,8 @@ fn find_z_bounds_for_angle(
         return !dist.is_none() && dist.unwrap() <= distance_bounds.0;
     };
     let upper_1 = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
+        camera_distance,
+        black_hole_radius,
         (-1., valid_z.0),
         &is_too_close,
     );
@@ -182,8 +196,8 @@ fn find_z_bounds_for_angle(
         dist.is_none() || dist.unwrap() < distance_bounds.0
     };
     let upper_2 = find_optimal_z(
-        camera_distance as f32,
-        black_hole_radius as f32,
+        camera_distance,
+        black_hole_radius,
         (valid_z.0, 1.0),
         &is_too_close,
     );
@@ -313,7 +327,7 @@ mod tests {
 
         assert!(serialized.is_ok());
 
-        let deserialized: Result<FixedDistanceFixedAngleDistanceCache, serde_json::Error> =
+        let deserialized: Result<FixedDistanceFixedAngleDistanceCache<f64>, serde_json::Error> =
             serde_json::from_str(serialized.unwrap().as_str());
 
         assert!(deserialized.is_ok());
