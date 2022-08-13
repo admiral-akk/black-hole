@@ -30,6 +30,7 @@ use wasm_timer::SystemTime;
 use web_sys::MouseEvent;
 use web_sys::Touch;
 use web_sys::TouchEvent;
+use web_sys::Url;
 use web_sys::WheelEvent;
 
 use std::cell::RefCell;
@@ -172,7 +173,6 @@ impl BlackHoleParams {
     fn uniform_context(&self) -> Vec<UniformContext> {
         let mut v = Vec::new();
         v.push(UniformContext::ivec2(self.dimensions, "dimensions"));
-        console_log!("Dimensions: {:?}", self.dimensions);
         v.push(UniformContext::f32(self.distance, "distance"));
         v.push(UniformContext::f32(
             self.vertical_fov_degrees,
@@ -339,6 +339,7 @@ pub async fn fetch_url_binary(url: String) -> Result<Uint8Array, JsValue> {
 
 pub async fn fetch_rgb_texture(gl: &RenderContext, url: &str, name: &str) -> UniformContext {
     let image = to_image(fetch_url_binary(url.to_string()).await.unwrap());
+    console_log!("image:{}\ndim: {:?}", name, (image.width(), image.height()));
     let image_tex = generate_texture_from_u8(
         &gl.gl,
         &image.as_rgb8().unwrap().as_raw(),
@@ -352,18 +353,17 @@ pub async fn fetch_rgb_texture(gl: &RenderContext, url: &str, name: &str) -> Uni
         image.height() as i32,
     )
 }
-
 const GALAXY_URL: &str = "galaxy.jpg";
 const CONSTELLATIONS_URL: &str = "constellations.jpg";
 const STARS_URL: &str = "stars.jpg";
-const RAY_CACHE_2_URL: &str = "ray_cache.txt";
-const FIXED_DISTANCE_ANGLE_CACHE_URL: &str = "fixed_distance_distance_cache64_64.txt";
-const DISTANCE_CACHE_URL: &str = "distance_cache16_256_64.txt";
-const DIRECTION_CACHE_URL: &str = "direction_cache.txt";
 const BLACK_HOLE_CACHE_URL: &str = "black_hole_cache.txt";
+const COMBINED_URL: &str = "noise.jpg";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
+}
+fn to_image_png(u8: Uint8Array) -> DynamicImage {
+    image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Png).unwrap()
 }
 pub struct ImageCache {
     textures: Vec<UniformContext>,
@@ -374,37 +374,21 @@ impl ImageCache {
         let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
         let stars_tex = fetch_rgb_texture(gl, STARS_URL, "stars").await;
         let constellations_tex = fetch_rgb_texture(gl, CONSTELLATIONS_URL, "constellations").await;
+        let disc_noise_tex = fetch_rgb_texture(gl, COMBINED_URL, "disc_noise").await;
 
-        let angle_cache = fetch_url_binary(FIXED_DISTANCE_ANGLE_CACHE_URL.to_string()).await?;
-        let angle_cache =
-            serde_json::from_slice::<FixedDistanceDistanceCache>(&angle_cache.to_vec()).unwrap();
-
-        let mut v = Vec::new();
-        let mut min_z = Vec::new();
-
-        for x in 0..angle_cache.angle_to_z_to_distance.len() {
-            let cache = &angle_cache.angle_to_z_to_distance[x];
-            min_z.push(cache.z_bounds.0 as f32);
-            min_z.push(cache.z_bounds.1 as f32);
-            for c in &cache.z_to_distance {
-                v.push(*c as f32);
-            }
-        }
-
-        let angle_height = (min_z.len() / 2) as i32;
-        let angle_width = v.len() as i32 / angle_height;
-        let disc_dim = UniformContext::vec2(
-            Vec2::new(
-                angle_cache.disc_bounds.0 as f32,
-                angle_cache.disc_bounds.1 as f32,
-            ),
-            "disc_dim",
-        );
         let black_hole_cache = fetch_url_binary(BLACK_HOLE_CACHE_URL.to_string()).await?;
         let black_hole_cache =
             serde_json::from_slice::<BlackHoleCache>(&black_hole_cache.to_vec()).unwrap();
         let direction_cache = black_hole_cache.direction_cache;
         let distance_cache = black_hole_cache.distance_cache;
+
+        let disc_dim = UniformContext::vec2(
+            Vec2::new(
+                distance_cache.disc_bounds.0 as f32,
+                distance_cache.disc_bounds.1 as f32,
+            ),
+            "disc_dim",
+        );
 
         let mut distance_cache_vec = Vec::new();
         let mut z_bounds_vec = Vec::new();
@@ -500,6 +484,7 @@ impl ImageCache {
                 galaxy_tex,
                 stars_tex,
                 constellations_tex,
+                disc_noise_tex,
                 disc_dim,
                 distance_cache_z_bounds,
                 distance_cache_tex,
@@ -670,6 +655,17 @@ pub async fn start() -> Result<(), JsValue> {
             .unwrap()
             .dyn_into::<web_sys::HtmlCanvasElement>()?,
     ));
+    let query_params = Url::new(&document().url().unwrap())
+        .unwrap()
+        .search_params();
+    let q_debug = query_params.get("debug");
+    if q_debug.is_some() {
+        // unhide
+        compile_button.set_hidden(false);
+        shader_text_box.set_hidden(false);
+        // enabled scrolling down?
+        d.body().unwrap().remove_attribute("overflow-x").unwrap();
+    }
     let last_200_frame_times = Rc::new(RefCell::new(Vec::from([0.0_f32])));
     let start_time = Rc::new(RefCell::new(SystemTime::now()));
     let params = Rc::new(RefCell::new(RenderParams::default()));
@@ -750,11 +746,24 @@ pub async fn start() -> Result<(), JsValue> {
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             {
                 let window = window();
-                let pixel_ratio = window.device_pixel_ratio();
-                let (width, height) = (
+                let mut pixel_ratio = window.device_pixel_ratio();
+                let (mut width, mut height) = (
                     window.inner_width().unwrap().as_f64().unwrap(),
                     window.inner_height().unwrap().as_f64().unwrap(),
                 );
+
+                let (q_width, q_height) = (query_params.get("width"), query_params.get("height"));
+                if q_width.is_some() {
+                    width = q_width.unwrap().parse::<f64>().unwrap();
+                    pixel_ratio = 1.0;
+                }
+                if q_height.is_some() {
+                    height = q_height.unwrap().parse::<f64>().unwrap();
+                    pixel_ratio = 1.0;
+                }
+
+                // let pixel_ratio = 1.;
+                // let (width, height) = (1024., 1024.);
                 {
                     params.borrow_mut().dimensions =
                         ((width * pixel_ratio) as u32, (height * pixel_ratio) as u32);

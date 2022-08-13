@@ -52,8 +52,32 @@ impl ProgramContext {
         gl.shader_source(&shader, &fragment_source.generate_source());
         gl.compile_shader(&shader);
         let compilation_log = gl.get_shader_info_log(&shader);
-        console_log!("Shader log: {:?}", compilation_log);
+        if compilation_log.is_some() {
+            let compilation_log = compilation_log.unwrap();
+            if compilation_log.contains("ERROR") || compilation_log.contains("WARNING") {
+                let source: Vec<String> = fragment_source
+                    .generate_source()
+                    .split("\n")
+                    .map(|s| s.to_string())
+                    .collect();
+                let log_vec: Vec<&str> = compilation_log.split("\n").collect();
 
+                for i in 0..log_vec.len() {
+                    let line = log_vec[i];
+                    if !line.contains("ERROR") && !line.contains("WARNING") {
+                        continue;
+                    }
+                    let split_line: Vec<&str> = line.split(":").collect();
+                    let line_number = split_line[2].parse::<usize>();
+                    if !line_number.is_ok() {
+                        continue;
+                    }
+                    let line_number = line_number.unwrap();
+                    let source_line = &source[line_number - 1];
+                    console_log!("Log line: {:?}\nSource line: {}", line, source_line);
+                }
+            }
+        }
         let frag_shader = shader;
         let program = gl
             .create_program()

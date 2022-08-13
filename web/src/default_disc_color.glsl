@@ -1,8 +1,52 @@
 
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+precision highp sampler3D;
+#else
+precision highp float;
+precision highp sampler3D;
+#endif
+uniform sampler2D stars;
+uniform ivec2 stars_dim;
+uniform sampler2D constellations;
+uniform ivec2 constellations_dim;
+uniform sampler2D galaxy;
+uniform ivec2 galaxy_dim;
+uniform sampler3D distance_cache_tex;
+uniform ivec3 distance_cache_tex_dim;
+uniform sampler2D distance_cache_z_bounds;
+uniform ivec2 distance_cache_z_bounds_dim;
+uniform sampler2D direction_cache;
+uniform ivec2 direction_cache_dim;
+uniform sampler2D direction_z_max_cache;
+uniform ivec2 direction_z_max_cache_dim;
+uniform sampler2D disc_noise;
+uniform ivec2 disc_noise_dim;
+out vec4 outColor;
+
+uniform float min_angle;
+
+uniform ivec2 dimensions;
+uniform vec2 disc_dim;
+uniform float vertical_fov_degrees;
+uniform vec3 normalized_dir;
+uniform vec3 normalized_up;
+uniform vec3 normalized_pos;
+uniform mat3x3 observer_mat;
+uniform mat3x3 inv_observer_mat;
+uniform float distance;
+uniform vec2 distance_bounds;
+uniform float time_s;
+uniform float vertical_fov_magnitude;
+
+#define PI_2 1.5707963269
+#define PI 3.1415926538
+#define TAU 6.2831853076
+
 #define SPEED_UP 1.*.1
 #define DIST_POINTS 14.
 #define REVOLUTION_COUNT 1.
-#define ARMS_COUNT 12.
+#define ARMS_COUNT 2.
 
 #define THETA_POINTS 35.*(1.+SPEED_UP)
 
@@ -23,45 +67,6 @@ vec3 galaxy_sample(vec2 phi_theta ){
     return texture(galaxy,phi_theta +0.5/vec2(galaxy_dim)).xyz;
 }
 
-
-float random(in vec2 _st){
-    return fract(cos(dot(_st.xy,vec2(TAU/ARMS_COUNT,1./1.)))*421.5453123);
-}
-
-// Based on Morgan McGuire @morgan3d
-// https://www.shadertoy.com/view/4dS3Wd
-float noise(in vec2 _st){
-    vec2 i=floor(_st);
-    vec2 f=fract(_st);
-    
-    // Four corners in 2D of a tile
-    float a=random(i);
-    float b=random(i+vec2(1.,0.));
-    float c=random(i+vec2(0.,1.));
-    float d=random(i+vec2(1.,1.));
-    
-    vec2 u=f*f*(3.-2.*f);
-    
-    return mix(a,b,u.x)+
-    (c-a)*u.y*(1.-u.x)+
-    (d-b)*u.x*u.y;
-}
-#define OCTAVES 3
-float fbm(in vec2 st){
-    // Initial values
-    float value=0.;
-    float amplitude=.5;
-    float frequency=0.;
-    //
-    // Loop of octaves
-    for(int i=0;i<OCTAVES;i++){
-        value+=amplitude*noise(st);
-        st*=2.;
-        amplitude*=.5;
-    }
-    return value;
-}
-
 // https://stackoverflow.com/questions/141855/programmatically-lighten-a-color
 vec3 scale_color(vec3 color,float scale){
     vec3 color_n=scale*color;
@@ -79,7 +84,7 @@ vec3 scale_color(vec3 color,float scale){
     float gray=1.-x*m;
     return vec3(gray+x*color_n.x,gray+x*color_n.y,gray+x*color_n.z);
 }
-#define ARM_DIST_SCALE 2.5
+#define ARM_DIST_SCALE 3.0
 #define INNER_SPEED_SCALE.03
 #define ARM_DIST_NORMALIZATION pow(TAU,ARM_DIST_SCALE)
 #define CLOUD_DENSITY.1
@@ -94,7 +99,10 @@ vec4 disc_color(float dist_01,float theta_01){
     
     float density=clamp(1.-dist_rescaled/1.1,0.,1.);
     
-    float noi=smoothstep(0.,.25,dist_01)*clamp((1./density)*(fbm(vec2(arm,arm_dist*ARM_DIST_NORMALIZATION*CLOUD_DENSITY+time_s*CLOUD_DENSITY*20.))-(1.-density)),0.,1.);
+    float x =arm ;
+    float y = arm_dist+time_s*CLOUD_DENSITY;
+    float noi_tex=texture(disc_noise,mod(vec2(x,y) + 1./vec2(disc_noise_dim),1.)).r*1.1;
+    float noi=smoothstep(0.,.25,dist_01)*clamp((1./density)*(noi_tex -(1.-density)),0.,1.);
     
     vec3 hard_red=vec3(.9,0.,0.)/2.;
     vec3 orange=vec3(1.,.5176,0.)/2.;
@@ -257,7 +265,7 @@ vec3 get_color(vec2 coord){
             texture(constellations,phi_theta+.5/vec2(constellations_dim)).xyz+
             texture(galaxy,phi_theta+.5/vec2(galaxy_dim)).xyz,0.,1.);
         }
-        return background_color.xyz;
+        return background_color;
     }
     
     void main(){

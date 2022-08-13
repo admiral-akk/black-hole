@@ -71,10 +71,17 @@ features = [
   'HtmlElement',
   'Node',
   'Window',
+  'Url',
+  'UrlSearchParams',
 ]
 
 [package.metadata.wasm-pack.profile.debug]
 wasm-opt = ['-O4', '-g']
 [package.metadata.wasm-pack.profile.release]
 # previously had just ['-O4']
-wasm-opt = ['-O4', '-g']
+wasm-opt = ['-Os']
+
+[package.metadata.wasm-pack.profile.release.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = false
