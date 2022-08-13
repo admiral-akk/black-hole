@@ -1,4 +1,4 @@
-use std::f64::consts::TAU;
+use std::{f32::consts::TAU, num};
 
 use crate::path_integration2::{
     path::cast_ray_steps_response,
@@ -8,34 +8,34 @@ use crate::path_integration2::{
 use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
-const ANGLE_EPSILON: f64 = 0.001;
-const LINEAR_SCALE: f64 = 20.;
-const MAX_ANGLE: f64 = TAU;
-const POW_F: f64 = 16.0;
+const ANGLE_EPSILON: f32 = 0.001;
+const LINEAR_SCALE: f32 = 20.;
+const MAX_ANGLE: f32 = TAU;
+const POW_F: f32 = 16.0;
 
-fn index_to_z_01(i: usize, cache_size: usize) -> f64 {
-    let z_01 = (i as f64) / (cache_size - 1) as f64;
+fn index_to_z_01(i: usize, cache_size: usize) -> f32 {
+    let z_01 = (i as f32) / (cache_size - 1) as f32;
     let mut z_01_high = z_01.powf(1. / POW_F).clamp(0., 1.);
     let mut z_01_low = (LINEAR_SCALE * z_01).clamp(0., 1.);
-    f64::min(z_01_low, z_01_high)
+    f32::min(z_01_low, z_01_high)
 }
 
-fn z_01_to_left_index(z_01: f64, cache_size: usize) -> (usize, f64) {
+fn z_01_to_left_index(z_01: f32, cache_size: usize) -> (usize, f32) {
     let mut z_01_high = z_01.powf(POW_F).clamp(0., 1.);
     let mut z_01_low = (z_01 / LINEAR_SCALE).clamp(0., 1.);
 
-    let z_01 = f64::max(z_01_low, z_01_high) * (cache_size - 1) as f64;
+    let z_01 = f32::max(z_01_low, z_01_high) * (cache_size - 1) as f32;
 
     let index = (z_01 as usize).clamp(0, cache_size - 2);
-    let t = z_01 - index as f64;
+    let t = z_01 - index as f32;
     (index, t)
 }
 
-fn index_to_z(max_z: f64, i: usize, cache_size: usize) -> f64 {
+fn index_to_z(max_z: f32, i: usize, cache_size: usize) -> f32 {
     let float_01 = index_to_z_01(i, cache_size);
     (max_z + 1.0) * float_01 - 1.0
 }
-fn z_to_left_index(max_z: f64, z: f64, cache_size: usize) -> (usize, f64) {
+fn z_to_left_index(max_z: f32, z: f32, cache_size: usize) -> (usize, f32) {
     let z_01 = ((z + 1.0) / (max_z + 1.0));
     z_01_to_left_index(z_01, cache_size)
 }
@@ -51,35 +51,53 @@ pub struct FixedDistanceDirectionCache<T> {
 
 fn find_closest_z(camera_distance: f64, black_hole_radius: f64) -> f64 {
     let too_close =
-        |r: Response| r.hits_black_hole() || r.get_angle_dist().get_max_angle() > MAX_ANGLE;
-    find_optimal_z(camera_distance, black_hole_radius, (-1., 1.), &too_close).0
+        |r: Response| r.hits_black_hole() || r.get_angle_dist().get_max_angle() > MAX_ANGLE as f64;
+    let camera_distance: f64 = camera_distance.into();
+    let black_hole_radius: f64 = black_hole_radius.into();
+    find_optimal_z(camera_distance, black_hole_radius, (-1., 1.), &too_close)
+        .0
+        .into()
 }
 
 // use this find z values where we don't have to apply anti-aliasing
-fn find_minimum_pertubation_z(camera_distance: f64, black_hole_radius: f64, max_z: f64) -> f64 {
+fn find_minimum_pertubation_z(camera_distance: f32, black_hole_radius: f32, max_z: f32) -> f32 {
     let too_close = |r: Response| {
         let initial_dir = (r.path[1] - r.path[0]).get_angle();
-        r.hits_black_hole() || r.get_angle_dist().get_max_angle() - initial_dir > ANGLE_EPSILON
+        r.hits_black_hole()
+            || r.get_angle_dist().get_max_angle() - initial_dir > ANGLE_EPSILON as f64
     };
-    find_optimal_z(camera_distance, black_hole_radius, (-1., max_z), &too_close).0
+    find_optimal_z(
+        camera_distance as f64,
+        black_hole_radius as f64,
+        (-1., max_z as f64),
+        &too_close,
+    )
+    .0 as f32
 }
 
-impl FixedDistanceDirectionCache<f64> {
-    pub fn compute_new(cache_size: usize, camera_distance: f64, black_hole_radius: f64) -> Self {
-        let max_z = find_closest_z(camera_distance, black_hole_radius);
-        let min_z = find_minimum_pertubation_z(camera_distance, black_hole_radius, max_z);
-        let mut z_to_final_dir = Vec::new();
+impl FixedDistanceDirectionCache<f32> {
+    pub fn compute_new(cache_size: usize, camera_distance: f32, black_hole_radius: f32) -> Self {
+        let max_z = find_closest_z(camera_distance as f64, black_hole_radius as f64);
+        let min_z = find_minimum_pertubation_z(
+            camera_distance as f32,
+            black_hole_radius as f32,
+            max_z as f32,
+        );
+        let mut z_to_final_dir: Vec<(f32, (f32, f32))> = Vec::new();
         for i in 0..cache_size {
-            let z = index_to_z(max_z, i, cache_size);
+            let z = index_to_z(max_z as f32, i, cache_size);
             let final_dir =
-                cast_ray_steps_response(z, camera_distance, black_hole_radius).final_dir;
+                cast_ray_steps_response(z as f64, camera_distance as f64, black_hole_radius as f64)
+                    .final_dir;
             if final_dir.is_none() {
                 panic!("Should always miss black hole!\nmax_z: {}\nz: {}", max_z, z);
             }
             let final_dir = final_dir.unwrap().normalize();
-            z_to_final_dir.push((z, (final_dir.x, final_dir.z)));
+            z_to_final_dir.push((z as f32, (final_dir.x as f32, final_dir.z as f32)));
         }
         println!("dist:{}\nMin_z: {}", camera_distance, min_z);
+        let min_z = min_z as f32;
+        let max_z = max_z as f32;
         FixedDistanceDirectionCache {
             max_z,
             min_z,
@@ -89,14 +107,15 @@ impl FixedDistanceDirectionCache<f64> {
         }
     }
 
-    pub fn get_final_dir(&self, z_01: f64) -> DVec3 {
-        let (index, t) = z_01_to_left_index(z_01, self.z_to_final_dir.len());
+    pub fn get_final_dir(&self, z_01: f32) -> DVec3 {
+        let (index, t) = z_01_to_left_index(z_01 as f32, self.z_to_final_dir.len());
         let left = self.z_to_final_dir[index].1;
         let right = self.z_to_final_dir[index + 1].1;
+        let t = t as f32;
         DVec3::new(
-            t * right.0 + (1. - t) * left.0,
+            (t * right.0 + (1. - t) * left.0) as f64,
             0.0,
-            t * right.1 + (1. - t) * left.1,
+            (t * right.1 + (1. - t) * left.1) as f64,
         )
     }
 }
@@ -121,7 +140,7 @@ mod tests {
 
         let mut errors = Vec::new();
         for pow in [1., 2., 4., 8., 16., 32.] {
-            let cache = FixedDistanceDirectionCache::compute_new(
+            let cache = FixedDistanceDirectionCache::<f32>::compute_new(
                 cache_size,
                 camera_distance,
                 black_hole_radius,
@@ -150,7 +169,7 @@ mod tests {
 
         let mut errors = Vec::new();
         for camera_distance in [2., 5., 10., 15., 20.] {
-            let cache = FixedDistanceDirectionCache::compute_new(
+            let cache = FixedDistanceDirectionCache::<f32>::compute_new(
                 cache_size,
                 camera_distance,
                 black_hole_radius,
@@ -159,11 +178,14 @@ mod tests {
             let mut line = Vec::new();
 
             for i in 0..cache.z_to_final_dir.len() {
-                let z = index_to_z(cache.max_z, i, cache_size);
-                let curr_angle =
-                    cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius)
-                        .get_angle_dist()
-                        .get_max_angle();
+                let z = index_to_z(cache.max_z as f32, i, cache_size);
+                let curr_angle = cast_ray_steps_response(
+                    z as f64,
+                    cache.camera_distance as f64,
+                    cache.black_hole_radius as f64,
+                )
+                .get_angle_dist()
+                .get_max_angle();
                 println!("z: {}, Final dir: {:?}", z, curr_angle);
                 line.push(((i as f32) / (cache_size - 1) as f32, curr_angle as f32));
             }
@@ -183,7 +205,7 @@ mod tests {
         let camera_distance = 2.0;
         let black_hole_radius = 1.5;
 
-        let cache = FixedDistanceDirectionCache::compute_new(
+        let cache = FixedDistanceDirectionCache::<f32>::compute_new(
             cache_size,
             camera_distance,
             black_hole_radius,
@@ -193,8 +215,11 @@ mod tests {
 
         for z in &cache.z_to_final_dir {
             let z = z.0;
-            let response =
-                cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius);
+            let response = cast_ray_steps_response(
+                z as f64,
+                cache.camera_distance as f64,
+                cache.black_hole_radius as f64,
+            );
             paths.push(
                 response
                     .path
@@ -225,7 +250,7 @@ mod tests {
             );
 
             for i in 0..(2 * cache_size) {
-                let z_01 = i as f64 / (2 * cache_size - 1) as f64;
+                let z_01 = i as f32 / (2 * cache_size - 1) as f32;
                 samples.push(z_01);
                 if z_01 > 0. && z_01 < 1. {
                     samples.push(z_01 * z_01);
@@ -238,8 +263,11 @@ mod tests {
             for z_01 in &samples {
                 let approx_final_dir = cache.get_final_dir(*z_01);
                 let z = (cache.max_z + 1.) * z_01 - 1.;
-                let response =
-                    cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius);
+                let response = cast_ray_steps_response(
+                    z as f64,
+                    cache.camera_distance as f64,
+                    cache.black_hole_radius as f64,
+                );
 
                 let true_final_dir = response.final_dir;
                 assert!(
@@ -278,7 +306,7 @@ mod tests {
 
         assert!(serialized.is_ok());
 
-        let deserialized: Result<FixedDistanceDirectionCache<f64>, serde_json::Error> =
+        let deserialized: Result<FixedDistanceDirectionCache<f32>, serde_json::Error> =
             serde_json::from_str(serialized.unwrap().as_str());
 
         assert!(deserialized.is_ok());

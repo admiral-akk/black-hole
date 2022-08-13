@@ -9,7 +9,7 @@ pub struct DirectionCache<T> {
     pub cache_size: (usize, usize),
     pub distance_bounds: (T, T),
     pub black_hole_radius: T,
-    pub distance_angle_to_z_to_distance: Vec<FixedDistanceDirectionCache<T>>,
+    pub distance_angle_to_z_to_distance: Vec<FixedDistanceDirectionCache<f32>>,
 }
 
 fn d_01_to_left_index(d_01: f64, vec_len: usize) -> (usize, f64) {
@@ -35,8 +35,11 @@ impl DirectionCache<f64> {
                 / (cache_size.0 - 1) as f64
                 + distance_bounds.0;
             println!("Generating dist: {}", dist);
-            let fixed_distance_cache =
-                FixedDistanceDirectionCache::compute_new(cache_size.1, dist, black_hole_radius);
+            let fixed_distance_cache = FixedDistanceDirectionCache::compute_new(
+                cache_size.1,
+                dist as f32,
+                black_hole_radius as f32,
+            );
             distance_angle_to_z_to_distance.push(fixed_distance_cache);
         }
         DirectionCache {
@@ -48,8 +51,8 @@ impl DirectionCache<f64> {
     }
     pub fn get_max_z_bounds(&self, d_01: f64) -> f64 {
         let (index, t) = d_01_to_left_index(d_01, self.distance_angle_to_z_to_distance.len());
-        let left = &self.distance_angle_to_z_to_distance[index].max_z;
-        let right = &self.distance_angle_to_z_to_distance[index + 1].max_z;
+        let left = self.distance_angle_to_z_to_distance[index].max_z as f64;
+        let right = self.distance_angle_to_z_to_distance[index + 1].max_z as f64;
         right * t + (1. - t) * left
     }
 
@@ -57,8 +60,8 @@ impl DirectionCache<f64> {
         let (index, t) = d_01_to_left_index(d_01, self.distance_angle_to_z_to_distance.len());
         let z_max = self.get_max_z_bounds(d_01);
         let z_01 = ((z + 1.) / (z_max + 1.)).clamp(0., 1.);
-        let left = self.distance_angle_to_z_to_distance[index].get_final_dir(z_01);
-        let right = self.distance_angle_to_z_to_distance[index + 1].get_final_dir(z_01);
+        let left = self.distance_angle_to_z_to_distance[index].get_final_dir(z_01 as f32);
+        let right = self.distance_angle_to_z_to_distance[index + 1].get_final_dir(z_01 as f32);
         t * right + (1. - t) * left
     }
 }

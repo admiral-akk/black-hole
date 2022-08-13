@@ -12,7 +12,7 @@ type TooClosePredicate = dyn Fn(Response) -> bool;
 pub const RAY_START_DIR: DVec3 = DVec3::new(0.0, 0.0, -1.0);
 // Takes in a ray and a parameterization of the black hole; returns the path taken.
 // Also returns the final direction if it doesn't hit the black hole.
-pub fn cast_ray_steps(
+fn cast_ray_steps(
     camera_distance: f64,
     start_dir: DVec3,
     field: &Field,
@@ -40,7 +40,14 @@ pub fn cast_ray_steps(
 
 // Takes in a ray and a parameterization of the black hole; returns the path taken.
 // Also returns the final direction if it doesn't hit the black hole.
-pub fn cast_ray_steps_response(z: f64, camera_distance: f64, black_hole_radius: f64) -> Response {
+pub fn cast_ray_steps_response<T: std::convert::Into<f64>>(
+    z: T,
+    camera_distance: T,
+    black_hole_radius: T,
+) -> Response {
+    let z = z.into();
+    let camera_distance = camera_distance.into();
+    let black_hole_radius = black_hole_radius.into();
     let test = DVec3::new((1.0 - z * z).sqrt(), 0.0, z);
     let field = Field::new(black_hole_radius, camera_distance);
     let mut particle = field.spawn_particle(camera_distance * RAY_START_DIR, test);
@@ -65,16 +72,20 @@ pub fn cast_ray_steps_response(z: f64, camera_distance: f64, black_hole_radius: 
 }
 const Z_EPSILON: f64 = 0.000000001;
 
-pub fn find_optimal_z(
-    camera_distance: f64,
-    black_hole_radius: f64,
-    z_bounds: (f64, f64),
+pub fn find_optimal_z<T: std::convert::Into<f64>>(
+    camera_distance: T,
+    black_hole_radius: T,
+    z_bounds: (T, T),
     is_too_close: &TooClosePredicate,
 ) -> (f64, f64) {
+    let camera_distance = camera_distance.into();
+    let black_hole_radius = black_hole_radius.into();
+    let z_bounds = (z_bounds.0.into(), z_bounds.1.into());
+
     let mut z_bounds = z_bounds;
     while z_bounds.1 - z_bounds.0 > Z_EPSILON {
         let z = 0.5 * (z_bounds.0 + z_bounds.1);
-        let response = cast_ray_steps_response(z, camera_distance as f64, black_hole_radius as f64);
+        let response = cast_ray_steps_response(z, camera_distance, black_hole_radius);
         if is_too_close(response) {
             // too close
             z_bounds.1 = z;
