@@ -624,6 +624,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-utils",
+ "wire-structs",
 ]
 
 [[package]]
@@ -1793,6 +1794,10 @@ checksum = "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "wire-structs"
+version = "0.1.0"
 
 [[package]]
 name = "yeslogic-fontconfig-sys"

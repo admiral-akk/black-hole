@@ -6,7 +6,8 @@ members = [
     "web",
     "generate_artifacts",
     "test_utils",
-]
+    "wire_structs",
+    ]
 resolver = "2"
 
 

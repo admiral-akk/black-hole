@@ -8,6 +8,7 @@ authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
 crate-type = ["cdylib", "rlib"]
 [dependencies]
 path-integration = { path = "../path_integration" }
+wire-structs = { path = "../wire_structs" }
 glam = "0.21.1"
 serde = "1.0"
 flexbuffers  = "2.0.0"
