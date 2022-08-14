@@ -56,11 +56,26 @@ uniform float vertical_fov_magnitude;
 #define ARM_DIST_NORMALIZATION pow(TAU,ARM_DIST_SCALE)
 #define CLOUD_DENSITY.1
 
+vec4 color_at(vec2 coord){
+    
+    return texture(disc_noise,coord.xy+.5/vec2(disc_noise_dim));
+}
+vec4 color_with_aa(vec2 coord,vec2 delta){
+    vec4 color_t=vec4(0.);
+    vec2 aa_half_delta=delta/(2.*AA_LEVEL);
+    for(float x=0.;x<AA_LEVEL;x=x+1.){
+        for(float y=0.;y<AA_LEVEL;y=y+1.){
+            vec2 target=coord+aa_half_delta*vec2(1.+2.*x,1.+2.*y);
+            color_t+=color_at(target);
+        }
+    }
+    return color_t/(AA_LEVEL*AA_LEVEL);
+}
 void main(){
     // Sample
     
     vec2 delta=1./vec2(dimensions);
     vec2 coord=(gl_FragCoord.xy)*delta;
-    vec4 s=texture(disc_noise,coord.xy+.5/vec2(disc_noise_dim));
-    outColor=vec4(s.xyz,1.);
+    vec4 c=color_with_aa(coord,delta);
+    outColor=c;
 }

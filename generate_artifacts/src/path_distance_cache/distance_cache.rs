@@ -5,10 +5,13 @@ use serde::{Deserialize, Serialize};
 use crate::path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE;
 
 use super::{
-    fixed_distance_distance_cache::FixedDistanceDistanceCache,
-    fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDistanceCache,
+    fixed_distance_distance_cache::{FixedDistanceDistanceCache, DISTANCE_CACHE_SIZE},
+    fixed_distance_fixed_angle_distance_cache::{
+        FixedDistanceFixedAngleDistanceCache, ANGLE_DISTANCE_CACHE_SIZE,
+    },
 };
 
+pub const ALL_DISTANCE_CACHE_SIZE: usize = 1 << 2;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct DistanceCache {
     pub cache_size: (usize, usize, usize),
@@ -35,6 +38,11 @@ impl DistanceCache {
         black_hole_radius: f64,
         disc_bounds: (f64, f64),
     ) -> Self {
+        let cache_size = (
+            ALL_DISTANCE_CACHE_SIZE,
+            DISTANCE_CACHE_SIZE,
+            ANGLE_DISTANCE_CACHE_SIZE,
+        );
         let mut distance_angle_to_z_to_distance = Vec::new();
 
         for i in 0..cache_size.0 {
@@ -90,14 +98,21 @@ mod tests {
     use test_utils::plot_trajectories;
 
     use crate::{
-        path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE,
+        path_distance_cache::{
+            fixed_distance_distance_cache::DISTANCE_CACHE_SIZE,
+            fixed_distance_fixed_angle_distance_cache::{ANGLE_DISTANCE_CACHE_SIZE, MIN_ANGLE},
+        },
         path_integration2::path::cast_ray_steps_response,
     };
 
-    use super::{DistanceCache, FixedDistanceDistanceCache};
+    use super::{DistanceCache, FixedDistanceDistanceCache, ALL_DISTANCE_CACHE_SIZE};
     #[test]
     fn full_test_error() {
-        let cache_size = (16, 16, 16);
+        let cache_size = (
+            ALL_DISTANCE_CACHE_SIZE,
+            DISTANCE_CACHE_SIZE,
+            ANGLE_DISTANCE_CACHE_SIZE,
+        );
         let black_hole_radius = 1.5;
         let distance = (5., 20.0);
         let max_disc_radius = (1.5, 12.0);

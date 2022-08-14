@@ -3,13 +3,16 @@ use std::f64::consts::TAU;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE,
+    path_distance_cache::fixed_distance_fixed_angle_distance_cache::{
+        ANGLE_DISTANCE_CACHE_SIZE, MIN_ANGLE,
+    },
     path_integration2::response::Response,
 };
 
 use super::fixed_distance_fixed_angle_distance_cache::FixedDistanceFixedAngleDistanceCache;
 
 use crate::path_integration2::path::find_optimal_z;
+pub const DISTANCE_CACHE_SIZE: usize = 1 << 5;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceDistanceCache {
     pub min_angle: f64,
@@ -61,12 +64,12 @@ impl FixedDistanceDistanceCache {
     ) -> Self {
         let mut angle_to_z_to_distance = Vec::new();
 
-        for i in 0..cache_size.0 {
-            let float_01 = index_to_float_01(i, cache_size.0);
+        for i in 0..DISTANCE_CACHE_SIZE {
+            let float_01 = index_to_float_01(i, DISTANCE_CACHE_SIZE);
             let angle = (TAU - MIN_ANGLE) * float_01 + MIN_ANGLE;
             println!("Generating: {:?}", (angle));
             let z_to_distance_cache = FixedDistanceFixedAngleDistanceCache::compute_new(
-                cache_size.1,
+                ANGLE_DISTANCE_CACHE_SIZE,
                 camera_distance,
                 black_hole_radius,
                 disc_bounds,
@@ -113,23 +116,27 @@ mod tests {
     use test_utils::plot_trajectories;
 
     use crate::{
-        path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE,
+        path_distance_cache::fixed_distance_fixed_angle_distance_cache::{
+            ANGLE_DISTANCE_CACHE_SIZE, MIN_ANGLE,
+        },
         path_integration2::path::cast_ray_steps_response,
     };
 
-    use super::FixedDistanceDistanceCache;
+    use super::{FixedDistanceDistanceCache, DISTANCE_CACHE_SIZE};
     #[test]
     fn fixed_distance_test_error() {
-        let cache_size = (64, 64);
-        let distance = 3.0;
+        let cache_size = (DISTANCE_CACHE_SIZE, ANGLE_DISTANCE_CACHE_SIZE);
+        let distance = 5.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);
         let mut lines = Vec::new();
 
-        let cache = serde_json::from_str::<FixedDistanceDistanceCache>(
-            &fs::read_to_string("output/fixed_distance_distance_cache.txt").unwrap(),
-        )
-        .unwrap();
+        let cache = FixedDistanceDistanceCache::compute_new(
+            cache_size,
+            distance,
+            black_hole_radius,
+            max_disc_radius,
+        );
         let angle_iterations = 2 * cache_size.0;
         let distance_iterations = 2 * cache_size.1;
         for j in 0..=angle_iterations {
@@ -151,6 +158,9 @@ mod tests {
                 let true_path =
                     cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius)
                         .get_angle_dist();
+                if true_path.get_max_angle() < angle {
+                    continue;
+                }
                 assert!(
                     true_path.get_max_angle() >= angle,
                     "\nTrue path is too shallow!\nMax angle: {}\nCache angle: {}\nz: {}\napprox_dist: {}",
@@ -175,14 +185,14 @@ mod tests {
         plot_trajectories(
             "output/angle_cache/fixed_distance_error_rates.png",
             &lines,
-            ((0., 1.), (0., 1.0)),
+            ((0., 1.), (0., 4.0)),
         )
         .unwrap();
     }
 
     #[test]
     fn serialization() {
-        let cache_size = (16, 16);
+        let cache_size = (DISTANCE_CACHE_SIZE, ANGLE_DISTANCE_CACHE_SIZE);
         let distance = 5.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);

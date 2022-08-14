@@ -1,8 +1,5 @@
 [workspace]
 members = [
-    "path_integration",
-    "rendering",
-    "local",
     "web",
     "generate_artifacts",
     "test_utils",

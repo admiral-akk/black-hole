@@ -3,7 +3,8 @@ use std::f64::consts::TAU;
 use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
-use super::fixed_distance_direction_cache::FixedDistanceDirectionCache;
+pub const DIRECTION_CACHE_SIZE: usize = 1 << 5;
+use super::fixed_distance_direction_cache::{FixedDistanceDirectionCache, DISTANCE_CACHE_SIZE};
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct DirectionCache {
     pub cache_size: (usize, usize),
@@ -30,33 +31,42 @@ impl DirectionCache {
         black_hole_radius: f64,
     ) -> Self {
         let mut distance_angle_to_z_to_distance = Vec::new();
-        for i in 0..cache_size.0 {
+        for i in 0..DIRECTION_CACHE_SIZE {
             let dist = (distance_bounds.1 - distance_bounds.0) as f64 * i as f64
-                / (cache_size.0 - 1) as f64
+                / (DIRECTION_CACHE_SIZE - 1) as f64
                 + distance_bounds.0;
             println!("Generating dist: {}", dist);
             let fixed_distance_cache =
-                FixedDistanceDirectionCache::compute_new(cache_size.1, dist, black_hole_radius);
+                FixedDistanceDirectionCache::compute_new(dist, black_hole_radius);
             distance_angle_to_z_to_distance.push(fixed_distance_cache);
         }
         DirectionCache {
-            cache_size,
+            cache_size: (DIRECTION_CACHE_SIZE, DISTANCE_CACHE_SIZE),
             distance_bounds,
             black_hole_radius,
             distance_angle_to_z_to_distance,
         }
     }
-    pub fn get_max_z_bounds(&self, d_01: f64) -> f64 {
+    pub fn get_z_bounds(&self, d_01: f64) -> (f64, f64) {
         let (index, t) = d_01_to_left_index(d_01, self.distance_angle_to_z_to_distance.len());
-        let left = &self.distance_angle_to_z_to_distance[index].max_z;
-        let right = &self.distance_angle_to_z_to_distance[index + 1].max_z;
-        right * t + (1. - t) * left
+        let left = (
+            self.distance_angle_to_z_to_distance[index].min_z,
+            self.distance_angle_to_z_to_distance[index].max_z,
+        );
+        let right = (
+            self.distance_angle_to_z_to_distance[index + 1].min_z,
+            self.distance_angle_to_z_to_distance[index + 1].max_z,
+        );
+        (
+            right.0 * t + (1. - t) * left.0,
+            right.1 * t + (1. - t) * left.1,
+        )
     }
 
     pub fn get_final_dir(&self, d_01: f64, z: f64) -> DVec3 {
         let (index, t) = d_01_to_left_index(d_01, self.distance_angle_to_z_to_distance.len());
-        let z_max = self.get_max_z_bounds(d_01);
-        let z_01 = ((z + 1.) / (z_max + 1.)).clamp(0., 1.);
+        let z_bounds = self.get_z_bounds(d_01);
+        let z_01 = ((z - z_bounds.0) / (z_bounds.1 - z_bounds.0)).clamp(0., 1.);
         let left = self.distance_angle_to_z_to_distance[index].get_final_dir(z_01);
         let right = self.distance_angle_to_z_to_distance[index + 1].get_final_dir(z_01);
         t * right + (1. - t) * left
@@ -69,14 +79,18 @@ mod tests {
     use test_utils::plot_trajectories;
 
     use crate::{
-        final_direction_cache::direction_cache::DirectionCache,
+        final_direction_cache::{
+            direction_cache::DirectionCache, fixed_distance_direction_cache::DISTANCE_CACHE_SIZE,
+        },
         path_integration2::path::cast_ray_steps_response,
     };
 
+    use super::DIRECTION_CACHE_SIZE;
+
     #[test]
     fn all_distance_direction_test() {
-        let cache_size = (1 << 6, 1 << 10);
-        let distance = (2.0, 30.);
+        let cache_size = (DIRECTION_CACHE_SIZE, DISTANCE_CACHE_SIZE);
+        let distance = (5.0, 30.);
         let black_hole_radius = 1.5;
         let cache = DirectionCache::compute_new(cache_size, distance, black_hole_radius);
 
@@ -106,7 +120,8 @@ mod tests {
             let mut line = Vec::new();
             for z_01 in &samples {
                 let z = 2. * z_01 - 1.;
-                if cache.get_max_z_bounds(*d_01) < z {
+                let z_bounds = cache.get_z_bounds(*d_01);
+                if z < z_bounds.0 || z > z_bounds.1 {
                     println!("Out of bounds, z: {}", z);
                     continue;
                 }
@@ -133,14 +148,14 @@ mod tests {
         plot_trajectories(
             "output/final_direction_cache/all_distance_error_rates.png",
             &lines,
-            ((0., 1.), (0., 1.0)),
+            ((0., 1.), (0., 4.0)),
         )
         .unwrap();
     }
 
     #[test]
     fn serialization() {
-        let cache_size = (16, 16);
+        let cache_size = (DIRECTION_CACHE_SIZE, DISTANCE_CACHE_SIZE);
         let distance = (5.0, 20.);
         let black_hole_radius = 1.5;
         let cache = DirectionCache::compute_new(cache_size, distance, black_hole_radius);

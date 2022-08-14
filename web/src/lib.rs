@@ -9,11 +9,7 @@ use framework::source_context::SourceContext;
 use framework::texture_utils::generate_3d_texture_from_f32;
 use framework::texture_utils::generate_texture_from_f32;
 use framework::texture_utils::Format;
-use generate_artifacts::black_hole_cache;
 use generate_artifacts::black_hole_cache::BlackHoleCache;
-use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
-use generate_artifacts::path_distance_cache::distance_cache;
-use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 use glam::IVec2;
 use glam::Mat3;
 use glam::Quat;
@@ -22,8 +18,6 @@ use glam::Vec3;
 
 use image::DynamicImage;
 use js_sys::Uint8Array;
-use path_integration::cache::fixed_distance_distance_cache::FixedDistanceDistanceCache;
-use path_integration::cache::ray_cache::RayCache as PathRayCache;
 
 use wasm_bindgen_futures::JsFuture;
 use wasm_timer::SystemTime;
@@ -356,8 +350,9 @@ pub async fn fetch_rgb_texture(gl: &RenderContext, url: &str, name: &str) -> Uni
 const GALAXY_URL: &str = "galaxy.jpg";
 const CONSTELLATIONS_URL: &str = "constellations.jpg";
 const STARS_URL: &str = "stars.jpg";
+const COMBINED_URL: &str = "combined.jpg";
 const BLACK_HOLE_CACHE_URL: &str = "black_hole_cache.txt";
-const COMBINED_URL: &str = "noise.jpg";
+const NOISE_URL: &str = "noise.jpg";
 
 fn to_image(u8: Uint8Array) -> DynamicImage {
     image::load_from_memory_with_format(&u8.to_vec(), image::ImageFormat::Jpeg).unwrap()
@@ -373,8 +368,9 @@ impl ImageCache {
     pub async fn new(gl: &RenderContext) -> Result<ImageCache, JsValue> {
         let galaxy_tex = fetch_rgb_texture(gl, GALAXY_URL, "galaxy").await;
         let stars_tex = fetch_rgb_texture(gl, STARS_URL, "stars").await;
+        let combined_tex = fetch_rgb_texture(gl, COMBINED_URL, "combined").await;
         let constellations_tex = fetch_rgb_texture(gl, CONSTELLATIONS_URL, "constellations").await;
-        let disc_noise_tex = fetch_rgb_texture(gl, COMBINED_URL, "disc_noise").await;
+        let disc_noise_tex = fetch_rgb_texture(gl, NOISE_URL, "disc_noise").await;
 
         let black_hole_cache = fetch_url_binary(BLACK_HOLE_CACHE_URL.to_string()).await?;
         let black_hole_cache =
@@ -483,6 +479,7 @@ impl ImageCache {
             textures: Vec::from([
                 galaxy_tex,
                 stars_tex,
+                combined_tex,
                 constellations_tex,
                 disc_noise_tex,
                 disc_dim,

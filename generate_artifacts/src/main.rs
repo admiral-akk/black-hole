@@ -1,74 +1,17 @@
+use std::f64::consts::TAU;
 use std::fs::{self};
 
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
-use path_distance_cache::fixed_distance_distance_cache::FixedDistanceDistanceCache;
-use path_integration::cache::{angle_cache::AngleCache, ray_cache::RayCache};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 mod final_direction_cache;
 mod path_distance_cache;
 mod path_integration2;
-const FIXED_DISTANCE_DISTANCE_CACHE: &str =
-    "generate_artifacts/output/fixed_distance_distance_cache.txt";
-const DISTANCE_DISTANCE_CACHE: &str = "generate_artifacts/output/distance_cache.txt";
-const FIXED_DISTANCE_DISTANCE_CACHE_FLEX_BUFFER: &str =
-    "generate_artifacts/output/fixed_distance_distance_cache.flex";
-const RAY_CACHE_PATH: &str = "generate_artifacts/output/ray_cache.txt";
-const ANGLE_CACHE_PATH: &str = "generate_artifacts/output/angle_cache.txt";
-const DIRECTION_CACHE_PATH: &str = "generate_artifacts/output/direction_cache.txt";
 const BLACK_HOLE_CACHE_PATH: &str = "generate_artifacts/output/black_hole_cache.txt";
-
-fn generate_ray_cache() {
-    let cache_dimensions = (128, 512);
-    let black_hole_radius = 1.5;
-    let distance_bounds = (7.0, 20.0);
-    let ray_cache = RayCache::compute_new(cache_dimensions, black_hole_radius, distance_bounds);
-    let data = serde_json::to_string(&ray_cache).unwrap();
-    fs::write(RAY_CACHE_PATH, data).expect("Unable to write file");
-}
-
-fn generate_distance_cache() {
-    let cache_size = (16, 256, 64);
-    let black_hole_radius = 1.5;
-    let distance = (5., 20.0);
-    let max_disc_radius = (1.5, 12.0);
-    let angle_cache =
-        DistanceCache::compute_new(cache_size, distance, black_hole_radius, max_disc_radius);
-    let data = serde_json::to_string(&angle_cache).unwrap();
-    fs::write(
-        DISTANCE_DISTANCE_CACHE.replace(
-            ".txt",
-            format!("{}_{}_{}.txt", cache_size.0, cache_size.1, cache_size.2).as_str(),
-        ),
-        data,
-    )
-    .expect("Unable to write file");
-}
-fn generate_direction_cache() {
-    let cache_dimensions = (1 << 6, 1 << 10);
-    let black_hole_radius = 1.5;
-    let distance_bounds = (5.0, 20.0);
-    let angle_cache =
-        DirectionCache::compute_new(cache_dimensions, distance_bounds, black_hole_radius);
-    let data = serde_json::to_string(&angle_cache).unwrap();
-    fs::write(DIRECTION_CACHE_PATH, data).expect("Unable to write file");
-}
-fn generate_angle_cache() {
-    let cache_dimensions = (1, 1024, 128);
-    let black_hole_radius = 1.5;
-    let distance_bounds = (16.0, 18.0);
-    let disc_radius = (3.0, 6.0);
-    let angle_cache = AngleCache::compute_new(
-        cache_dimensions,
-        black_hole_radius,
-        distance_bounds,
-        disc_radius,
-    );
-    let data = serde_json::to_string(&angle_cache).unwrap();
-    fs::write(ANGLE_CACHE_PATH, data).expect("Unable to write file");
-}
+const DISTANCE_TEST_PATH: &str = "generate_artifacts/output/distance_test_points.txt";
+const DIRECTION_TEST_PATH: &str = "generate_artifacts/output/direction_test_points.txt";
 use std::fs::File;
 use std::io::Read;
 
@@ -80,43 +23,79 @@ fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, std::io::Error> {
 
     Ok(buffer)
 }
-fn generate_fixed_distance_distance_cache() {
-    let cache_dimensions = (64, 64);
-    let camera_distance = 17.0;
-    let black_hole_radius = 1.5;
-    let disc_radius = (1.5, 12.0);
-    let angle_cache = FixedDistanceDistanceCache::compute_new(
-        cache_dimensions,
-        camera_distance,
-        black_hole_radius,
-        disc_radius,
-    );
-    let data = serde_json::to_string(&angle_cache).unwrap();
-    fs::write(
-        FIXED_DISTANCE_DISTANCE_CACHE.replace(
-            ".txt",
-            format!("{}_{}.txt", cache_dimensions.0, cache_dimensions.1).as_str(),
-        ),
-        data,
-    )
-    .expect("Unable to write file");
+
+#[derive(Serialize, Deserialize)]
+pub struct DirectionTestPoint {
+    pub z: f64,
+    pub dist: f64,
+    pub final_angle: Option<f64>,
 }
 
-fn write_file_as_byte_vec(filename: &str, bytes: Vec<u8>) {
-    fs::write(filename, &bytes).unwrap();
+#[derive(Serialize, Deserialize)]
+pub struct AngleTestPoint {
+    pub z: f64,
+    pub target_angle: f64,
+    pub dist: f64,
+    pub dist_at_angle: Option<f64>,
 }
 
-fn reserialize_fixed_distance_distance_cache() {
-    let angle_cache_u8 = get_file_as_byte_vec(&FIXED_DISTANCE_DISTANCE_CACHE.to_string()).unwrap();
-    let fixed_distance_distance_cache =
-        serde_json::from_slice::<FixedDistanceDistanceCache>(&angle_cache_u8).unwrap();
+const DIRECTION_CACHE_SIZE: (usize, usize) = (1 << 5, 1 << 8);
+const DISTANCE_CACHE_SIZE: (usize, usize, usize) = (1 << 4, 1 << 6, 1 << 4);
+const DISTANCE_BOUNDS: (f64, f64) = (3.0, 30.0);
+const BLACK_HOLE_RADIUS: f64 = 1.5;
+const DISC_BOUNDS: (f64, f64) = (1.5, 12.0);
+const DIST_TEST_POINTS: usize = 50;
+const ANGLE_TEST_POINTS: usize = 45;
+const Z_TEST_POINTS: usize = 2000;
+use crate::path_integration2::path::cast_ray_steps_response;
+use generate_artifacts::path_integration2::response::ToAngle;
+fn generate_test_points() {
+    let mut dist_test_points = Vec::new();
+    let mut angle_test_points = Vec::new();
+    for d_index in 0..DIST_TEST_POINTS {
+        for z_index in 0..Z_TEST_POINTS {
+            println!("Generating dist, d: {}, z: {}", d_index, z_index);
+            let dist = (DISTANCE_BOUNDS.1 - DISTANCE_BOUNDS.0)
+                * (d_index as f64 / (DIST_TEST_POINTS - 1) as f64)
+                + DISTANCE_BOUNDS.0;
+            let z = z_index as f64 / (Z_TEST_POINTS - 1) as f64;
+            let res = cast_ray_steps_response(z, dist, BLACK_HOLE_RADIUS);
+            let final_dir = res.final_dir;
+            let mut final_angle = None;
+            if final_dir.is_some() {
+                final_angle = Some(final_dir.unwrap().get_angle())
+            }
+            let test_point = DirectionTestPoint {
+                z,
+                dist,
+                final_angle,
+            };
+            dist_test_points.push(test_point);
+            let angle_dist = res.get_angle_dist();
+            for a_index in 0..ANGLE_TEST_POINTS {
+                println!(
+                    "Generating angle, d: {}, a: {}, z: {}",
+                    d_index, a_index, z_index
+                );
+                let target_angle = TAU * a_index as f64 / (ANGLE_TEST_POINTS - 1) as f64;
+                let dist_at_angle = angle_dist.get_dist(target_angle);
 
-    let mut s = flexbuffers::FlexbufferSerializer::new();
-    fixed_distance_distance_cache.serialize(&mut s).unwrap();
-    write_file_as_byte_vec(
-        &FIXED_DISTANCE_DISTANCE_CACHE_FLEX_BUFFER.to_string(),
-        s.take_buffer(),
-    );
+                let test_point = AngleTestPoint {
+                    z,
+                    target_angle,
+                    dist,
+                    dist_at_angle,
+                };
+                angle_test_points.push(test_point);
+            }
+        }
+    }
+    let data = serde_json::to_string(&dist_test_points).unwrap();
+    println!("Writing distance test points out.");
+    fs::write(DIRECTION_TEST_PATH, data).expect("Unable to write file");
+    let data = serde_json::to_string(&angle_test_points).unwrap();
+    println!("Writing angle test points out.");
+    fs::write(DISTANCE_TEST_PATH, data).expect("Unable to write file");
 }
 
 fn regenerate_black_hole_cache() {
@@ -128,14 +107,14 @@ fn regenerate_black_hole_cache() {
             Some(serde_json::from_slice::<BlackHoleCache>(&curr_cache_vec.unwrap()).unwrap());
     }
 
-    let direction_cache_size = (1 << 6, 1 << 10);
-    let distance_cache_size = (1 << 4, 1 << 8, 1 << 4);
+    let direction_cache_size = (1 << 5, 1 << 8);
+    let distance_cache_size = (1 << 4, 1 << 6, 1 << 4);
     let distance_bounds = (3.0, 30.0);
     let black_hole_radius = 1.5;
     let disc_bounds = (1.5, 12.0);
 
-    let mut direction_cache: DirectionCache;
-    let mut distance_cache: DistanceCache;
+    let direction_cache: DirectionCache;
+    let distance_cache: DistanceCache;
 
     if curr_cache.is_none() {
         println!("Black hole cache not found.");
@@ -195,8 +174,6 @@ fn regenerate_black_hole_cache() {
 }
 
 fn main() {
-    // generate_ray_cache();
-    // generate_angle_cache();
-    regenerate_black_hole_cache();
-    // reserialize_fixed_distance_distance_cache();
+    generate_test_points();
+    //regenerate_black_hole_cache();
 }

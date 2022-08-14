@@ -12,7 +12,7 @@ type TooClosePredicate = dyn Fn(Response) -> bool;
 pub const RAY_START_DIR: DVec3 = DVec3::new(0.0, 0.0, -1.0);
 // Takes in a ray and a parameterization of the black hole; returns the path taken.
 // Also returns the final direction if it doesn't hit the black hole.
-pub fn cast_ray_steps(
+fn cast_ray_steps(
     camera_distance: f64,
     start_dir: DVec3,
     field: &Field,

@@ -10,6 +10,8 @@ uniform sampler2D stars;
 uniform ivec2 stars_dim;
 uniform sampler2D constellations;
 uniform ivec2 constellations_dim;
+uniform sampler2D combined;
+uniform ivec2 combined_dim;
 uniform sampler2D galaxy;
 uniform ivec2 galaxy_dim;
 uniform sampler3D distance_cache_tex;
@@ -65,6 +67,9 @@ vec3 constellation_sample(vec2 phi_theta ){
 }
 vec3 galaxy_sample(vec2 phi_theta ){
     return texture(galaxy,phi_theta +0.5/vec2(galaxy_dim)).xyz;
+}
+vec3 combined_sample(vec2 phi_theta) {
+    return texture(combined, phi_theta +0.5/vec2(combined_dim)).xyz;
 }
 
 // https://stackoverflow.com/questions/141855/programmatically-lighten-a-color
@@ -228,32 +233,35 @@ vec3 get_color(vec2 coord){
     
     vec3 true_start_dir=normalize(view_width2*((coord.x-.5)*right2+(coord.y-.5)*up2)+forward2);
     vec3 background_color=vec3(0.,0.,0.);
-    float max_z=texture(direction_z_max_cache,vec2((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),.0)+.5/vec2(direction_z_max_cache_dim)).y;
+    vec2 z_bounds=texture(direction_z_max_cache,vec2((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),.0)+.5/vec2(direction_z_max_cache_dim)).xy;
     
-    if(start_dir.z<max_z){
-        float val_1=(start_dir.z+1.)/(max_z+1.);
-        float i_0=val_1;
-        for(int i=0;i<4;i++){
-            i_0=i_0*i_0;
+    if(start_dir.z<z_bounds.y){
+        vec3 final_dir=true_start_dir;
+        if(start_dir.z>z_bounds.x){
+            float val_1=(start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+            float i_0=val_1;
+            for(int i=0;i<4;i++){
+                i_0=i_0*i_0;
+            }
+            float i_1=val_1/20.;
+            float index=clamp(max(i_0,i_1),0.,1.);
+            vec3 cached_dir=texture(direction_cache,vec2(index,(distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x))+.5/vec2(direction_cache_dim)).xzy;
+            float angle=PI/2.;
+            if(start_dir.x!=0.){
+                angle=atan(start_dir.y,start_dir.x);
+            }else if(start_dir.y<0.){
+                angle=-PI/2.;
+            }
+            
+            float sin_val=sin(angle);
+            float cos_val=cos(angle);
+            mat3x3 rot=mat3x3(vec2(cos_val,sin_val),0.,vec2(-sin_val,cos_val),0.,vec2(0.,0.),1.);
+            cached_dir=rot*cached_dir;
+            
+            // todo(CPU pre-compute)
+            mat3x3 inv=inverse(observer_mat);
+            vec3 final_dir=inv*cached_dir;
         }
-        float i_1=val_1/20.;
-        float index=clamp(max(i_0,i_1),0.,1.);
-        vec3 cached_dir=texture(direction_cache,vec2(index,(distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x))+.5/vec2(direction_cache_dim)).xzy;
-        float angle=PI/2.;
-        if(start_dir.x!=0.){
-            angle=atan(start_dir.y,start_dir.x);
-        }else if(start_dir.y<0.){
-            angle=-PI/2.;
-        }
-        
-        float sin_val=sin(angle);
-        float cos_val=cos(angle);
-        mat3x3 rot=mat3x3(vec2(cos_val,sin_val),0.,vec2(-sin_val,cos_val),0.,vec2(0.,0.),1.);
-        cached_dir=rot*cached_dir;
-        
-        // todo(CPU pre-compute)
-        mat3x3 inv=inverse(observer_mat);
-        vec3 final_dir=inv*cached_dir;
         float horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
         float phi=4.*PI+atan(final_dir.z,final_dir.x);
         
@@ -261,9 +269,7 @@ vec3 get_color(vec2 coord){
         
         vec2 phi_theta=vec2(mod(phi,TAU)/TAU,mod(theta,PI)/PI);
         background_color=clamp(
-            texture(stars,phi_theta+.5/vec2(stars_dim)).xyz+
-            texture(constellations,phi_theta+.5/vec2(constellations_dim)).xyz+
-            texture(galaxy,phi_theta+.5/vec2(galaxy_dim)).xyz,0.,1.);
+            texture(combined,phi_theta+.5/vec2(combined_dim)).xyz,0.,1.);
         }
         return background_color;
     }

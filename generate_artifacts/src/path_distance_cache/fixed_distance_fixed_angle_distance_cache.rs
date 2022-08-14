@@ -7,6 +7,7 @@ use crate::path_integration2::{
 };
 
 pub const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
+pub const ANGLE_DISTANCE_CACHE_SIZE: usize = 1 << 4;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {
     pub camera_distance: f64,
@@ -40,6 +41,7 @@ impl FixedDistanceFixedAngleDistanceCache {
         disc_bounds: (f64, f64),
         angle: f64,
     ) -> Self {
+        let cache_size = ANGLE_DISTANCE_CACHE_SIZE;
         let z_bounds =
             find_z_bounds_for_angle(camera_distance, black_hole_radius, disc_bounds, angle);
 
@@ -211,7 +213,10 @@ mod tests {
 
     use crate::path_integration2::path::cast_ray_steps_response;
 
-    use super::{float_01_to_index_01, FixedDistanceFixedAngleDistanceCache, MIN_ANGLE};
+    use super::{
+        float_01_to_index_01, FixedDistanceFixedAngleDistanceCache, ANGLE_DISTANCE_CACHE_SIZE,
+        MIN_ANGLE,
+    };
 
     #[test]
     fn show_index_distribution() {
@@ -235,8 +240,8 @@ mod tests {
 
     #[test]
     fn fixed_angle_test_error() {
-        let cache_size = 1 << 9;
-        let distance = 20.0;
+        let cache_size = ANGLE_DISTANCE_CACHE_SIZE;
+        let distance = 5.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (1.5, 12.0);
         let mut lines = Vec::new();
@@ -296,7 +301,7 @@ mod tests {
 
     #[test]
     fn serialization() {
-        let cache_size = 512;
+        let cache_size = ANGLE_DISTANCE_CACHE_SIZE;
         let distance = 10.0;
         let black_hole_radius = 1.5;
         let max_disc_radius = (3.0, 6.0);
