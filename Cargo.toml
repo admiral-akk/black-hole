@@ -4,6 +4,7 @@ members = [
     "generate_artifacts",
     "test_utils",
     "wire_structs",
+    "web_wgpu",
     ]
 resolver = "2"
 
