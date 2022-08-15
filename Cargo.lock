@@ -2123,6 +2123,7 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "env_logger",
+ "glam",
  "image",
  "log",
  "pollster",
