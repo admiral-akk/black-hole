@@ -11,7 +11,7 @@ pub struct BlackHole {
 impl BlackHole {
     pub fn to_buffer(&self, device: &Device) -> (Buffer, usize) {
         let mut padded_slice: Vec<u8> = bytemuck::cast_slice(&[*self]).to_vec();
-        while padded_slice.len() % 8 != 0 {
+        while padded_slice.len() % 16 != 0 {
             padded_slice.push(0);
         }
         (

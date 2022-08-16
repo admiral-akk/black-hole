@@ -20,12 +20,16 @@ struct RenderParams {
     distance: f32,
     time_s: f32,
     view_width: f32,
+    temp: f32,
 }
 
 struct BlackHole {
     disc_bounds: vec2<f32>,
     distance_bounds: vec2<f32>,
     radius: f32,
+    temp: f32,
+    temp2:f32,
+    temp3:f32,
 }
 
 @vertex

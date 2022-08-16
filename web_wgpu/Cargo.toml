@@ -42,10 +42,10 @@ web-sys = { version = "0.3", features = [
 ]}
  
 [package.metadata.wasm-pack.profile.debug]
-wasm-opt = ['-O4', '-g']
+wasm-opt = false
 [package.metadata.wasm-pack.profile.release]
+wasm-opt = false
 # previously had just ['-O4']
-wasm-opt = ['-O4', '-g']
 
 [package.metadata.wasm-pack.profile.release.wasm-bindgen]
 debug-js-glue = false

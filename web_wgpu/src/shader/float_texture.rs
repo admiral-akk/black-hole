@@ -1,11 +1,55 @@
 use anyhow::*;
 use std::mem::size_of;
-use wgpu::{Extent3d, TextureDimension, TextureFormat};
+use wgpu::{
+    BindGroupEntry, BindGroupLayoutEntry, BindingResource, Extent3d, SamplerBindingType,
+    TextureDimension, TextureFormat, TextureViewDimension,
+};
 
-pub struct FloatTexture {
+use super::variable::Variable;
+use std::marker::PhantomData;
+pub struct FloatTexture<U: Dimensions> {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
+    dimension_type: PhantomData<U>,
+}
+
+impl<U: Dimensions> Variable for FloatTexture<U> {
+    fn entry(&self, index: u32) -> Vec<BindGroupEntry> {
+        [
+            wgpu::BindGroupEntry {
+                binding: index,
+                resource: BindingResource::TextureView(&self.view),
+            },
+            wgpu::BindGroupEntry {
+                binding: index + 1,
+                resource: BindingResource::Sampler(&self.sampler),
+            },
+        ]
+        .to_vec()
+    }
+
+    fn layout_entry(&self, index: u32) -> Vec<BindGroupLayoutEntry> {
+        [
+            wgpu::BindGroupLayoutEntry {
+                binding: index,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: U::texture_view_dimension(),
+                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: index + 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(SamplerBindingType::NonFiltering),
+                count: None,
+            },
+        ]
+        .to_vec()
+    }
 }
 
 pub trait Format {
@@ -30,6 +74,7 @@ impl Format for [f32; 4] {
 
 pub trait Dimensions {
     fn texture_dimension() -> TextureDimension;
+    fn texture_view_dimension() -> TextureViewDimension;
     fn size(&self) -> Extent3d;
     fn row_length(&self) -> u32;
     fn row_count(&self) -> u32;
@@ -38,6 +83,9 @@ pub trait Dimensions {
 impl Dimensions for u32 {
     fn texture_dimension() -> TextureDimension {
         wgpu::TextureDimension::D1
+    }
+    fn texture_view_dimension() -> TextureViewDimension {
+        wgpu::TextureViewDimension::D1
     }
 
     fn size(&self) -> Extent3d {
@@ -60,6 +108,9 @@ impl Dimensions for (u32, u32) {
     fn texture_dimension() -> TextureDimension {
         wgpu::TextureDimension::D2
     }
+    fn texture_view_dimension() -> TextureViewDimension {
+        wgpu::TextureViewDimension::D2
+    }
 
     fn size(&self) -> Extent3d {
         Extent3d {
@@ -81,6 +132,9 @@ impl Dimensions for (u32, u32, u32) {
     fn texture_dimension() -> TextureDimension {
         wgpu::TextureDimension::D3
     }
+    fn texture_view_dimension() -> TextureViewDimension {
+        wgpu::TextureViewDimension::D3
+    }
 
     fn size(&self) -> Extent3d {
         Extent3d {
@@ -99,8 +153,8 @@ impl Dimensions for (u32, u32, u32) {
     }
 }
 
-impl FloatTexture {
-    pub fn from_f32<T: Format + bytemuck::Pod, U: Dimensions>(
+impl<U: Dimensions> FloatTexture<U> {
+    pub fn from_f32<T: Format + bytemuck::Pod>(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         vec: &[T],
@@ -151,6 +205,7 @@ impl FloatTexture {
             texture,
             view,
             sampler,
+            dimension_type: PhantomData,
         })
     }
 }
