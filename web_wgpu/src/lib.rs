@@ -7,7 +7,7 @@ use shader::{
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
 };
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, BindGroupLayoutDescriptor};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -22,6 +22,7 @@ struct State {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
+    stencil_pipeline: wgpu::RenderPipeline,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
@@ -29,6 +30,7 @@ struct State {
     render_params_buffer: wgpu::Buffer,
     params: (BlackHole, RenderParams),
     num_indices: u32,
+    stencil_bind_group: wgpu::BindGroup,
     diffuse_bind_group: wgpu::BindGroup,
 }
 
@@ -86,6 +88,10 @@ impl State {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
+        let stencil_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Stencil Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("stencil.wgsl").into()),
         });
         let mut v = Vec::new();
         for i in 0..1000 {
@@ -174,7 +180,17 @@ impl State {
             Texture::from_bytes(&device, &queue, include_bytes!("noise.jpg"), "Noise").unwrap();
         let noise_tex_view = noise_tex.view;
         let noise_tex_sampler = noise_tex.sampler;
+        let stencil_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[],
+                label: Some("Stencil Bind Group Layout"),
+            });
 
+        let stencil_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &stencil_bind_group_layout,
+            entries: &Vec::new(),
+            label: Some("Stencil Bind Group"),
+        });
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -352,6 +368,43 @@ impl State {
                 bind_group_layouts: &[&texture_bind_group_layout],
                 push_constant_ranges: &[],
             });
+        let stencil_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Stencil Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &stencil_shader,
+                entry_point: "vs_main",
+                buffers: &[Vertex::desc()],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &stencil_shader,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw, // 2.
+                cull_mode: Some(wgpu::Face::Back),
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None, // 1.
+            multisample: wgpu::MultisampleState {
+                count: 1,                         // 2.
+                mask: !0,                         // 3.
+                alpha_to_coverage_enabled: false, // 4.
+            },
+            multiview: None, // 5.
+        });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
@@ -399,6 +452,7 @@ impl State {
             queue,
             config,
             size,
+            stencil_pipeline,
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -406,6 +460,7 @@ impl State {
             render_params_buffer,
             params: (black_hole, render_params),
             num_indices,
+            stencil_bind_group,
             diffuse_bind_group,
         }
     }
