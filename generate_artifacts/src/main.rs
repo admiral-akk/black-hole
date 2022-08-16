@@ -4,7 +4,11 @@ use std::fs::{self};
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
+use generate_artifacts::texture::texture_2d::{
+    generate_final_angle_texture, sample_final_angle_texture, IndexMapping, Texture2D,
+};
 use serde::{Deserialize, Serialize};
+use test_utils::plot_trajectories;
 
 mod final_direction_cache;
 mod path_distance_cache;
@@ -24,14 +28,14 @@ fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, std::io::Error> {
     Ok(buffer)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DirectionTestPoint {
     pub z: f64,
     pub dist: f64,
     pub final_angle: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AngleTestPoint {
     pub z: f64,
     pub target_angle: f64,
@@ -42,6 +46,7 @@ pub struct AngleTestPoint {
 const DIRECTION_CACHE_SIZE: (usize, usize) = (1 << 5, 1 << 8);
 const DISTANCE_CACHE_SIZE: (usize, usize, usize) = (1 << 4, 1 << 6, 1 << 4);
 const DISTANCE_BOUNDS: (f64, f64) = (3.0, 30.0);
+const DISTANCE_BOUNDS_F32: (f32, f32) = (DISTANCE_BOUNDS.0 as f32, DISTANCE_BOUNDS.1 as f32);
 const BLACK_HOLE_RADIUS: f64 = 1.5;
 const DISC_BOUNDS: (f64, f64) = (1.5, 12.0);
 const DIST_TEST_POINTS: usize = 50;
@@ -49,6 +54,104 @@ const ANGLE_TEST_POINTS: usize = 45;
 const Z_TEST_POINTS: usize = 2000;
 use crate::path_integration2::path::cast_ray_steps_response;
 use generate_artifacts::path_integration2::response::ToAngle;
+const ANGLE_CACHE_PATH: &str = "generate_artifacts/output/angle_cache.txt";
+const ANGLE_PLOT_Z_PATH: &str = "generate_artifacts/output/angle_cache_z_bound.png";
+const ANGLE_ERROR_PLOT_PATH: &str = "generate_artifacts/output/angle_error.png";
+const Z_POW: f32 = 32.;
+const Z_LINEAR: f32 = 10.;
+const DIST_POW: f32 = 0.5;
+
+fn plot_z_bounds(tex: &Texture2D) {
+    let distance_mapping = IndexMapping {
+        i_01_to_dist_01: |i_01| i_01,
+        dist_01_to_i_01: |dist_01| dist_01,
+    };
+    let mut low = Vec::new();
+    let mut high = Vec::new();
+    for d_index in 0..100 {
+        let d_01 = distance_mapping.val_to_i_01(d_index as f32, (0., 100.));
+        let z_bounds = tex.get_z_bounds(d_01);
+        low.push((d_01, z_bounds.0));
+        high.push((d_01, z_bounds.1));
+    }
+
+    plot_trajectories(
+        ANGLE_PLOT_Z_PATH,
+        &[low, high].to_vec(),
+        ((0., 1.), (-1., 1.)),
+    )
+    .unwrap();
+}
+
+fn plot_error_by_z(tex: &Texture2D, distance_mapping: &IndexMapping, z_mapping: &IndexMapping) {
+    let test_points = get_file_as_byte_vec(DIRECTION_TEST_PATH);
+    let mut test_points: Vec<DirectionTestPoint> =
+        serde_json::from_slice::<Vec<DirectionTestPoint>>(&test_points.unwrap()).unwrap();
+
+    test_points.sort_by(|p_1, p_2| p_1.dist.partial_cmp(&p_2.dist).unwrap());
+    let mut lines = Vec::new();
+    let mut curr_dist = test_points[0].dist as f32;
+    let mut line = Vec::new();
+    for point in test_points {
+        let dist = point.dist as f32;
+        if dist != curr_dist {
+            curr_dist = dist;
+            lines.push(line);
+            line = Vec::new();
+        }
+        let d_01 = distance_mapping.val_to_i_01(dist, DISTANCE_BOUNDS_F32);
+        let z_bounds = tex.get_z_bounds(d_01);
+        let z = point.z as f32;
+        if z > z_bounds.1 || z < z_bounds.0 {
+            continue;
+        }
+        if point.final_angle.is_none() {
+            println!(
+                "In bounds, but no final angle.\nPoint: {:?}\napprox z_bounds: {:?}",
+                point,
+                tex.get_z_bounds(d_01),
+            );
+            continue;
+        }
+        let v = sample_final_angle_texture(
+            &tex,
+            &distance_mapping,
+            &z_mapping,
+            dist,
+            z,
+            DISTANCE_BOUNDS_F32,
+        );
+        let diff = (v - point.final_angle.unwrap() as f32).abs();
+        line.push((z.log2(), diff.log2()));
+    }
+    plot_trajectories(ANGLE_ERROR_PLOT_PATH, &lines, ((-10., 0.), (-10., 0.))).unwrap();
+}
+
+fn plot_angle_texture_stats(distance_mapping: &IndexMapping, z_mapping: &IndexMapping) {
+    let tex_u8 = get_file_as_byte_vec(ANGLE_CACHE_PATH);
+    let tex = serde_json::from_slice::<Texture2D>(&tex_u8.unwrap()).unwrap();
+    plot_z_bounds(&tex);
+    plot_error_by_z(&tex, distance_mapping, z_mapping);
+}
+
+fn generate_angle_texture(distance_mapping: &IndexMapping, z_mapping: &IndexMapping) {
+    let tex_u8 = get_file_as_byte_vec(ANGLE_CACHE_PATH);
+    let tex: Texture2D;
+    if tex_u8.is_ok() {
+        tex = serde_json::from_slice::<Texture2D>(&tex_u8.unwrap()).unwrap();
+    } else {
+        tex = generate_final_angle_texture(
+            (32, 64),
+            DISTANCE_BOUNDS_F32,
+            BLACK_HOLE_RADIUS as f32,
+            &distance_mapping,
+            &z_mapping,
+        );
+        fs::write(ANGLE_CACHE_PATH, serde_json::to_string(&tex).unwrap())
+            .expect("Unable to write file");
+    }
+}
+
 fn generate_test_points() {
     let mut dist_test_points = Vec::new();
     let mut angle_test_points = Vec::new();
@@ -60,11 +163,7 @@ fn generate_test_points() {
                 + DISTANCE_BOUNDS.0;
             let z = z_index as f64 / (Z_TEST_POINTS - 1) as f64;
             let res = cast_ray_steps_response(z, dist, BLACK_HOLE_RADIUS);
-            let final_dir = res.final_dir;
-            let mut final_angle = None;
-            if final_dir.is_some() {
-                final_angle = Some(final_dir.unwrap().get_angle())
-            }
+            let final_angle = res.get_final_angle();
             let test_point = DirectionTestPoint {
                 z,
                 dist,
@@ -171,9 +270,11 @@ fn regenerate_black_hole_cache() {
     let data = serde_json::to_string(&new_cache).unwrap();
     println!("Writing black hole cache out.");
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
-}
+} // lib.rs
 
 fn main() {
-    generate_test_points();
+    //  generate_test_points();
+    //generate_angle_texture(&distance_mapping, &z_mapping);
+    //plot_angle_texture_stats(&distance_mapping, &z_mapping);
     //regenerate_black_hole_cache();
 }

@@ -7,11 +7,20 @@ authors = ["Kuba Karpierz <mr.karpierz@gmail.com>"]
 [lib]
 crate-type = ["cdylib", "rlib"]
 [dependencies]
+winit = "0.26"
+env_logger = "0.9"
+log = "0.4"
+wgpu = "0.13"
+pollster = "0.2"
 wire-structs = { path = "../wire_structs" }
 glam = "0.21.1"
 serde = { version = "1.0", features = ["derive"] }
 flexbuffers  = "2.0.0"
 serde_json = { version = "1.0.82", features = ["float_roundtrip"] }
+test-utils = { path = "../test_utils" }
 
 [dev-dependencies]
 test-utils = { path = "../test_utils" }
+
+[features]
+generate = []

@@ -4,6 +4,7 @@ use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
 pub const DIRECTION_CACHE_SIZE: usize = 1 << 5;
+
 use super::fixed_distance_direction_cache::{FixedDistanceDirectionCache, DISTANCE_CACHE_SIZE};
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct DirectionCache {
@@ -47,6 +48,7 @@ impl DirectionCache {
             distance_angle_to_z_to_distance,
         }
     }
+
     pub fn get_z_bounds(&self, d_01: f64) -> (f64, f64) {
         let (index, t) = d_01_to_left_index(d_01, self.distance_angle_to_z_to_distance.len());
         let left = (

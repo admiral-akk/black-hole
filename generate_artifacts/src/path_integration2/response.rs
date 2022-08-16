@@ -30,6 +30,17 @@ impl Response {
     pub fn get_angle_dist(&self) -> AnglePath {
         AnglePath::new(&self.path)
     }
+
+    pub fn get_final_angle(&self) -> Option<f64> {
+        if self.final_dir.is_none() {
+            return None;
+        }
+        let mut final_angle = self.final_dir.unwrap().get_angle();
+        while final_angle < self.get_angle_dist().get_max_angle() {
+            final_angle += TAU;
+        }
+        Some(final_angle)
+    }
 }
 
 pub struct AnglePath {
