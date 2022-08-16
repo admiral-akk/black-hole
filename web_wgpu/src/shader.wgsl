@@ -52,30 +52,28 @@ var noise_s: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let pixel_xy =render_params.resolution * in.tex_coords;
+    let pixel_xy = render_params.resolution * in.tex_coords;
     let min_dim=min(render_params.resolution.x,render_params.resolution.y);
     let max_dim=max(render_params.resolution.x,render_params.resolution.y);
     let diff=max_dim-min_dim;
     let lower=diff/2.;
     let upper=min_dim+lower;
     let delta=1./vec2(min_dim);
-    var offset=vec2((max_dim-min_dim)/2.);
-    if(render_params.resolution.x>render_params.resolution.y){
-        if(pixel_xy.x <lower||pixel_xy.x>upper){
+    var offset=vec2(lower);
+    if(render_params.resolution.x > render_params.resolution.y){
+        if(pixel_xy.x < lower || pixel_xy.x > upper){
             return vec4(vec3(0.),1.);
         } else {
-        offset.y=0.;
-
+            offset.y=0.;
         }
     }else{
-        if(pixel_xy.y<lower||pixel_xy.y>upper){
+        if(pixel_xy.y < lower || pixel_xy.y > upper){
             return vec4(vec3(0.),1.);
         } else {
-            
-        offset.x=0.;
+            offset.x=0.;
         }
     }
-    let coords = (pixel_xy + offset)*delta - 0.5;
+    let coords = (pixel_xy - offset)*delta - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
 
     let v = (render_params.observer_matrix*vec4(start_dir,0.)).xyz;
