@@ -18,6 +18,8 @@ wgpu = "0.13"
 pollster = "0.2"
 bytemuck = { version = "1.4", features = [ "derive" ] }
 glam = "0.21.1"
+serde_json = { version = "1.0.82", features = ["float_roundtrip"] }
+generate-artifacts = { path = "../generate_artifacts" }
 
  [dependencies.image]
 version = "0.24"

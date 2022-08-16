@@ -49,9 +49,24 @@ var<uniform> render_params: RenderParams;
 var noise_t: texture_2d<f32>;
 @group(0) @binding(5)
 var noise_s: sampler;
+@group(0) @binding(6)
+var sin_t: texture_2d<f32>;
+@group(0) @binding(7)
+var sin_s: sampler;
+@group(0) @binding(8)
+var dir_z_bounds_t: texture_1d<f32>;
+@group(0) @binding(9)
+var dir_z_bounds_s: sampler;
+@group(0) @binding(10)
+var final_dir_t: texture_2d<f32>;
+@group(0) @binding(11)
+var final_dir_s: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let s = textureSample(sin_t,sin_s, in.tex_coords);
+    if (in.tex_coords.x > -1.) {
+    return vec4(s.xyz,1.);}
     let pixel_xy = render_params.resolution * in.tex_coords;
     let min_dim=min(render_params.resolution.x,render_params.resolution.y);
     let max_dim=max(render_params.resolution.x,render_params.resolution.y);

@@ -1,5 +1,4 @@
 use wgpu::util::DeviceExt;
-use wgpu::{Buffer, Device};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
