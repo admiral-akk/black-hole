@@ -9,6 +9,7 @@ pub struct RenderParams {
     pub resolution: [f32; 2],
     pub distance: [f32; 1],
     pub time_s: [f32; 1],
+    pub view_width: [f32; 1],
 }
 
 impl RenderParams {

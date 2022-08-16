@@ -1,7 +1,7 @@
 use glam::Mat4;
 use shader::{
-    black_hole::{self, BlackHole},
-    render_params::{self, RenderParams},
+    black_hole::BlackHole,
+    render_params::RenderParams,
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
 };
@@ -97,6 +97,7 @@ impl State {
             resolution: [1., 1.],
             distance: [5.],
             time_s: [1.],
+            view_width: [2. * f32::tan(std::f32::consts::PI * 60. / 360.)],
         };
         let (render_params_buffer, _) = render_params.to_buffer(&device);
 
