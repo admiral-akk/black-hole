@@ -65,8 +65,6 @@ var final_dir_s: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let s = textureSample(sin_t,sin_s, in.tex_coords);
-    if (in.tex_coords.x > -1.) {
-    return vec4(s.xyz,1.);}
     let pixel_xy = render_params.resolution * in.tex_coords;
     let min_dim=min(render_params.resolution.x,render_params.resolution.y);
     let max_dim=max(render_params.resolution.x,render_params.resolution.y);
@@ -75,6 +73,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let upper=min_dim+lower;
     let delta=1./vec2(min_dim);
     var offset=vec2(lower);
+    let distance = render_params.distance;
+    let distance_bounds = black_hole.distance_bounds;
+    let z_bounds=textureSample(dir_z_bounds_t,dir_z_bounds_s,
+    (distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x)).xy;
     if(render_params.resolution.x > render_params.resolution.y){
         if(pixel_xy.x < lower || pixel_xy.x > upper){
             return vec4(vec3(0.),1.);
@@ -90,6 +92,17 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
     let coords = (pixel_xy - offset)*delta - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
+    var final_dir = start_dir;
+    let z_01=(start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+    if (z_01 > 1. || z_01< 0.) {
+        return vec4(vec3(0.), 1.);
+    } else if (z_01 >= 0.)  {
+        var z_pow = z_01;
+        for (var i = 0; i < 4; i += 1) {
+            z_pow = z_pow*z_pow;
+        }
+        z_pow = clamp(max(z_pow, z_01/20.),0.,1.);
+    } 
 
     let v = (render_params.observer_matrix*vec4(start_dir,0.)).xyz;
     return vec4(v.xyz,1.);
