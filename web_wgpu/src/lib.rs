@@ -617,7 +617,16 @@ impl State {
                         lines, rows, self.params.1.distance[0]
                     );
                 }
-                MouseScrollDelta::PixelDelta(pixels) => todo!(),
+                MouseScrollDelta::PixelDelta(pixels) => {
+                    let bounds = self.params.0.distance_bounds;
+                    self.params
+                        .1
+                        .update_distance(pixels.y as f32 / 200., bounds);
+                    println!(
+                        "Pixels: {:?}, distance: {}",
+                        pixels, self.params.1.distance[0]
+                    );
+                }
             },
             WindowEvent::CursorMoved {
                 device_id,
