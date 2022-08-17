@@ -23,6 +23,7 @@ struct RenderParams {
     view_width: f32,
     temp: f32,
     temp2: f32,
+    temp3: f32,
 }
 
 struct BlackHole {
@@ -68,6 +69,9 @@ var final_dir_t: texture_2d<f32>;
 @group(0) @binding(11)
 var final_dir_s: sampler;
 
+fn to_float(in:vec2<f32>) -> f32 {
+   return (255.*in.x + in.y) / 128. - 1.;
+}
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -87,9 +91,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let d_left = floor(d_01*render_params.cache_dim.y)/render_params.cache_dim.y;
     let d_right = d_left+1./render_params.cache_dim.y;
     let d_left_weight = 1.0-(d_01-d_left)/(d_right-d_left);
-    let left_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_left).xy;
-    let right_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right).xy;
-    let z_bounds=d_left_weight * left_z_bounds + (1.-d_left_weight) * right_z_bounds;
+    // let left_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_left).xy;
+    // let right_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right).xy;
+    // let z_bounds=d_left_weight * left_z_bounds + (1.-d_left_weight) * right_z_bounds;
+    let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right);
+    let z_bounds = vec2(to_float(u8_z_bounds.xy), to_float(u8_z_bounds.zw));
     let coords = (pixel_xy - offset)*delta - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
     let z_01=clamp((start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x),0.,1.1);

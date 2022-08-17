@@ -3,6 +3,7 @@ use glam::Mat4;
 use shader::{
     black_hole::BlackHole,
     float_texture::FloatTexture,
+    hacky_float_texture::HackyFloatTexture,
     render_params::RenderParams,
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
@@ -126,7 +127,7 @@ impl State {
             }
         }
 
-        let dir_z_bounds_tex = FloatTexture::from_f32(
+        let dir_z_bounds_tex = HackyFloatTexture::from_f32(
             &device,
             &queue,
             &z_bounds,
