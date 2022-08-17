@@ -25,7 +25,6 @@ impl RenderParams {
     }
     pub fn update_distance(&mut self, delta: f32, bounds: [f32; 2]) {
         self.distance[0] = (self.distance[0] + delta).clamp(bounds[0], bounds[1]);
-    
     }
 
     fn update_observer_matrix(&mut self) {
@@ -59,7 +58,6 @@ impl RenderParams {
         while padded_slice.len() % 16 != 0 {
             padded_slice.push(0);
         }
-        println!("RenderParams size: {}", padded_slice.len());
         (
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Simulation Parameter Buffer"),

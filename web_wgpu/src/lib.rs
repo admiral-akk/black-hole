@@ -99,19 +99,10 @@ impl State {
             label: Some("Stencil Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("stencil.wgsl").into()),
         });
-        let mut v = Vec::new();
-        for i in 0..1000 {
-            let angle = i as f32 / (999.) * std::f32::consts::TAU;
-            for j in 0..1000 {
-                let angle2 = j as f32 / (999.) * std::f32::consts::TAU;
-                v.push([angle2.sin(), angle.cos()]);
-            }
-        }
 
         let black_hole_cache =
             serde_json::from_slice::<BlackHoleCache>(include_bytes!("black_hole_cache.txt"))
                 .unwrap();
-
         let direction_cache = black_hole_cache.direction_cache;
         let mut z_bounds = Vec::new();
         let mut final_dir_vec = Vec::new();
@@ -130,9 +121,9 @@ impl State {
         let mut z_bounds_distance = Vec::new();
         let mut angle_distance_vec = Vec::new();
         let dist_dim = [
-            distance_cache.cache_size.0 as u32,
-            distance_cache.cache_size.1 as u32,
             distance_cache.cache_size.2 as u32,
+            distance_cache.cache_size.1 as u32,
+            distance_cache.cache_size.0 as u32,
         ];
         let bounds = distance_cache.disc_bounds;
         for fixed_distance in distance_cache.distance_angle_to_z_to_distance {
@@ -149,7 +140,7 @@ impl State {
             &device,
             &queue,
             &z_bounds_distance,
-            [dist_dim[0], dist_dim[1]],
+            [dist_dim[1], dist_dim[2]],
             "Distance z bounds",
         )
         .unwrap();
@@ -191,7 +182,10 @@ impl State {
         let final_dir_tex_view = final_dir_tex.view;
         let final_dir_sampler = final_dir_tex.sampler;
         let black_hole = BlackHole {
-            disc_bounds: [2., 12.],
+            disc_bounds: [
+                distance_cache.disc_bounds.0 as f32,
+                distance_cache.disc_bounds.1 as f32,
+            ],
             distance_bounds: [
                 direction_cache.distance_bounds.0 as f32,
                 direction_cache.distance_bounds.1 as f32,
@@ -209,12 +203,6 @@ impl State {
             view_width: [2. * f32::tan(std::f32::consts::PI * 60. / 360.)],
         };
         let (render_params_buffer, _) = render_params.to_buffer(&device);
-
-        let float_tex =
-            FloatTexture::from_f32(&device, &queue, &v, [1000, 1000], "Sin wave").unwrap();
-
-        let float_tex_view = float_tex.view;
-        let float_sampler = float_tex.sampler;
 
         let depth_texture = Texture::create_depth_texture(&device, &config, "Stencil Texture");
         let galaxy_tex = Texture::from_bytes(

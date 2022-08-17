@@ -14,7 +14,6 @@ impl BlackHole {
         while padded_slice.len() % 16 != 0 {
             padded_slice.push(0);
         }
-        println!("Black hole size: {}", padded_slice.len());
         (
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Simulation Parameter Buffer"),

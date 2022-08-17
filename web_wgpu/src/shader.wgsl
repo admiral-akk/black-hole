@@ -76,12 +76,62 @@ var dist_s: sampler;
 fn to_float(in:vec2<f32>) -> f32 {
    return (255.*in.x + in.y) / 128. - 1.;
 }
+fn to_vec2(in:vec4<f32>) -> vec2<f32> {
+   return vec2(to_float(in.xy),to_float(in.zw));
+}
 
+ fn get_disc_color( start_dir: vec3<f32>, coord:vec2<f32>, d_01:f32) -> vec4<f32>{
+   
+let normalized_pos = 
+-vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
+    let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
+    let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(.25,d_01));
+    let min_z = to_float(z_bounds.xy);
+    let z = start_dir.z;
+    let color = vec4(0.);
+    let is_top = step(0.,normalized_pos.y);
 
-fn background_color(start_dir: vec3<f32>) -> vec3<f32> {
-    let distance = render_params.distance;
-    let distance_bounds = black_hole.distance_bounds;
-    let d_01 =clamp((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),0.,1.);
+    let close_color=vec3(is_top,1.-is_top,0.);
+    let far_color=vec3(1.-is_top,is_top,0.);
+    
+    let travel_normal=normalize(cross(-normalized_pos,true_start_dir));
+    let intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
+    let cos_val=clamp(dot(intersection,-normalized_pos),-1.,1.);
+    
+    // there are two angles that matter;
+    // which to use depends on whether the ray is going "under" or "over"
+    let temp_angle_01=acos(cos_val)/TAU;
+    let alt_angle_01=.5-temp_angle_01;
+
+    let theta_01=atan2(intersection.z,intersection.x)/TAU+.5;
+    let top_half = step(0.,coord.y);
+    let neq = step(0.5,abs((top_half - is_top)));
+    let angle_01 = neq*vec2(min(temp_angle_01,alt_angle_01),theta_01) + (1.-neq) * vec2(max(temp_angle_01,alt_angle_01),theta_01);
+    
+    let alpha_mod=smoothstep(.03*(1.-d_01),.06*(1.-d_01),angle_01.x);
+    
+    var total_disc_color=vec4(0.);
+    let other_angle_01=angle_01+.5;
+    let z_bounds=to_vec2(textureSample(dist_z_t,dist_z_s,vec2(other_angle_01.x,d_01)));
+    let z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+
+   let in_bounds = step(0.,z_index)- step(1.,z_index);
+   let dist=in_bounds*to_float(textureSample(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01)).xy);
+
+   total_disc_color+=vec4(dist,0.,0.,in_bounds*dist + 1. - in_bounds );
+
+   let z_bounds=to_vec2(textureSample(dist_z_t,dist_z_s,vec2(angle_01.x,d_01)));
+   let z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+   let in_bounds = step(0.,z_index)- step(1.,z_index);
+   let dist=in_bounds*to_float(textureSample(dist_t,dist_s,vec3(z_index,angle_01.x,d_01)).xy);
+
+   total_disc_color+= total_disc_color.w*vec4(dist,0.,0.,in_bounds*dist + 1. - in_bounds);
+
+    let z_bounds = to_vec2(textureSample(dist_z_t,dist_z_s,vec2(coord+0.5)));
+    let d_tex = to_float(textureSample(dist_t,dist_s,vec3(coord+0.5,d_01)).xy);
+    return vec4(total_disc_color);
+}
+fn background_color(start_dir: vec3<f32>, d_01: f32) -> vec3<f32> {
     let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);
     let z_bounds = vec2(to_float(u8_z_bounds.xy), to_float(u8_z_bounds.zw));
     let z_01=clamp((start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x),0.,1.1);
@@ -131,9 +181,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let delta=1./vec2(min_dim);
     var offset=vec2(lower)*vec2(step(resolution.y, resolution.x),step(resolution.x,resolution.y));
   
+    let distance = render_params.distance;
+    let distance_bounds = black_hole.distance_bounds;
+    let d_01 =clamp((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),0.,1.);
+    
     let coords = (pixel_xy - offset)*delta - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
-    let background_color=background_color(start_dir);
+    let background_color=background_color(start_dir,d_01);
+    let disc_color = get_disc_color(start_dir, coords, d_01);
     if(render_params.resolution.x > render_params.resolution.y){
         if(pixel_xy.x < lower || pixel_xy.x > upper){
             return vec4(vec3(0.),1.);
@@ -143,6 +198,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             return vec4(vec3(0.),1.);
         } 
     }
-    return vec4(background_color,1.);
+    return vec4(disc_color.xyz,1.);
 }
  
