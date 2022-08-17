@@ -115,13 +115,13 @@ impl State {
         let direction_cache = black_hole_cache.direction_cache;
         let mut z_bounds = Vec::new();
         let mut final_dir_vec = Vec::new();
-        let mut dir_dim = (
+        let mut dir_dim = [
             direction_cache.distance_angle_to_z_to_distance.len() as u32,
-            0,
-        );
+            1000,
+        ];
         for fixed_distance in direction_cache.distance_angle_to_z_to_distance {
             z_bounds.push([fixed_distance.min_z as f32, fixed_distance.max_z as f32]);
-            dir_dim.1 = fixed_distance.z_to_final_dir.len() as u32;
+            dir_dim[1] = fixed_distance.z_to_final_dir.len() as u32;
             for (_, final_dir) in fixed_distance.z_to_final_dir {
                 final_dir_vec.push([final_dir.0 as f32, final_dir.1 as f32]);
             }
@@ -138,7 +138,7 @@ impl State {
 
         let dir_z_bounds_tex_view = dir_z_bounds_tex.view;
         let dir_z_bounds_sampler = dir_z_bounds_tex.sampler;
-        let final_dir_tex = FloatTexture::from_f32(
+        let final_dir_tex = HackyFloatTexture::from_f32(
             &device,
             &queue,
             &final_dir_vec,
@@ -160,7 +160,7 @@ impl State {
         let render_params = RenderParams {
             observer_matrix: Mat4::IDENTITY.to_cols_array(),
             cursor_pos: [0., 0.],
-            cache_dim: [dir_dim.0 as f32, dir_dim.1 as f32],
+            cache_dim: [dir_dim[0] as f32, dir_dim[1] as f32],
             resolution: [1., 1.],
             distance: [10.],
             time_s: [1.],
@@ -169,7 +169,7 @@ impl State {
         let (render_params_buffer, _) = render_params.to_buffer(&device);
 
         let float_tex =
-            FloatTexture::from_f32(&device, &queue, &v, (1000, 1000), "Sin wave").unwrap();
+            FloatTexture::from_f32(&device, &queue, &v, [1000, 1000], "Sin wave").unwrap();
 
         let float_tex_view = float_tex.view;
         let float_sampler = float_tex.sampler;
@@ -263,8 +263,8 @@ impl State {
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D1,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
                         count: None,
                     },
@@ -273,7 +273,7 @@ impl State {
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         // This should match the filterable field of the
                         // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
@@ -281,8 +281,8 @@ impl State {
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D1,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
                         count: None,
                     },
@@ -291,25 +291,7 @@ impl State {
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         // This should match the filterable field of the
                         // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 10,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 11,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                 ],
@@ -344,26 +326,18 @@ impl State {
                 },
                 wgpu::BindGroupEntry {
                     binding: 6,
-                    resource: wgpu::BindingResource::TextureView(&float_tex_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 7,
-                    resource: wgpu::BindingResource::Sampler(&float_sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 8,
                     resource: wgpu::BindingResource::TextureView(&dir_z_bounds_tex_view),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 9,
+                    binding: 7,
                     resource: wgpu::BindingResource::Sampler(&dir_z_bounds_sampler),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 10,
+                    binding: 8,
                     resource: wgpu::BindingResource::TextureView(&final_dir_tex_view),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 11,
+                    binding: 9,
                     resource: wgpu::BindingResource::Sampler(&final_dir_sampler),
                 },
             ],

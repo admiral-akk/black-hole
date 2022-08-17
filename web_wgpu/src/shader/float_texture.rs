@@ -37,14 +37,14 @@ impl<U: Dimensions> Variable for FloatTexture<U> {
                 ty: wgpu::BindingType::Texture {
                     multisampled: false,
                     view_dimension: U::texture_view_dimension(),
-                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
                 },
                 count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: index + 1,
                 visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(SamplerBindingType::NonFiltering),
+                ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                 count: None,
             },
         ]
@@ -78,6 +78,7 @@ pub trait Dimensions {
     fn size(&self) -> Extent3d;
     fn row_length(&self) -> u32;
     fn row_count(&self) -> u32;
+    fn dimension() -> u32;
 }
 
 impl Dimensions for u32 {
@@ -103,8 +104,11 @@ impl Dimensions for u32 {
     fn row_count(&self) -> u32 {
         1
     }
+    fn dimension() -> u32 {
+        1
+    }
 }
-impl Dimensions for (u32, u32) {
+impl Dimensions for [u32; 2] {
     fn texture_dimension() -> TextureDimension {
         wgpu::TextureDimension::D2
     }
@@ -114,21 +118,24 @@ impl Dimensions for (u32, u32) {
 
     fn size(&self) -> Extent3d {
         Extent3d {
-            width: self.0,
-            height: self.1,
+            width: self[0],
+            height: self[1],
             depth_or_array_layers: 1,
         }
     }
 
     fn row_length(&self) -> u32 {
-        self.0
+        self[0]
     }
 
     fn row_count(&self) -> u32 {
-        self.1
+        self[1]
+    }
+    fn dimension() -> u32 {
+        2
     }
 }
-impl Dimensions for (u32, u32, u32) {
+impl Dimensions for [u32; 3] {
     fn texture_dimension() -> TextureDimension {
         wgpu::TextureDimension::D3
     }
@@ -138,18 +145,21 @@ impl Dimensions for (u32, u32, u32) {
 
     fn size(&self) -> Extent3d {
         Extent3d {
-            width: self.0,
-            height: self.1,
-            depth_or_array_layers: self.2,
+            width: self[0],
+            height: self[1],
+            depth_or_array_layers: self[2],
         }
     }
 
     fn row_length(&self) -> u32 {
-        self.0
+        self[0]
     }
 
     fn row_count(&self) -> u32 {
-        self.1 * self.2
+        self[1] * self[2]
+    }
+    fn dimension() -> u32 {
+        3
     }
 }
 

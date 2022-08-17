@@ -57,9 +57,12 @@ fn float_to_u8(f: f32) -> [u8; 2] {
     let y = (256. * 255. * remainder).floor() as u8;
     [x, y]
 }
+fn u8_to_float_01(u: [u8; 2]) -> [f32; 2] {
+    [u[0] as f32 / 255., u[1] as f32 / 255.]
+}
 
-fn u8_to_float(u: [u8; 2]) -> f32 {
-    2. * (u[0] as f32 + u[1] as f32 / 255.) / 256. - 1.
+fn float_01_to_float(f: [f32; 2]) -> f32 {
+    (255. * f[0] + f[1]) / 128. - 1.
 }
 
 pub trait FloatFormat<T> {
@@ -142,7 +145,7 @@ impl<U: Dimensions> HackyFloatTexture<U> {
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(
-                    dimensions.row_length() * size_of::<T>() as u32,
+                    2 * dimensions.row_length() * U::dimension(),
                 ),
                 rows_per_image: std::num::NonZeroU32::new(dimensions.row_count()),
             },
@@ -154,7 +157,7 @@ impl<U: Dimensions> HackyFloatTexture<U> {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
+            mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Nearest,
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
@@ -171,24 +174,29 @@ impl<U: Dimensions> HackyFloatTexture<U> {
 
 #[cfg(test)]
 mod tests {
-    use super::{float_to_u8, u8_to_float};
+    use crate::shader::hacky_float_texture::u8_to_float_01;
+
+    use super::{float_01_to_float, float_to_u8};
 
     const MAX_ERROR: f32 = 2. / (256. * 255.);
-    const ITERATIONS: u32 = 10000;
+    const ITERATIONS: u32 = 30000;
     #[test]
     fn test_map_from_float_to_u8() {
         let f = 1.;
         let u = float_to_u8(f);
-        let f_1 = u8_to_float(u);
+        let f_01 = u8_to_float_01(u);
+        let f_1 = float_01_to_float(f_01);
         assert_eq!(f, f_1);
         let f = -1.;
         let u = float_to_u8(f);
-        let f_1 = u8_to_float(u);
+        let f_01 = u8_to_float_01(u);
+        let f_1 = float_01_to_float(f_01);
         assert_eq!(f, f_1);
         for i in 0..ITERATIONS {
             let f = 2. * (i as f32 / (ITERATIONS - 1) as f32) - 1.;
             let u = float_to_u8(f);
-            let f_1 = u8_to_float(u);
+            let f_01 = u8_to_float_01(u);
+            let f_1 = float_01_to_float(f_01);
             let error = (f - f_1).abs();
             assert!(error < MAX_ERROR, "Error: {}\nf: {}\nf': {}", error, f, f_1);
         }

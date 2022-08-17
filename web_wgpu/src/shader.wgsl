@@ -1,7 +1,7 @@
 // Vertex shader
 
  
- let PI2: f32 =1.5707963269;
+ let PI2: f32 = 1.5707963269;
  let PI : f32= 3.1415926538;
  let TAU: f32 = 6.2831853076;
 struct VertexInput {
@@ -57,16 +57,12 @@ var noise_t: texture_2d<f32>;
 @group(0) @binding(5)
 var noise_s: sampler;
 @group(0) @binding(6)
-var sin_t: texture_2d<f32>;
-@group(0) @binding(7)
-var sin_s: sampler;
-@group(0) @binding(8)
 var dir_z_bounds_t: texture_1d<f32>;
-@group(0) @binding(9)
+@group(0) @binding(7)
 var dir_z_bounds_s: sampler;
-@group(0) @binding(10)
+@group(0) @binding(8)
 var final_dir_t: texture_2d<f32>;
-@group(0) @binding(11)
+@group(0) @binding(9)
 var final_dir_s: sampler;
 
 fn to_float(in:vec2<f32>) -> f32 {
@@ -75,7 +71,6 @@ fn to_float(in:vec2<f32>) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let s = textureSample(sin_t,sin_s, in.tex_coords);
     let pixel_xy = render_params.resolution * in.tex_coords;
     let resolution = render_params.resolution;
     let min_dim=min(render_params.resolution.x,render_params.resolution.y);
@@ -91,10 +86,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let d_left = floor(d_01*render_params.cache_dim.y)/render_params.cache_dim.y;
     let d_right = d_left+1./render_params.cache_dim.y;
     let d_left_weight = 1.0-(d_01-d_left)/(d_right-d_left);
-    // let left_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_left).xy;
-    // let right_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right).xy;
-    // let z_bounds=d_left_weight * left_z_bounds + (1.-d_left_weight) * right_z_bounds;
-    let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right);
+     let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right);
     let z_bounds = vec2(to_float(u8_z_bounds.xy), to_float(u8_z_bounds.zw));
     let coords = (pixel_xy - offset)*delta - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
@@ -115,14 +107,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let cos_val=cos(angle);
     let rot=mat3x3(vec3(cos_val,sin_val,0.),vec3(-sin_val,cos_val,0.),vec3(0.,0.,1.));
     let t = smoothstep(0.,0.04,z_pow);
-   
-    var cached_dir_00=textureSample(final_dir_t,final_dir_s,vec2(z_left,d_left)).xzy;
-    var cached_dir_10=textureSample(final_dir_t,final_dir_s,vec2(z_right,d_left)).xzy;
-    var cached_dir_01=textureSample(final_dir_t,final_dir_s,vec2(z_left,d_right)).xzy;
-    var cached_dir_11=textureSample(final_dir_t,final_dir_s,vec2(z_right,d_right)).xzy;
-    let average_dir = d_left_weight*(z_left_weight*cached_dir_00+(1.-z_left_weight)*cached_dir_10) 
-    + (1.-d_left_weight)*(z_left_weight*cached_dir_01+(1.-z_left_weight)*cached_dir_11);
-  
+    let u8_average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow, d_01));
+    let average_dir = vec3(to_float(u8_average_dir.xy),0.,to_float(u8_average_dir.zw));
     let cached_dir = rot* normalize(average_dir);
   
     let temp_dir = t*cached_dir+(1.-t)*start_dir;
@@ -148,6 +134,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     if (z_01 > 1.) {
             return vec4(vec3(0.),1.);
     } 
-    return vec4(vec3(background_color),1.);
+    return vec4(background_color,1.);
 }
  
