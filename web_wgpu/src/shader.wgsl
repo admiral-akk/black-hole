@@ -86,7 +86,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let d_left = floor(d_01*render_params.cache_dim.y)/render_params.cache_dim.y;
     let d_right = d_left+1./render_params.cache_dim.y;
     let d_left_weight = 1.0-(d_01-d_left)/(d_right-d_left);
-     let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right);
+    let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_right);
     let z_bounds = vec2(to_float(u8_z_bounds.xy), to_float(u8_z_bounds.zw));
     let coords = (pixel_xy - offset)*delta - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
@@ -122,6 +122,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     
     let phi_theta=vec2(fract(phi/TAU),fract(theta/PI));
     let background_color=textureSample(galaxy_t,galaxy_s,phi_theta).xyz;
+    let t_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,coords.x + 0.5);
+    let t_z_bounds2 = vec2(to_float(t_z_bounds.xy), to_float(t_z_bounds.zw));
     if(render_params.resolution.x > render_params.resolution.y){
         if(pixel_xy.x < lower || pixel_xy.x > upper){
             return vec4(vec3(0.),1.);

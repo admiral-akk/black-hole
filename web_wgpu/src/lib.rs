@@ -521,12 +521,22 @@ impl State {
 
     fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::MouseInput {
+            WindowEvent::MouseWheel {
                 device_id,
-                state,
-                button,
+                delta,
+                phase,
                 modifiers,
-            } => {}
+            } => match delta {
+                MouseScrollDelta::LineDelta(lines, rows) => {
+                    let bounds = self.params.0.distance_bounds;
+                    self.params.1.update_distance(*rows, bounds);
+                    println!(
+                        "Lines: {}, rows: {}, distance: {}",
+                        lines, rows, self.params.1.distance[0]
+                    );
+                }
+                MouseScrollDelta::PixelDelta(pixels) => todo!(),
+            },
             WindowEvent::CursorMoved {
                 device_id,
                 position,

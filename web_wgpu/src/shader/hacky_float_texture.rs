@@ -145,7 +145,7 @@ impl<U: Dimensions> HackyFloatTexture<U> {
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(
-                    2 * dimensions.row_length() * U::dimension(),
+                    dimensions.row_length() * size_of::<T>() as u32 / 2,
                 ),
                 rows_per_image: std::num::NonZeroU32::new(dimensions.row_count()),
             },
