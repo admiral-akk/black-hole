@@ -156,7 +156,7 @@ impl Dimensions for [u32; 3] {
     }
 
     fn row_count(&self) -> u32 {
-        self[1] * self[2]
+        self[1]
     }
     fn dimension() -> u32 {
         3

@@ -110,7 +110,7 @@ impl FloatFormat<[f32; 2]> for [f32; 2] {
     }
 }
 
-impl<U: Dimensions> HackyFloatTexture<U> {
+impl<U: Dimensions + std::fmt::Debug> HackyFloatTexture<U> {
     pub fn from_f32<T>(
         device: &wgpu::Device,
         queue: &wgpu::Queue,

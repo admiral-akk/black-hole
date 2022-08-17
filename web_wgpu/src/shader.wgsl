@@ -64,18 +64,26 @@ var dir_z_bounds_s: sampler;
 var final_dir_t: texture_2d<f32>;
 @group(0) @binding(9)
 var final_dir_s: sampler;
+@group(0) @binding(10)
+var dist_z_t: texture_2d<f32>;
+@group(0) @binding(11)
+var dist_z_s: sampler;
+@group(0) @binding(12)
+var dist_t: texture_3d<f32>;
+@group(0) @binding(13)
+var dist_s: sampler;
 
 fn to_float(in:vec2<f32>) -> f32 {
    return (255.*in.x + in.y) / 128. - 1.;
 }
 
-fn background_color(coords: vec2<f32>) -> vec3<f32> {
-      let distance = render_params.distance;
+
+fn background_color(start_dir: vec3<f32>) -> vec3<f32> {
+    let distance = render_params.distance;
     let distance_bounds = black_hole.distance_bounds;
     let d_01 =clamp((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),0.,1.);
     let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);
     let z_bounds = vec2(to_float(u8_z_bounds.xy), to_float(u8_z_bounds.zw));
-    let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
     let z_01=clamp((start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x),0.,1.1);
     var z_pow = z_01;
     for (var i = 0; i < 4; i += 1) {
@@ -109,7 +117,6 @@ fn background_color(coords: vec2<f32>) -> vec3<f32> {
     let phi_theta=vec2(fract(phi/TAU),fract(theta/PI));
     let hit = step(z_01, 1.);
     return hit*textureSample(galaxy_t,galaxy_s,phi_theta).xyz;
-
 }
 
 @fragment
@@ -125,7 +132,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var offset=vec2(lower)*vec2(step(resolution.y, resolution.x),step(resolution.x,resolution.y));
   
     let coords = (pixel_xy - offset)*delta - 0.5;
-    let background_color=background_color(coords);
+    let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
+    let background_color=background_color(start_dir);
     if(render_params.resolution.x > render_params.resolution.y){
         if(pixel_xy.x < lower || pixel_xy.x > upper){
             return vec4(vec3(0.),1.);
