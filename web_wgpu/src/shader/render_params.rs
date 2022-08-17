@@ -7,6 +7,7 @@ pub struct RenderParams {
     pub observer_matrix: [f32; 16],
     pub cursor_pos: [f32; 2],
     pub resolution: [f32; 2],
+    pub cache_dim: [f32; 2],
     pub distance: [f32; 1],
     pub time_s: [f32; 1],
     pub view_width: [f32; 1],

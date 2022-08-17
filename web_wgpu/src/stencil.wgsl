@@ -1,9 +1,5 @@
-// Vertex shader
 
  
- let PI2: f32 =1.5707963269;
- let PI : f32= 3.1415926538;
- let TAU: f32 = 6.2831853076;
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec2<f32>,
@@ -13,7 +9,9 @@ struct VertexOutput {
     @location(0) tex_coords: vec2<f32>,
 };
 
-
+ struct FragmentOutput {
+  @builtin(frag_depth) depth: f32,
+ }
 @vertex
 fn vs_main(
     model: VertexInput,
@@ -25,7 +23,9 @@ fn vs_main(
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4(in.tex_coords,0.,1.);
+fn fs_main(in: VertexOutput) -> FragmentOutput {
+    var out: FragmentOutput;
+    out.depth =  100.0 ;
+    return out;
 }
  

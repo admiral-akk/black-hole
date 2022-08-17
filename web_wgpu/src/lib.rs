@@ -7,7 +7,11 @@ use shader::{
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
 };
-use wgpu::{util::DeviceExt, BindGroupLayoutDescriptor};
+use wgpu::{
+    util::DeviceExt, BindGroupLayoutDescriptor, BlendState, ColorWrites, DepthBiasState,
+    DepthStencilState, Operations, RenderPassDepthStencilAttachment, StencilFaceState,
+    StencilOperation, StencilState, TextureFormat,
+};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -32,6 +36,7 @@ struct State {
     num_indices: u32,
     stencil_bind_group: wgpu::BindGroup,
     diffuse_bind_group: wgpu::BindGroup,
+    depth_texture: Texture,
 }
 
 impl State {
@@ -55,9 +60,9 @@ impl State {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
-                    limits: if cfg!(target_arch = "wasm32") {
+                    // We're aiming to support WebGl, so we should assume that we're using it.
+                    limits: //wgpu::Limits::downlevel_webgl2_defaults(),
+                     if cfg!(target_arch = "wasm32") {
                         wgpu::Limits::downlevel_webgl2_defaults()
                     } else {
                         wgpu::Limits::default()
@@ -154,6 +159,7 @@ impl State {
         let render_params = RenderParams {
             observer_matrix: Mat4::IDENTITY.to_cols_array(),
             cursor_pos: [0., 0.],
+            cache_dim: [dir_dim.0 as f32, dir_dim.1 as f32],
             resolution: [1., 1.],
             distance: [10.],
             time_s: [1.],
@@ -167,6 +173,7 @@ impl State {
         let float_tex_view = float_tex.view;
         let float_sampler = float_tex.sampler;
 
+        let depth_texture = Texture::create_depth_texture(&device, &config, "Stencil Texture");
         let galaxy_tex = Texture::from_bytes(
             &device,
             &queue,
@@ -368,6 +375,12 @@ impl State {
                 bind_group_layouts: &[&texture_bind_group_layout],
                 push_constant_ranges: &[],
             });
+        let stencil_state = wgpu::StencilFaceState {
+            compare: wgpu::CompareFunction::Always,
+            fail_op: wgpu::StencilOperation::Keep,
+            depth_fail_op: wgpu::StencilOperation::Keep,
+            pass_op: wgpu::StencilOperation::IncrementClamp,
+        };
         let stencil_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Stencil Pipeline"),
             layout: Some(&render_pipeline_layout),
@@ -379,11 +392,7 @@ impl State {
             fragment: Some(wgpu::FragmentState {
                 module: &stencil_shader,
                 entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
+                targets: &[],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList, // 1.
@@ -397,7 +406,18 @@ impl State {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: Some(DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil: StencilState {
+                    front: stencil_state,
+                    back: stencil_state,
+                    read_mask: 0xff,
+                    write_mask: 0xff,
+                },
+                bias: Default::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1,                         // 2.
                 mask: !0,                         // 3.
@@ -405,6 +425,12 @@ impl State {
             },
             multiview: None, // 5.
         });
+        let stencil_state = wgpu::StencilFaceState {
+            compare: wgpu::CompareFunction::Always,
+            fail_op: wgpu::StencilOperation::Keep,
+            depth_fail_op: wgpu::StencilOperation::Keep,
+            pass_op: wgpu::StencilOperation::Keep,
+        };
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
@@ -434,7 +460,18 @@ impl State {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: Some(DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: StencilState {
+                    front: stencil_state,
+                    back: stencil_state,
+                    read_mask: 0xff,
+                    write_mask: 0xff,
+                },
+                bias: Default::default(),
+            }), // 1.
             multisample: wgpu::MultisampleState {
                 count: 1,                         // 2.
                 mask: !0,                         // 3.
@@ -462,6 +499,7 @@ impl State {
             num_indices,
             stencil_bind_group,
             diffuse_bind_group,
+            depth_texture,
         }
     }
 
@@ -474,6 +512,8 @@ impl State {
                 .1
                 .update_resolution([new_size.width as f32, new_size.height as f32]);
             self.surface.configure(&self.device, &self.config);
+            self.depth_texture =
+                Texture::create_depth_texture(&self.device, &self.config, "Stencil Texture");
             self.update_params();
         }
     }
@@ -542,6 +582,30 @@ impl State {
                 label: Some("Render Encoder"),
             });
         {
+            let mut stencil_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Stencil Pass"),
+                color_attachments: &[],
+                depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture.view,
+                    depth_ops: Some(Operations {
+                        load: wgpu::LoadOp::Clear(0.),
+                        store: true,
+                    }),
+                    stencil_ops: Some(Operations {
+                        load: wgpu::LoadOp::Clear(0),
+                        store: false,
+                    }),
+                }),
+            });
+
+            stencil_pass.set_pipeline(&self.stencil_pipeline);
+            stencil_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            stencil_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            stencil_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+
+            stencil_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 3.
+        }
+        {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -557,13 +621,24 @@ impl State {
                         store: true,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture.view,
+                    depth_ops: Some(Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: true,
+                    }),
+                    stencil_ops: Some(Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: true,
+                    }),
+                }),
             });
             // NEW!
             render_pass.set_pipeline(&self.render_pipeline); // 2.
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]); // NEW!
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_stencil_reference(1);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 3.
         }
 
