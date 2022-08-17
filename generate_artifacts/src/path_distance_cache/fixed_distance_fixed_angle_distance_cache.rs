@@ -7,7 +7,7 @@ use crate::path_integration2::{
 };
 
 pub const MIN_ANGLE: f64 = TAU * (0.1 / 360.);
-pub const ANGLE_DISTANCE_CACHE_SIZE: usize = 1 << 4;
+pub const ANGLE_DISTANCE_CACHE_SIZE: usize = 1 << 5;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct FixedDistanceFixedAngleDistanceCache {
     pub camera_distance: f64,

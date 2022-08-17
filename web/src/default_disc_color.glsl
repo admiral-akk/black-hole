@@ -209,7 +209,6 @@ vec4 get_disc_color(vec2 coord){
         }
     }
     return total_disc_color;
-    
 }
 
 vec3 get_color(vec2 coord){

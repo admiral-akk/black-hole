@@ -11,7 +11,7 @@ use super::{
     },
 };
 
-pub const ALL_DISTANCE_CACHE_SIZE: usize = 1 << 2;
+pub const ALL_DISTANCE_CACHE_SIZE: usize = 1 << 5;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct DistanceCache {
     pub cache_size: (usize, usize, usize),

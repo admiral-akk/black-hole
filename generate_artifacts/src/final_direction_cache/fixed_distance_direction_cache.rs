@@ -8,11 +8,11 @@ use crate::path_integration2::{
 use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
-pub const DISTANCE_CACHE_SIZE: usize = 1 << 5;
+pub const DISTANCE_CACHE_SIZE: usize = 1 << 9;
 const ANGLE_EPSILON: f64 = 0.01 * TAU / 360.;
-const LINEAR_SCALE: f64 = 10.;
+const LINEAR_SCALE: f64 = 5.;
 const MAX_ANGLE: f64 = TAU;
-const POW_F: f64 = 16.0;
+const POW_F: f64 = 32.0;
 
 fn index_to_z_01(i: usize, cache_size: usize) -> f64 {
     let z_01 = (i as f64) / (cache_size - 1) as f64;
@@ -65,8 +65,14 @@ fn find_closest_z(camera_distance: f64, black_hole_radius: f64) -> f64 {
 // use this find z values where we don't have to apply anti-aliasing
 fn find_minimum_pertubation_z(camera_distance: f64, black_hole_radius: f64, max_z: f64) -> f64 {
     let too_close = |r: Response| {
-        let initial_dir = (r.path[1] - r.path[0]).get_angle();
-        r.hits_black_hole() || r.get_angle_dist().get_max_angle() - initial_dir > ANGLE_EPSILON
+        if r.hits_black_hole() {
+            return true;
+        }
+
+        let initial_dir = (r.path[1] - r.path[0]).normalize();
+        let final_dir = r.final_dir.unwrap().normalize();
+        let angle = initial_dir.dot(final_dir).acos();
+        angle.abs() > ANGLE_EPSILON
     };
     find_optimal_z(
         camera_distance as f32,
@@ -83,7 +89,8 @@ impl FixedDistanceDirectionCache {
         let max_z = find_closest_z(camera_distance, black_hole_radius);
         let min_z = find_minimum_pertubation_z(camera_distance, black_hole_radius, max_z);
         let mut z_to_final_dir = Vec::new();
-        for i in 0..cache_size {
+        z_to_final_dir.push((min_z, ((1. - min_z * min_z).sqrt(), min_z)));
+        for i in 1..cache_size {
             let z = index_to_z(max_z, min_z, i, cache_size);
             let final_dir =
                 cast_ray_steps_response(z, camera_distance, black_hole_radius).final_dir;
@@ -235,7 +242,7 @@ mod tests {
 
             let mut line = Vec::new();
             for z_01 in &samples {
-                let approx_final_dir = cache.get_final_dir(*z_01);
+                let approx_final_dir = cache.get_final_dir(*z_01).normalize();
                 let z = (cache.max_z - cache.min_z) * z_01 + cache.min_z;
                 let response =
                     cast_ray_steps_response(z, cache.camera_distance, cache.black_hole_radius);
@@ -248,7 +255,7 @@ mod tests {
                     approx_final_dir,
                     z
                 );
-                let true_final_dir = true_final_dir.unwrap();
+                let true_final_dir = true_final_dir.unwrap().normalize();
                 let error = (true_final_dir - approx_final_dir).length();
                 if error > 0.1 {
                     println!("z: {}\nerror: {}", z, error);

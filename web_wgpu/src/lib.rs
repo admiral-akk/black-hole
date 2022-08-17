@@ -107,8 +107,8 @@ impl State {
         let mut z_bounds = Vec::new();
         let mut final_dir_vec = Vec::new();
         let dir_dim = [
-            direction_cache.cache_size.0 as u32,
             direction_cache.cache_size.1 as u32,
+            direction_cache.cache_size.0 as u32,
         ];
         for fixed_distance in direction_cache.distance_angle_to_z_to_distance {
             z_bounds.push([fixed_distance.min_z as f32, fixed_distance.max_z as f32]);
@@ -163,7 +163,7 @@ impl State {
             &device,
             &queue,
             &z_bounds,
-            direction_cache.cache_size.0 as u32,
+            z_bounds.len() as u32,
             "Direction z bounds",
         )
         .unwrap();
