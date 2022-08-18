@@ -2,8 +2,6 @@ use generate_artifacts::{black_hole_cache::BlackHoleCache, path_distance_cache::
 use glam::Mat4;
 use shader::{
     black_hole::BlackHole,
-    float_texture::FloatTexture,
-    hacky_float_texture::HackyFloatTexture,
     half_float_texture::HalfFloatTexture,
     render_params::RenderParams,
     texture::Texture,
@@ -142,7 +140,7 @@ impl State {
             }
         }
 
-        let dist_z_bounds_tex = HackyFloatTexture::from_f32(
+        let dist_z_bounds_tex = HalfFloatTexture::from_f32(
             &device,
             &queue,
             &z_bounds_distance,
@@ -153,7 +151,7 @@ impl State {
         let dist_z_bounds_tex_view = dist_z_bounds_tex.view;
         let dist_z_bounds_sampler = dist_z_bounds_tex.sampler;
 
-        let dist_tex = HackyFloatTexture::from_f32(
+        let dist_tex = HalfFloatTexture::from_f32(
             &device,
             &queue,
             &angle_distance_vec,

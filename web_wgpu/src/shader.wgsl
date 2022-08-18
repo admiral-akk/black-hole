@@ -73,13 +73,6 @@ var dist_t: texture_3d<f32>;
 @group(0) @binding(13)
 var dist_s: sampler;
 
-fn to_float(in:vec2<f32>) -> f32 {
-   return (255.*in.x + in.y) / 128. - 1.;
-}
-fn to_vec2(in:vec4<f32>) -> vec2<f32> {
-   return vec2(to_float(in.xy),to_float(in.zw));
-}
-
 
 
 // https://stackoverflow.com/questions/141855/programmatically-lighten-a-color
@@ -135,7 +128,7 @@ let normalized_pos =
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
     let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
     let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(.25,d_01));
-    let min_z = to_float(z_bounds.xy);
+    let min_z = z_bounds.x;
     let z = start_dir.z;
     let color = vec4(0.);
     let is_top = step(0.,normalized_pos.y);
@@ -161,20 +154,20 @@ let normalized_pos =
     
     var total_disc_color=vec4(0.,0.,0.,0.);
     let other_angle_01=angle_01+.5;
-    let z_bounds=to_vec2(textureSample(dist_z_t,dist_z_s,vec2(other_angle_01.x,d_01)));
+    let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(other_angle_01.x,d_01)).xy;
     let z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
 
    let in_bounds = step(0.,z_index)- step(1.,z_index);
-   let dist=to_float(textureSample(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01)).xy);
+   let dist=textureSample(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01)).x;
 
 let color = in_bounds*disc_color(dist,other_angle_01.y);
 total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
    total_disc_color+= in_bounds*(1.-total_disc_color.w)*disc_color(dist,other_angle_01.y);
 
-   let z_bounds=to_vec2(textureSample(dist_z_t,dist_z_s,vec2(angle_01.x,d_01)));
+   let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(angle_01.x,d_01)).xy;
    let z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
    let in_bounds = step(0.,z_index)- step(1.,z_index);
-   let dist=to_float(textureSample(dist_t,dist_s,vec3(z_index,angle_01.x,d_01)).xy);
+   let dist=textureSample(dist_t,dist_s,vec3(z_index,angle_01.x,d_01)).x;
 
    let color = in_bounds*disc_color(dist,angle_01.y);
     total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
