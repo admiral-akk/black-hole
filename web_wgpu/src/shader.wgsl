@@ -182,8 +182,9 @@ total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
     return vec4(total_disc_color);
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
-    let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);
-    let z_bounds = to_vec2(u8_z_bounds);
+   // let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);
+   // let z_bounds = to_vec2(u8_z_bounds);
+   let z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01).xy;
     let z_01=clamp((start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x),0.,1.1);
     var z_pow = z_01;
     for (var i = 0; i < 5; i += 1) {
@@ -196,8 +197,9 @@ fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f3
     let cos_val=cos(angle);
     let rot=mat3x3(vec3(cos_val,sin_val,0.),vec3(-sin_val,cos_val,0.),vec3(0.,0.,1.));
     let start_weight = 1.-step(z_bounds.x,start_dir.z);
-    let u8_average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01));
-    let average_dir = vec3(to_vec2(u8_average_dir),0.).xzy;
+    // let u8_average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01));
+    // let average_dir = vec3(to_vec2(u8_average_dir),0.).xzy;
+    let average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01)).xzy;
     let cached_dir = (1.-start_weight)*rot* normalize(average_dir);
   
     let temp_dir = normalize(cached_dir+start_weight*start_dir);
@@ -250,6 +252,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             return vec4(vec3(0.),1.);
         } 
     }
-    return vec4(background_color, 1.0);
+    return vec4(final_color, 1.0);
 }
  

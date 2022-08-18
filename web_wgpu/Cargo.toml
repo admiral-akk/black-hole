@@ -20,6 +20,7 @@ bytemuck = { version = "1.4", features = [ "derive" ] }
 glam = "0.21.1"
 serde_json = { version = "1.0.82", features = ["float_roundtrip"] }
 generate-artifacts = { path = "../generate_artifacts" }
+half= {version = "2.1.0",features = ["bytemuck"]}
 
  [dependencies.image]
 version = "0.24"

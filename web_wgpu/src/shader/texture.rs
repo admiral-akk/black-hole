@@ -26,6 +26,7 @@ impl Texture {
         config: &wgpu::SurfaceConfiguration,
         label: &str,
     ) -> Self {
+        println!("Surface config: {:?}", config);
         let size = wgpu::Extent3d {
             // 2.
             width: config.width,

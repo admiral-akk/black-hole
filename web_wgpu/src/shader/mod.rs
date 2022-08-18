@@ -1,6 +1,7 @@
 pub mod black_hole;
 pub mod float_texture;
 pub mod hacky_float_texture;
+pub mod half_float_texture;
 pub mod pass;
 pub mod render_params;
 pub mod texture;

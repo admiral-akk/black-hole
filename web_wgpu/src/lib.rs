@@ -4,6 +4,7 @@ use shader::{
     black_hole::BlackHole,
     float_texture::FloatTexture,
     hacky_float_texture::HackyFloatTexture,
+    half_float_texture::HalfFloatTexture,
     render_params::RenderParams,
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
@@ -14,10 +15,11 @@ use wgpu::{
     StencilOperation, StencilState, TextureFormat,
 };
 use winit::{
+    dpi::LogicalSize,
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::Window,
-    window::WindowBuilder,
+    window::{self, WindowBuilder},
 };
 
 mod shader;
@@ -57,17 +59,21 @@ impl State {
             })
             .await
             .unwrap();
+        let mut limits = wgpu::Limits::downlevel_webgl2_defaults();
+        limits.max_texture_dimension_1d = 8192;
+        limits.max_texture_dimension_2d = 8192;
+        limits.max_texture_dimension_3d = 2048;
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
                     // We're aiming to support WebGl, so we should assume that we're using it.
-                    limits: //wgpu::Limits::downlevel_webgl2_defaults(),
-                     if cfg!(target_arch = "wasm32") {
-                        wgpu::Limits::downlevel_webgl2_defaults()
-                    } else {
-                        wgpu::Limits::default()
-                    },
+                    limits: limits,
+                    //  if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Limits::downlevel_webgl2_defaults()
+                    // } else {
+                    //     wgpu::Limits::default()
+                    // },
                     label: None,
                 },
                 None, // Trace path
@@ -159,7 +165,7 @@ impl State {
         let dist_tex_view = dist_tex.view;
         let dist_sampler = dist_tex.sampler;
 
-        let dir_z_bounds_tex = HackyFloatTexture::from_f32(
+        let dir_z_bounds_tex = HalfFloatTexture::from_f32(
             &device,
             &queue,
             &z_bounds,
@@ -170,7 +176,7 @@ impl State {
 
         let dir_z_bounds_tex_view = dir_z_bounds_tex.view;
         let dir_z_bounds_sampler = dir_z_bounds_tex.sampler;
-        let final_dir_tex = HackyFloatTexture::from_f32(
+        let final_dir_tex = HalfFloatTexture::from_f32(
             &device,
             &queue,
             &final_dir_vec,
@@ -634,6 +640,7 @@ impl State {
                 modifiers,
             } => {
                 let pos = [position.x as f32, position.y as f32];
+
                 self.params.1.update_cursor(pos);
                 self.update_params();
             }
@@ -727,6 +734,7 @@ impl State {
 }
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+use winit::dpi::PhysicalSize;
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub async fn run() {
     let event_loop = EventLoop::new();
@@ -734,15 +742,11 @@ pub async fn run() {
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            console_log::init_with_level(log::Level::Trace).expect("Couldn't initialize logger");
+            console_log::init_with_level(log::Level::Error).expect("Couldn't initialize logger");
             use wasm_bindgen::JsCast;
              use web_sys::WebGl2RenderingContext;
 
-
-        // Winit prevents sizing with CSS, so we have to set
-        // the size manually when on web.
-        use winit::dpi::PhysicalSize;
-        window.set_inner_size(PhysicalSize::new(450, 400));
+             window.set_inner_size(PhysicalSize::new(2048, 2048));
 
         use winit::platform::web::WindowExtWebSys;
         web_sys::window()
@@ -769,6 +773,7 @@ pub async fn run() {
             .expect("Couldn't append canvas to document body.");
         } else {
             env_logger::init();
+            window.set_inner_size(PhysicalSize::new(2048, 2048));
         }
     }
 
