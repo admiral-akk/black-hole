@@ -80,7 +80,7 @@ impl FixedDistanceDistanceCache {
         let min_z = find_grazing_z(camera_distance, black_hole_radius, disc_bounds.1);
         FixedDistanceDistanceCache {
             min_angle: MIN_ANGLE,
-            min_z,
+            min_z: 0.0,
             camera_distance,
             black_hole_radius,
             disc_bounds,

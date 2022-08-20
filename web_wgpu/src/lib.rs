@@ -2,14 +2,16 @@ use generate_artifacts::{black_hole_cache::BlackHoleCache, path_distance_cache::
 use glam::Mat4;
 use shader::{
     black_hole::BlackHole,
+    full_float_texture::FullFloatTexture,
     half_float_texture::HalfFloatTexture,
     render_params::RenderParams,
+    small_float_texture::SmallFloatTexture,
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
 };
 use wgpu::{
     util::DeviceExt, BindGroupLayoutDescriptor, BlendState, ColorWrites, DepthBiasState,
-    DepthStencilState, Operations, RenderPassDepthStencilAttachment, StencilFaceState,
+    DepthStencilState, Features, Operations, RenderPassDepthStencilAttachment, StencilFaceState,
     StencilOperation, StencilState, TextureFormat,
 };
 use winit::{
@@ -64,7 +66,9 @@ impl State {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+                        | Features::ADDRESS_MODE_CLAMP_TO_BORDER
+                        | Features::TEXTURE_FORMAT_16BIT_NORM,
                     // We're aiming to support WebGl, so we should assume that we're using it.
                     limits: limits,
                     //  if cfg!(target_arch = "wasm32") {
@@ -115,7 +119,10 @@ impl State {
             direction_cache.cache_size.0 as u32,
         ];
         for fixed_distance in direction_cache.distance_angle_to_z_to_distance {
-            z_bounds.push([fixed_distance.min_z as f32, fixed_distance.max_z as f32]);
+            z_bounds.push([
+                fixed_distance.min_z as f32,
+                (fixed_distance.max_z - fixed_distance.min_z) as f32,
+            ]);
             for (_, final_dir) in fixed_distance.z_to_final_dir {
                 final_dir_vec.push([final_dir.0 as f32, final_dir.1 as f32]);
             }
@@ -123,6 +130,8 @@ impl State {
 
         let distance_cache = black_hole_cache.distance_cache;
         let mut z_bounds_distance = Vec::new();
+        let mut z_min_distance = Vec::new();
+        let mut z_max_distance = Vec::new();
         let mut angle_distance_vec = Vec::new();
         let dist_dim = [
             distance_cache.cache_size.2 as u32,
@@ -131,16 +140,68 @@ impl State {
         ];
         let bounds = distance_cache.disc_bounds;
         for fixed_distance in distance_cache.distance_angle_to_z_to_distance {
+            let mut is_decrease = false;
+            let mut is_first = true;
+            let mut max_is_increase = false;
+
+            println!("dist: {}", fixed_distance.camera_distance);
             for fixed_angle in fixed_distance.angle_to_z_to_distance {
-                z_bounds_distance
-                    .push([fixed_angle.z_bounds.0 as f32, fixed_angle.z_bounds.1 as f32]);
+                let min = (fixed_angle.z_bounds.1 - fixed_angle.z_bounds.0) as f32;
+                let max = fixed_angle.z_bounds.0 as f32;
+                println!("min: {}", min);
+                println!("max: {}", max);
+                let len = z_min_distance.len();
+                if is_first {
+                    is_first = false;
+                } else {
+                    if is_decrease {
+                        assert!(z_min_distance[len - 1] > min);
+                    } else if z_min_distance[len - 1] > min {
+                        is_decrease = true;
+                    }
+                    if max_is_increase {
+                        assert!(z_max_distance[len - 1] < max);
+                    }
+                    if z_max_distance[len - 1] < max {
+                        max_is_increase = true;
+                    }
+                }
+                z_min_distance.push(min);
+
+                z_max_distance.push(max);
+                z_bounds_distance.push([
+                    fixed_angle.z_bounds.0 as f32,
+                    (fixed_angle.z_bounds.1 - fixed_angle.z_bounds.0) as f32,
+                ]);
                 for d in fixed_angle.z_to_distance {
                     angle_distance_vec.push(((d - bounds.0) / (bounds.1 - bounds.0)) as f32);
                 }
             }
         }
 
-        let dist_z_bounds_tex = HalfFloatTexture::from_f32(
+        let dist_z_min_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &z_min_distance,
+            [dist_dim[1], dist_dim[2]],
+            "Distance z bounds",
+        )
+        .unwrap();
+        let dist_z_min_tex_view = dist_z_min_tex.view;
+        let dist_z_min_sampler = dist_z_min_tex.sampler;
+
+        let dist_z_max_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &z_max_distance,
+            [dist_dim[1], dist_dim[2]],
+            "Distance z bounds",
+        )
+        .unwrap();
+        let dist_z_max_tex_view = dist_z_max_tex.view;
+        let dist_z_max_sampler = dist_z_max_tex.sampler;
+
+        let dist_z_bounds_tex = FullFloatTexture::from_f32(
             &device,
             &queue,
             &z_bounds_distance,
@@ -151,7 +212,7 @@ impl State {
         let dist_z_bounds_tex_view = dist_z_bounds_tex.view;
         let dist_z_bounds_sampler = dist_z_bounds_tex.sampler;
 
-        let dist_tex = HalfFloatTexture::from_f32(
+        let dist_tex = FullFloatTexture::from_f32(
             &device,
             &queue,
             &angle_distance_vec,
@@ -163,7 +224,7 @@ impl State {
         let dist_tex_view = dist_tex.view;
         let dist_sampler = dist_tex.sampler;
 
-        let dir_z_bounds_tex = HalfFloatTexture::from_f32(
+        let dir_z_bounds_tex = FullFloatTexture::from_f32(
             &device,
             &queue,
             &z_bounds,
@@ -174,7 +235,7 @@ impl State {
 
         let dir_z_bounds_tex_view = dir_z_bounds_tex.view;
         let dir_z_bounds_sampler = dir_z_bounds_tex.sampler;
-        let final_dir_tex = HalfFloatTexture::from_f32(
+        let final_dir_tex = FullFloatTexture::from_f32(
             &device,
             &queue,
             &final_dir_vec,
@@ -364,6 +425,42 @@ impl State {
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 14,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 15,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 16,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 17,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
                 ],
                 label: Some("texture_bind_group_layout"),
             });
@@ -425,6 +522,22 @@ impl State {
                 wgpu::BindGroupEntry {
                     binding: 13,
                     resource: wgpu::BindingResource::Sampler(&dist_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 14,
+                    resource: wgpu::BindingResource::TextureView(&dist_z_min_tex_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 15,
+                    resource: wgpu::BindingResource::Sampler(&dist_z_min_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 16,
+                    resource: wgpu::BindingResource::TextureView(&dist_z_max_tex_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 17,
+                    resource: wgpu::BindingResource::Sampler(&dist_z_max_sampler),
                 },
             ],
             label: Some("diffuse_bind_group"),
@@ -771,7 +884,7 @@ pub async fn run() {
             .expect("Couldn't append canvas to document body.");
         } else {
             env_logger::init();
-            window.set_inner_size(PhysicalSize::new(2048, 2048));
+            window.set_inner_size(PhysicalSize::new(1024, 1024));
         }
     }
 

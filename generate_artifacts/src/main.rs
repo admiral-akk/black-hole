@@ -1,15 +1,23 @@
+use std::f32::consts::PI;
 use std::f64::consts::TAU;
+use std::fmt::format;
 use std::fs::{self};
 
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
+use generate_artifacts::path_integration2::path;
 use generate_artifacts::texture::texture_2d::{
     generate_final_angle_texture, sample_final_angle_texture, IndexMapping, Texture2D,
 };
 use serde::{Deserialize, Serialize};
-use test_utils::plot_trajectories;
+use test_utils::{plot_trajectories, plot_with_title};
+use wire_structs::angle_distance_cache::{
+    AngleDistanceCache, AngleDistanceCacheParams, DimensionParams,
+};
+use wire_structs::gpu::gpu_state::run_main;
 
+mod factory;
 mod final_direction_cache;
 mod path_distance_cache;
 mod path_integration2;
@@ -35,9 +43,9 @@ pub struct DirectionTestPoint {
     pub final_angle: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct AngleTestPoint {
-    pub z: f64,
+    pub view_port_coord: f64,
     pub target_angle: f64,
     pub dist: f64,
     pub dist_at_angle: Option<f64>,
@@ -177,10 +185,10 @@ fn generate_test_points() {
                     d_index, a_index, z_index
                 );
                 let target_angle = TAU * a_index as f64 / (ANGLE_TEST_POINTS - 1) as f64;
-                let dist_at_angle = angle_dist.get_dist(target_angle);
+                let dist_at_angle = angle_dist.get_dist(target_angle as f64);
 
                 let test_point = AngleTestPoint {
-                    z,
+                    view_port_coord: z,
                     target_angle,
                     dist,
                     dist_at_angle,
@@ -272,9 +280,315 @@ fn regenerate_black_hole_cache() {
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
 } // lib.rs
 
+const ANGLE_DISTANCE_CACHE_PATH: &str = "generate_artifacts/output/angle_distance_cache.txt";
+
+fn regenerate_angle_distance_cache(dimensions: [usize; 3]) -> AngleDistanceCache {
+    let dist_bounds = [5.0, 30.0];
+    let view_bounds = [0., 0.5_f32.sqrt()];
+    let angle_bounds = [0.01 * TAU as f32 / 360.0, TAU as f32];
+    let black_hole_radius = 1.5;
+    let fov_degrees = 60.;
+
+    let params = AngleDistanceCacheParams {
+        dist: DimensionParams {
+            size: dimensions[0],
+            bounds: dist_bounds,
+        },
+        view_dist: DimensionParams {
+            size: dimensions[1],
+            bounds: view_bounds,
+        },
+        angle: DimensionParams {
+            size: dimensions[2],
+            bounds: angle_bounds,
+        },
+        black_hole_radius,
+        fov_degrees,
+    };
+    let path = format!(
+        "generate_artifacts/output/angle_distance_cache_{}.txt",
+        params.cache_name()
+    );
+    let cache = fs::read(&path);
+    if cache.is_ok() {
+        println!("Found existing cache!");
+        let cache = cache.unwrap();
+        //let de: AngleDistanceCache = ciborium::de::from_reader(&*cache).unwrap();
+        let de: AngleDistanceCache = serde_json::from_slice(&cache).unwrap();
+        return de;
+    }
+
+    let cache = AngleDistanceCache::generate_angle_distance_cache(params);
+
+    // ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
+    let buffer = serde_json::to_string(&cache).unwrap();
+    fs::write(&path, buffer).expect("Unable to write file");
+    return cache;
+}
+
+fn regenerate_angle_distance_test_points(params: &AngleDistanceCacheParams) -> Vec<AngleTestPoint> {
+    let path = format!(
+        "generate_artifacts/output/angle_test_points_{}.txt",
+        params.test_name(),
+    );
+    let data = fs::read(&path);
+    if data.is_ok() {
+        println!("Found existing data!");
+        return serde_json::from_slice(&data.unwrap()).unwrap();
+    }
+
+    let dists = DimensionParams {
+        size: 15,
+        bounds: params.dist.bounds,
+    }
+    .generate_list();
+    let views = DimensionParams {
+        size: 4000,
+        bounds: params.view_dist.bounds,
+    }
+    .generate_list();
+    let angles = DimensionParams {
+        size: 61,
+        bounds: params.angle.bounds,
+    }
+    .generate_list();
+
+    let mut test_points = Vec::new();
+    for (dist_index, dist) in dists.iter().enumerate() {
+        for (view_index, view) in views.iter().enumerate() {
+            println!(
+                "Generating test case ({}/{}, {}/{})",
+                dist_index + 1,
+                dists.len(),
+                view_index + 1,
+                views.len()
+            );
+            let z = params.to_z(*view);
+            let response =
+                cast_ray_steps_response(z as f64, *dist as f64, params.black_hole_radius as f64);
+
+            for target_angle in &angles {
+                let dist_at_angle = match response.get_angle_dist().get_dist(*target_angle as f64) {
+                    Some(distance) => distance as f32,
+                    None => match response.hits_black_hole() {
+                        true => 0.,
+                        false => params.dist.bounds[1],
+                    },
+                };
+                test_points.push(AngleTestPoint {
+                    view_port_coord: *view as f64,
+                    target_angle: *target_angle as f64,
+                    dist: *dist as f64,
+                    dist_at_angle: Some(dist_at_angle as f64),
+                });
+            }
+        }
+    }
+    let data = serde_json::to_string(&test_points).unwrap();
+    fs::write(&path, data).expect("Unable to write file");
+    test_points
+}
+
+fn test_angle_distance_cache(
+    cache: &AngleDistanceCache,
+    test_points: &Vec<AngleTestPoint>,
+) -> Vec<(AngleTestPoint, Option<f32>)> {
+    test_points
+        .iter()
+        .map(|test_point| {
+            (
+                *test_point,
+                cache.get_dist(
+                    test_point.dist,
+                    test_point.view_port_coord,
+                    test_point.target_angle,
+                ),
+            )
+        })
+        .collect()
+}
+fn normalize_line_z(mut line: Vec<(f32, f32)>) -> Vec<(f32, f32)> {
+    println!("line len: {}", line.len());
+    if line.len() < 2 {
+        return line;
+    }
+    let (min, max) = (
+        line.iter()
+            .map(|v| v.0)
+            .min_by(|x, y| x.partial_cmp(y).unwrap())
+            .unwrap(),
+        line.iter()
+            .map(|v| v.0)
+            .max_by(|x, y| x.partial_cmp(y).unwrap())
+            .unwrap(),
+    );
+    println!("Max, min: {}, {}", max, min);
+    for i in 0..line.len() {
+        line[i].0 = (line[i].0 - min) / (max - min);
+    }
+    line
+}
+fn plot_angle_error_by_z(cache: &AngleDistanceCache, results: &Vec<(AngleTestPoint, Option<f32>)>) {
+    let mut filtered: Vec<&(AngleTestPoint, Option<f32>)> =
+        results.iter().filter(|p| true).collect();
+    filtered.sort_by(|p_1, p_2| {
+        let order = p_1.0.dist.partial_cmp(&p_2.0.dist).unwrap();
+        if order.is_eq() {
+            let order = p_1.0.target_angle.partial_cmp(&p_2.0.target_angle).unwrap();
+            if order.is_eq() {
+                return p_1
+                    .0
+                    .view_port_coord
+                    .partial_cmp(&p_2.0.view_port_coord)
+                    .unwrap();
+            } else {
+                return order;
+            }
+        } else {
+            return order;
+        }
+    });
+    let mut curr_angle = results[0].0.target_angle;
+    let mut lines = Vec::new();
+    let mut curr_dist = results[0].0.dist;
+    let mut line = Vec::new();
+    for point in filtered {
+        if point.0.dist != curr_dist {
+            line = normalize_line_z(line);
+            lines.push(line);
+            plot_with_title(
+                &format!("Error for dist = {:.2}", curr_dist),
+                &format!(
+                    "generate_artifacts/output/distance_cache_{}_{}_{}_z_error_dist_{:.2}.png",
+                    cache.params.dist.size,
+                    cache.params.view_dist.size,
+                    cache.params.angle.size,
+                    curr_dist
+                ),
+                &lines,
+                ((0., 1.), (0., 1.)),
+            )
+            .unwrap();
+            curr_dist = point.0.dist;
+            curr_angle = point.0.target_angle;
+            lines = Vec::new();
+            line = Vec::new();
+        }
+        if point.0.target_angle != curr_angle {
+            line = normalize_line_z(line);
+            lines.push(line);
+            curr_dist = point.0.dist;
+            curr_angle = point.0.target_angle;
+            line = Vec::new();
+        }
+        if point.0.dist_at_angle.is_none() {
+            continue;
+        }
+
+        let val = point.0.dist_at_angle.unwrap();
+        if val < 2. || val > 12. {
+            continue;
+        }
+        if point.1.is_none() {
+            continue;
+        }
+        let diff = (point.1.unwrap() - val as f32).abs();
+        line.push((point.0.view_port_coord as f32, diff));
+    }
+    line = normalize_line_z(line);
+    lines.push(line);
+    plot_with_title(
+        &format!("Error for dist = {:.2}", curr_dist),
+        &format!(
+            "generate_artifacts/output/distance_cache_{}_{}_{}_z_error_dist_{:.2}.png",
+            cache.params.dist.size, cache.params.view_dist.size, cache.params.angle.size, curr_dist
+        ),
+        &lines,
+        ((0., 1.), (0., 1.)),
+    )
+    .unwrap();
+}
+
+fn plot_cache_statistics(cache: &AngleDistanceCache) {
+    let disc_bounds = [2., 12.];
+
+    let params = &cache.params;
+    let dists = params.dist.generate_list();
+    let angles = params.angle.generate_list();
+    let views = params.view_dist.generate_list();
+
+    let mut data_points_per = Vec::new();
+    for (d_index, dist) in dists.iter().enumerate() {
+        let mut data_per = Vec::new();
+        let mut distances_per = Vec::new();
+        for (a_index, angle) in angles.iter().enumerate() {
+            let mut distance_per = Vec::new();
+            let mut count = 0;
+            for (v_index, view) in views.iter().enumerate() {
+                let val = cache.distances[d_index][v_index][a_index];
+                distance_per.push((*view, val));
+                if val >= disc_bounds[0] && val <= disc_bounds[1] {
+                    count += 1;
+                }
+            }
+            distances_per.push(distance_per);
+            data_per.push((*angle, count as f32 / (10.) as f32));
+        }
+        data_points_per.push(data_per);
+        plot_with_title(
+            &format!("Distance by angle, dist = {:.2}", dist),
+            &format!(
+                "generate_artifacts/output/distance_cache_{}_{}_{}_dist_per_angle_{:.2}.png",
+                cache.params.dist.size, cache.params.view_dist.size, cache.params.angle.size, dist
+            ),
+            &distances_per,
+            ((0., 1.), (0., 20.)),
+        )
+        .unwrap();
+    }
+    plot_with_title(
+        &format!("Data points per angle"),
+        &format!(
+            "generate_artifacts/output/distance_cache_{}_{}_{}_points_per_angle.png",
+            cache.params.dist.size, cache.params.view_dist.size, cache.params.angle.size
+        ),
+        &data_points_per,
+        ((0., TAU), (0., 1.)),
+    )
+    .unwrap();
+}
+
+fn plot_paths(paths: Vec<Vec<[f32; 2]>>) {
+    let paths = paths
+        .iter()
+        .map(|path| path.iter().map(|v| (v[0], v[1])).collect())
+        .collect();
+    plot_with_title(
+        &format!("Paths computed on gpu"),
+        &format!("generate_artifacts/output/gpu_paths.png"),
+        &paths,
+        ((-30., 30.), (-30., 30.)),
+    )
+    .unwrap();
+}
+
 fn main() {
     //  generate_test_points();
     //generate_angle_texture(&distance_mapping, &z_mapping);
     //plot_angle_texture_stats(&distance_mapping, &z_mapping);
-    regenerate_black_hole_cache();
+    // regenerate_black_hole_cache();
+    // let curr_cache_vec = get_file_as_byte_vec(BLACK_HOLE_CACHE_PATH);
+    // let mut curr_cache = None;
+    // if curr_cache_vec.is_ok() {
+    //     curr_cache =
+    //         Some(serde_json::from_slice::<BlackHoleCache>(&curr_cache_vec.unwrap()).unwrap());
+    // }
+    let paths = run_main();
+    plot_paths(paths);
+    // let dimensions = [1 << 6, 1 << 6, 1 << 6];
+    // let cache = regenerate_angle_distance_cache(dimensions);
+    // plot_cache_statistics(&cache);
+    // let data = regenerate_angle_distance_test_points( &cache.params);
+    // let results = test_angle_distance_cache(&cache, &data);
+    // plot_angle_error_by_z(&cache, &results);
 }

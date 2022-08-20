@@ -4,7 +4,8 @@ use plotters::{
     style::{IntoFont, WHITE},
 };
 
-pub fn plot_trajectories(
+pub fn plot_with_title(
+    title: &str,
     file_path: &str,
     lines: &Vec<Vec<(f32, f32)>>,
     bounds: ((f64, f64), (f64, f64)),
@@ -14,7 +15,7 @@ pub fn plot_trajectories(
 
     let (x_bound, y_bound) = bounds;
     let mut chart = ChartBuilder::on(&root)
-        .caption(format!("angle cache"), ("Arial", 50).into_font())
+        .caption(title, ("Arial", 50).into_font())
         .margin(5 as u32)
         .x_label_area_size(30 as u32)
         .y_label_area_size(30 as u32)
@@ -35,4 +36,12 @@ pub fn plot_trajectories(
     // let backend = SVGBackend::new("output.svg", (800, 600));
     root.present().expect("Plot failed!");
     Ok(())
+}
+
+pub fn plot_trajectories(
+    file_path: &str,
+    lines: &Vec<Vec<(f32, f32)>>,
+    bounds: ((f64, f64), (f64, f64)),
+) -> Result<(), Box<dyn std::error::Error>> {
+    return plot_with_title("empty", file_path, lines, bounds);
 }

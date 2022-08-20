@@ -72,8 +72,26 @@ var dist_z_s: sampler;
 var dist_t: texture_3d<f32>;
 @group(0) @binding(13)
 var dist_s: sampler;
+@group(0) @binding(14)
+var dist_min_z_t: texture_2d<f32>;
+@group(0) @binding(15)
+var dist_min_z_s: sampler;
+@group(0) @binding(16)
+var dist_max_z_t: texture_2d<f32>;
+@group(0) @binding(17)
+var dist_max_z_s: sampler;
 
+fn to_float(v: vec2<f32>) -> f32 {
+    return v.x + v.y/2048.0;
+}
 
+fn to_vec2(v: vec4<f32>) -> vec2<f32> {
+return vec2(to_float(v.xy),to_float(v.zw));
+}
+
+fn to_high_p_float(v: vec4<f32>) -> f32 {
+     return v.w/(2048.0*2048.0*2048.0) +v.z/(2048.0*2048.0) + v.y/2048.0+v.x;
+}
 
 // https://stackoverflow.com/questions/141855/programmatically-lighten-a-color
 fn scale_color( color:vec3<f32>, scale: f32) -> vec3<f32>{
@@ -100,8 +118,8 @@ let ARM_DIST_SCALE = 3.0;
 let INNER_SPEED_SCALE = 0.03;
 let  ARM_DIST_NORMALIZATION =pow(TAU,ARM_DIST_SCALE);
 let CLOUD_DENSITY = 0.1;
-let dist_01 =1.-dist_01;
-    let dist_rescaled=((dist_01+INNER_SPEED_SCALE/(.99-dist_01))-INNER_SPEED_SCALE/.99)/(1.98-INNER_SPEED_SCALE/.99);
+let dist_01 =1.0-dist_01;
+    let dist_rescaled=((dist_01+INNER_SPEED_SCALE/(.97-dist_01))-INNER_SPEED_SCALE/.97)/(1.98-INNER_SPEED_SCALE/.99);
     let arm=ARMS_COUNT*fract(theta_01+dist_rescaled*REVOLUTION_COUNT);
     let theta_start=arm/ARMS_COUNT;
     let theta_offset=TAU*fract(10.+theta_01-theta_start);
@@ -115,7 +133,7 @@ let dist_01 =1.-dist_01;
     let noi_tex=textureSample(noise_t,noise_s,fract(vec2(x,y))).r*1.1;
     let noi=smoothstep(0.,.25,dist_01)*clamp((1./density)*(noi_tex -(1.-density)),0.,1.);
     let brightness=2.*clamp(1.-density,0.,1.);
-    let alpha=smoothstep(.3,.55,dist_01)-smoothstep(.95,.99,dist_01)-noi;
+    let alpha=smoothstep(.3,.55,dist_01)-smoothstep(.9,.94,dist_01)-noi;
     
     let color = clamp(vec4(scale_color(vec3(show,0.),3.*(1.-density)),alpha),vec4(0.),vec4(1.));
 
@@ -127,7 +145,7 @@ let dist_01 =1.-dist_01;
 let normalized_pos = 
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
     let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
-    let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(.25,d_01));
+    let z_bounds=to_vec2(textureSampleLevel(dist_z_t,dist_z_s,vec2(.25,d_01),0.));
     let min_z = z_bounds.x;
     let z = start_dir.z;
     let color = vec4(0.);
@@ -154,31 +172,53 @@ let normalized_pos =
     
     var total_disc_color=vec4(0.,0.,0.,0.);
     let other_angle_01=angle_01+.5;
-    let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(other_angle_01.x,d_01)).xy;
-    let z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
+    var z_bounds=to_vec2(textureSampleLevel(dist_z_t,dist_z_s,vec2(other_angle_01.x,d_01),0.));
+     z_bounds.x = to_high_p_float(textureSample(dist_max_z_t, dist_max_z_s,vec2(angle_01.x,d_01) ));
+   z_bounds.y = to_high_p_float(textureSample(dist_min_z_t, dist_min_z_s,vec2(other_angle_01.x,d_01) ));
+    let z_index=(z-z_bounds.x)/z_bounds.y;
 
    let in_bounds = step(0.,z_index)- step(1.,z_index);
-   let dist=textureSample(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01)).x;
+   let dist=to_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01),0.).xy);
 
-let color = in_bounds*disc_color(dist,other_angle_01.y);
-total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
+    let color = in_bounds*disc_color(dist,other_angle_01.y);
+    total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
    total_disc_color+= in_bounds*(1.-total_disc_color.w)*disc_color(dist,other_angle_01.y);
 
-   let z_bounds=textureSample(dist_z_t,dist_z_s,vec2(angle_01.x,d_01)).xy;
-   let z_index=(z-z_bounds.x)/(z_bounds.y-z_bounds.x);
-   let in_bounds = step(0.,z_index)- step(1.,z_index);
-   let dist=textureSample(dist_t,dist_s,vec3(z_index,angle_01.x,d_01)).x;
+    z_bounds=to_vec2(textureSampleLevel(dist_z_t,dist_z_s,vec2(angle_01.x,d_01),0.));
+      z_bounds.x = to_high_p_float(textureSample(dist_max_z_t, dist_max_z_s,vec2(angle_01.x,d_01) ));
+   z_bounds.y = to_high_p_float(textureSample(dist_min_z_t, dist_min_z_s,vec2(angle_01.x,d_01) ));
+   let z_index=(z-z_bounds.x)/z_bounds.y;
+   let in_bounds = step(0.,z_index) - step(1.,z_index);
+   let dist=to_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,angle_01.x,d_01),0.).xy);
 
    let color = in_bounds*disc_color(dist,angle_01.y);
     total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
+let coord  = coord+0.5;
+    let d_v = to_float(textureSampleLevel(dist_t,dist_s,vec3(coord,d_01),0.).xy);
+    let z_v = to_float(textureSampleLevel(dist_z_t,dist_z_s,vec2(coord),0.).xy);
+   let v_co = disc_color(d_v,coord.y);
 
-    return vec4(total_disc_color);
+let v = fract(16.*angle_01.x + 0.5);
+let th_v = fract(32.*angle_01.y);
+var s = to_vec2(textureSample(dist_z_t,dist_z_s,vec2(coord)));
+   s.x = to_high_p_float(textureSample(dist_max_z_t, dist_max_z_s,vec2(coord) ));
+   s.y = to_high_p_float(textureSample(dist_min_z_t, dist_min_z_s,vec2(coord) ));
+let z_index = (coord.x - s.x) /s.y;
+   let in_bounds = step(0.,z_index) - step(1.,z_index);
+   let d_11=in_bounds*to_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,coord.y,d_01),0.).xy);
+let v = fract(d_11);
+let diff = step(0.02,abs(dpdx(v))+abs(dpdy(v)));
+   return vec4(v,0.,0.,1.);
+   //return total_disc_color;
+  //return total_disc_color+vec4(diff,0.,0.,0.5);
+ // let fv = -log2(s.y)/19.;//-log2(1.-s.x)/10.;//-log2(s.y)/20.;
+ //return vec4(fv,step(1.,fv) ,step(1.,fv),1.);
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
    // let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);
    // let z_bounds = to_vec2(u8_z_bounds);
-   let z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01).xy;
-    let z_01=clamp((start_dir.z-z_bounds.x)/(z_bounds.y-z_bounds.x),0.,1.1);
+   let z_bounds = to_vec2(textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01));
+    let z_01=clamp((start_dir.z-z_bounds.x)/z_bounds.y,0.,1.1);
     var z_pow = z_01;
     for (var i = 0; i < 5; i += 1) {
         z_pow = z_pow*z_pow;
@@ -192,7 +232,7 @@ fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f3
     let start_weight = 1.-step(z_bounds.x,start_dir.z);
     // let u8_average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01));
     // let average_dir = vec3(to_vec2(u8_average_dir),0.).xzy;
-    let average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01)).xzy;
+    let average_dir = vec3(to_vec2(textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01))),0.).xzy;
     let cached_dir = (1.-start_weight)*rot* normalize(average_dir);
   
     let temp_dir = normalize(cached_dir+start_weight*start_dir);
@@ -204,7 +244,7 @@ fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f3
     let theta=atan2(final_dir.y,horizontal_len)+5.*PI/2.;
     
     let phi_theta=vec2(fract(phi/TAU),fract(theta/PI));
-    let hit_black_hole = step(z_bounds.y,start_dir.z);
+    let hit_black_hole = step(z_bounds.y+z_bounds.x,start_dir.z);
     var p = coords+0.5;
     p = p*p;
     p = p*p;

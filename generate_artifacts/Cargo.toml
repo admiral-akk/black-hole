@@ -18,7 +18,7 @@ serde = { version = "1.0", features = ["derive"] }
 flexbuffers  = "2.0.0"
 serde_json = { version = "1.0.82", features = ["float_roundtrip"] }
 test-utils = { path = "../test_utils" }
-
+ciborium = "0.2.0"
 [dev-dependencies]
 test-utils = { path = "../test_utils" }
 
