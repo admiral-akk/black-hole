@@ -10,7 +10,7 @@ use crate::{
     path_integration::path,
 };
 
-async fn run() -> Vec<Vec<[f32; 2]>> {
+async fn run(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
     let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
     let adapter = instance.request_adapter(&Default::default()).await.unwrap();
     let features = adapter.features();
@@ -44,7 +44,7 @@ async fn run() -> Vec<Vec<[f32; 2]>> {
 
     let field = Field::new(1.5, 20.);
     let (field_buffer, field_buffer_len) = field.to_buffer(&device);
-    let particle_count = 1 << 12;
+
     let particles: Vec<crate::gpu::particle::Particle> = (0..particle_count)
         .into_iter()
         .map(|i| i as f32 / (particle_count - 1) as f32)
@@ -128,9 +128,8 @@ async fn run() -> Vec<Vec<[f32; 2]>> {
     });
 
     let start = SystemTime::now();
-    let step_count = 1024;
     let mut vec = Vec::new();
-    for _ in 0..step_count {
+    for i in 0..steps {
         let mut encoder = device.create_command_encoder(&Default::default());
         {
             let mut cpass = encoder.begin_compute_pass(&Default::default());
@@ -138,21 +137,33 @@ async fn run() -> Vec<Vec<[f32; 2]>> {
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.dispatch_workgroups(256, 1, 1);
         }
-        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: particle_bytes.len() as u64,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-        encoder.copy_buffer_to_buffer(&particle_buffer, 0, &buffer, 0, particle_bytes.len() as u64);
-        let index = queue.submit(Some(encoder.finish()));
 
-        vec.push((index, buffer));
+        if (i + 1) % (steps / samples) == 0 {
+            let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: particle_bytes.len() as u64,
+                usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+
+            encoder.copy_buffer_to_buffer(
+                &particle_buffer,
+                0,
+                &buffer,
+                0,
+                particle_bytes.len() as u64,
+            );
+            let index = queue.submit(Some(encoder.finish()));
+
+            vec.push((index, buffer));
+        } else {
+            queue.submit(Some(encoder.finish()));
+        }
     }
 
     let mut paths = Vec::new();
     for p in particles {
-        paths.push(Vec::from([[p.pv[0], p.pv[1]]]));
+        paths.push(Vec::from([[[p.pv[0], p.pv[1]], [p.pv[2], p.pv[3]]]]));
     }
 
     for (index, buffer) in vec {
@@ -166,7 +177,7 @@ async fn run() -> Vec<Vec<[f32; 2]>> {
             let data_raw = &*buffer_slice.get_mapped_range();
             let data: &[Particle] = bytemuck::cast_slice(data_raw);
             for (i, p) in data.iter().enumerate() {
-                paths[i].push([p.pv[0], p.pv[1]]);
+                paths[i].push([[p.pv[0], p.pv[1]], [p.pv[2], p.pv[3]]]);
             }
         }
     }
@@ -174,6 +185,6 @@ async fn run() -> Vec<Vec<[f32; 2]>> {
     return paths;
 }
 
-pub fn run_main() -> Vec<Vec<[f32; 2]>> {
-    return pollster::block_on(run());
+pub fn run_main(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
+    return pollster::block_on(run(particle_count, steps, samples));
 }

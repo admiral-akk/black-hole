@@ -37,7 +37,7 @@ var<storage, read_write> particles: Particles;
 fn stop(particle: vec2<f32>) -> bool {
     let dist = length(particle.xy);
     // We add some error so that the geodesics that are on the edge of the schwarzchild radius don't get pulled in accidentally.
-  return dist < 0.85 * field.radius || dist > 35.;
+  return dist <  0.99* field.radius || dist > 35.;
 }
 
 
@@ -48,21 +48,20 @@ fn step_size(particle: vec4<f32>) -> f32 {
     let r = length(particle.xy);
     let m_4 = 6.0 * field.radius;
     if r < m_4{
-    return 0.0001 / v;
+    return 0.005;
     }
     if (dot(particle.xy,particle.zw) < 0.) {
-        return (0.1 * r + 0.0001)/v;
+        return 0.1 * r + 0.005;
     }
-    return (0.1 * (r - m_4) + 0.0001)/v;
+    return 0.1 * (r - m_4) + 0.005;
 } 
 
 
    fn force( p: vec2<f32>) -> vec2<f32> {
         let diff = -p;
-
-let len = length(diff);
-var len_5 = len*len;
-len_5 = len_5*len_5*len;
+        let len = length(diff);
+        var len_5 = len*len;
+        len_5 = len_5*len_5*len;
       return normalize(diff) * field.magnitude  / len_5;
     }
 
@@ -84,11 +83,36 @@ fn rk4(particle: vec4<f32>, h: f32) -> vec4<f32> {
         (l_0 + 2.0 * l_1 + 2.0 * l_2 + l_3),
     );
 }
-fn step_particle(particle:  vec4<f32>) -> vec4<f32> {
-    let h = step_size(particle);
 
-    let delta_pv = rk4(particle, h);
-    return particle +delta_pv;
+fn closest(pos1: vec2<f32>,pos2: vec2<f32>) -> vec2<f32> {
+    let step = pos2 - pos1;
+    let d = dot(step, -pos1) / length(step);
+    return d*step - pos1;
+}
+fn step_particle(particle: vec4<f32>) -> vec4<f32> {
+    var h = step_size(particle);
+
+
+    var delta_pv = rk4(particle, h);
+    var delta_pv2 = rk4(particle, 0.5*h);
+    delta_pv2 = delta_pv2+rk4(particle+delta_pv2, 0.5*h);
+    loop {
+        delta_pv = rk4(particle, h);
+        delta_pv2 = rk4(particle, 0.5*h);
+        delta_pv2 = delta_pv2+rk4(particle+delta_pv2, 0.5*h);
+        continuing {
+            h *= 0.125;
+            break if length(delta_pv.xy) < 0.05 && length(delta_pv.xy - delta_pv2.xy) < 0.001 && length(delta_pv.zw - delta_pv2.zw) < 0.0001 ;
+        }
+    }
+    
+    // let intersection = closest(particle.xy, (particle+delta_pv).xy);
+    // if (stop(intersection)) {
+    //     return vec4(intersection, particle.zw);
+    // }
+    // let h = step_size(particle+delta_pv);
+    // let delta_pv = rk4(particle, h);
+    return particle + delta_pv;
 }
 
 
@@ -100,9 +124,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i = 0u; i < iterations; i++) {
         let index = start_index + i*256u;
         var next_particle = particles.data[index];
-        for (var i = 0u; i < 5000u; i += 1u) {
-            if (!stop(next_particle.xy) ) {
-                next_particle = step_particle(next_particle);
+        var start_pos = next_particle.xy;
+        if (stop(start_pos) ) { continue; }
+        var i = 0u;
+        loop {
+            next_particle = step_particle(next_particle);
+            continuing {
+                break if stop(next_particle.xy) || length(start_pos-next_particle.xy) > 0.1;
             }
         }
         particles.data[index] = next_particle;

@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 use std::f64::consts::TAU;
 use std::fmt::format;
 use std::fs::{self};
+use std::time::SystemTime;
 
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
@@ -583,8 +584,59 @@ fn main() {
     //     curr_cache =
     //         Some(serde_json::from_slice::<BlackHoleCache>(&curr_cache_vec.unwrap()).unwrap());
     // }
-    let paths = run_main();
-    plot_paths(paths);
+
+    let start = SystemTime::now();
+    let steps = 1 << 9;
+    let samples = 1 << 9;
+    let rendered_paths = 1 << 10;
+    let particle_count = 1 << 20;
+
+    let paths = run_main(particle_count, steps, samples);
+
+    let unfinished_paths = paths.iter().filter(|path| {
+        let last = path.last().unwrap()[0];
+        let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
+        dist > 1.5 && dist < 20.
+    });
+
+    let mut unfinished_index = 0;
+    for (i, path) in paths.iter().enumerate() {
+        let last = path.last().unwrap()[0];
+        let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
+        if dist > 1.5 && dist < 20. {
+            println!(
+                "Unfinished! Index: {}, final Pos: {:?}, dist: {}, path: {:?}",
+                i, last, dist, 1
+            );
+            unfinished_index = i;
+        }
+    }
+    let unfinished_paths = paths.iter().filter(|path| {
+        let last = path.last().unwrap()[0];
+        let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
+        dist > 1.5 && dist < 20.
+    });
+    println!("Unfinished count: {}", unfinished_paths.count());
+    let unfinished_paths = paths.iter().filter(|path| {
+        let last = path.last().unwrap()[0];
+        let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
+        dist > 1.5 && dist < 20.
+    });
+    for pv in &paths[unfinished_index] {
+        println!("pos: {:?}", pv);
+    }
+
+    println!("unfinished index: {:?}", unfinished_index);
+
+    let filtered_paths = paths
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| i % (particle_count / rendered_paths) as usize == 0)
+        .map(|(_, path)| path.iter().map(|pv| [pv[0][0], pv[0][1]]).collect())
+        .collect();
+
+    plot_paths(filtered_paths);
+    println!("time taken (ms): {}", start.elapsed().unwrap().as_millis());
     // let dimensions = [1 << 6, 1 << 6, 1 << 6];
     // let cache = regenerate_angle_distance_cache(dimensions);
     // plot_cache_statistics(&cache);
