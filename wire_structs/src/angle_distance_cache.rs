@@ -6,9 +6,13 @@ pub struct AngleDistanceCache {
     pub params: AngleDistanceCacheParams,
 }
 
+use glam::{DVec3, Vec2};
 use serde::{Deserialize, Serialize};
 
-use crate::path_integration::path::cast_ray_steps_response;
+use crate::{
+    gpu::{field::Field, gpu_state::simulate_particles, particle::Particle},
+    path_integration::{path::cast_ray_steps_response, response::AnglePath},
+};
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct DimensionParams {
     pub size: usize,
@@ -126,15 +130,23 @@ impl AngleDistanceCache {
             let mut camera_dist: Vec<Vec<f32>> = Vec::new();
             let dist = dists[d];
             for view in 0..views.len() {
+                println!(
+                    "Distance: ({}/{}, {}/{})",
+                    d,
+                    dists.len(),
+                    view,
+                    views.len()
+                );
                 let mut view_dist: Vec<f32> = Vec::new();
                 let view_coord = views[view];
                 let z = params.to_z(view_coord);
                 let response =
                     cast_ray_steps_response(z as f64, dist as f64, params.black_hole_radius as f64);
+                let all_angles = response.get_angle_dist().get_all_dist(&angles);
                 for a in 0..angles.len() {
                     let angle = angles[a];
 
-                    let distance = match response.get_angle_dist().get_dist(angle as f64) {
+                    let distance = match all_angles[a] {
                         Some(distance) => distance as f32,
                         None => match response.hits_black_hole() {
                             true => 0.,
@@ -142,16 +154,62 @@ impl AngleDistanceCache {
                         },
                     };
 
-                    println!(
-                        "Distance: ({}/{}, {}/{}, {}/{}): {}",
-                        d,
-                        dists.len(),
-                        view,
-                        views.len(),
-                        a,
-                        angles.len(),
-                        distance
-                    );
+                    view_dist.push(distance);
+                }
+                camera_dist.push(view_dist);
+            }
+            distances.push(camera_dist);
+        }
+
+        AngleDistanceCache { distances, params }
+    }
+}
+
+fn view_to_particle(
+    view: &Vec<f32>,
+    field: &Field,
+    dist: f32,
+    params: &AngleDistanceCacheParams,
+) -> Vec<Particle> {
+    view.iter()
+        .map(|v| field.spawn_particle(dist * Vec2::NEG_Y, Vec2::new(params.to_z(*v), 1.)))
+        .collect()
+}
+
+impl AngleDistanceCache {
+    pub fn generate_angle_distance_cache_gpu(
+        params: AngleDistanceCacheParams,
+    ) -> AngleDistanceCache {
+        let dists = params.dist.generate_list();
+        let views = params.view_dist.generate_list();
+        let angles = params.angle.generate_list();
+
+        let mut distances: Vec<Vec<Vec<f32>>> = Vec::new();
+        for d in 0..dists.len() {
+            let mut camera_dist: Vec<Vec<f32>> = Vec::new();
+            let dist = dists[d];
+            let field = Field::new(1.5, dist as f64);
+            let particles = view_to_particle(&views, &field, dist, &params);
+            let paths = simulate_particles(particles, &field);
+            for (i, path) in paths.iter().enumerate() {
+                let angle_path = AnglePath::new(
+                    &path
+                        .iter()
+                        .map(|v| DVec3::new(v[0][0] as f64, 0., v[0][1] as f64))
+                        .collect(),
+                );
+                let angles = angle_path.get_all_dist(&angles);
+                let mut view_dist: Vec<f32> = Vec::new();
+                println!("Distance: ({}/{}, {}/{})", d, dists.len(), i, paths.len());
+                for a in 0..angles.len() {
+                    let distance = match angles[a] {
+                        Some(distance) => distance as f32,
+                        None => match angle_path.hits_black_hole {
+                            true => 0.,
+                            false => params.dist.bounds[1],
+                        },
+                    };
+
                     view_dist.push(distance);
                 }
                 camera_dist.push(view_dist);

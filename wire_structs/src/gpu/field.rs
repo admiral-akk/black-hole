@@ -29,7 +29,7 @@ impl Field {
 
 impl Field {
     pub fn new(radius: f64, camera_distance: f64) -> Self {
-        let magnitude = 2.0 / ((2.0 / radius.powi(4)) - (1.0 / camera_distance.powi(4)));
+        let magnitude = 2.0 / (2.0 / radius.powi(4) - (1.0 / camera_distance.powi(4)));
         Self {
             magnitude: magnitude as f32,
             radius: radius as f32,

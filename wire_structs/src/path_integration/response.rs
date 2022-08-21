@@ -45,6 +45,7 @@ impl Response {
 
 pub struct AnglePath {
     angle_dist: Vec<AngleDist>,
+    pub hits_black_hole: bool,
 }
 
 impl ToAngle<f64> for DVec3 {
@@ -73,7 +74,10 @@ impl AnglePath {
             angle_dist[i].angle += offset;
         }
 
-        AnglePath { angle_dist }
+        AnglePath {
+            angle_dist,
+            hits_black_hole: path.last().unwrap().length() <= 1.5,
+        }
     }
 
     pub fn get_max_angle(&self) -> f64 {
@@ -82,6 +86,27 @@ impl AnglePath {
 
     pub fn get_final_dist(&self) -> f64 {
         self.angle_dist.last().unwrap().distance
+    }
+
+    pub fn get_all_dist(&self, angles: &Vec<f32>) -> Vec<Option<f64>> {
+        let mut i = 0;
+        let mut dists = Vec::new();
+        while i < self.angle_dist.len() - 1 && dists.len() < angles.len() {
+            let angle = self.angle_dist[i + 1].angle;
+            if angle as f32 > angles[dists.len()] {
+                let left = &self.angle_dist[i];
+
+                let right = &self.angle_dist[i + 1];
+                let t = (angle - left.angle) / (right.angle - left.angle);
+
+                dists.push(Some(t * right.distance + (1. - t) * left.distance));
+            }
+            i += 1;
+        }
+        while dists.len() < angles.len() {
+            dists.push(None);
+        }
+        dists
     }
 
     pub fn get_dist(&self, angle: f64) -> Option<f64> {

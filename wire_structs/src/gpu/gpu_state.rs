@@ -10,7 +10,7 @@ use crate::{
     path_integration::path,
 };
 
-async fn run(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
+async fn run(particles: Vec<Particle>, field: &Field) -> Vec<Vec<[[f32; 2]; 2]>> {
     let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
     let adapter = instance.request_adapter(&Default::default()).await.unwrap();
     let features = adapter.features();
@@ -25,6 +25,8 @@ async fn run(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]
         )
         .await
         .unwrap();
+
+    let (field_buffer, _) = field.to_buffer(&device);
 
     let start_instant = Instant::now();
     let cs_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -41,16 +43,6 @@ async fn run(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]
             | wgpu::BufferUsages::COPY_DST
             | wgpu::BufferUsages::COPY_SRC,
     });
-
-    let field = Field::new(1.5, 20.);
-    let (field_buffer, field_buffer_len) = field.to_buffer(&device);
-
-    let particles: Vec<crate::gpu::particle::Particle> = (0..particle_count)
-        .into_iter()
-        .map(|i| i as f32 / (particle_count - 1) as f32)
-        .map(|i_01| Vec2::new(i_01, 1.).normalize())
-        .map(|v| field.spawn_particle(20. * Vec2::NEG_Y, v))
-        .collect();
 
     let particle_bytes = bytemuck::cast_slice(&particles);
     let particle_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -127,6 +119,9 @@ async fn run(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]
         ],
     });
 
+    let steps = 1 << 9;
+    let samples = 1 << 8;
+
     let start = SystemTime::now();
     let mut vec = Vec::new();
     for i in 0..steps {
@@ -185,6 +180,17 @@ async fn run(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]
     return paths;
 }
 
-pub fn run_main(particle_count: u32, steps: u32, samples: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
-    return pollster::block_on(run(particle_count, steps, samples));
+pub fn simulate_particles(particles: Vec<Particle>, field: &Field) -> Vec<Vec<[[f32; 2]; 2]>> {
+    return pollster::block_on(run(particles, &field));
+}
+
+pub fn run_main(particle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
+    let field = Field::new(1.5, 5.);
+    let particles: Vec<crate::gpu::particle::Particle> = (0..particle_count)
+        .into_iter()
+        .map(|i| i as f32 / (particle_count - 1) as f32)
+        .map(|i_01| Vec2::new(i_01, 1.).normalize())
+        .map(|v| field.spawn_particle(5. * Vec2::NEG_Y, v))
+        .collect();
+    return pollster::block_on(run(particles, &field));
 }

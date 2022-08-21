@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 use std::f64::consts::TAU;
 use std::fmt::format;
 use std::fs::{self};
+use std::path::Path;
 use std::time::SystemTime;
 
 use generate_artifacts::black_hole_cache::BlackHoleCache;
@@ -11,6 +12,7 @@ use generate_artifacts::path_integration2::path;
 use generate_artifacts::texture::texture_2d::{
     generate_final_angle_texture, sample_final_angle_texture, IndexMapping, Texture2D,
 };
+use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use test_utils::{plot_trajectories, plot_with_title};
 use wire_structs::angle_distance_cache::{
@@ -319,7 +321,8 @@ fn regenerate_angle_distance_cache(dimensions: [usize; 3]) -> AngleDistanceCache
         return de;
     }
 
-    let cache = AngleDistanceCache::generate_angle_distance_cache(params);
+    let cache = AngleDistanceCache::generate_angle_distance_cache_gpu(params);
+    //let cache = AngleDistanceCache::generate_angle_distance_cache(params);
 
     // ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
     let buffer = serde_json::to_string(&cache).unwrap();
@@ -449,6 +452,13 @@ fn plot_angle_error_by_z(cache: &AngleDistanceCache, results: &Vec<(AngleTestPoi
             return order;
         }
     });
+
+    let folder_path = &format!(
+        "generate_artifacts/output/distance_cache_{}_{}_{}",
+        cache.params.dist.size, cache.params.view_dist.size, cache.params.angle.size
+    );
+    fs::create_dir_all(folder_path).unwrap();
+    if !Path::new(folder_path).is_dir() {}
     let mut curr_angle = results[0].0.target_angle;
     let mut lines = Vec::new();
     let mut curr_dist = results[0].0.dist;
@@ -459,13 +469,7 @@ fn plot_angle_error_by_z(cache: &AngleDistanceCache, results: &Vec<(AngleTestPoi
             lines.push(line);
             plot_with_title(
                 &format!("Error for dist = {:.2}", curr_dist),
-                &format!(
-                    "generate_artifacts/output/distance_cache_{}_{}_{}_z_error_dist_{:.2}.png",
-                    cache.params.dist.size,
-                    cache.params.view_dist.size,
-                    cache.params.angle.size,
-                    curr_dist
-                ),
+                &format!("{}/z_error_dist_{:.2}.png", folder_path, curr_dist),
                 &lines,
                 ((0., 1.), (0., 1.)),
             )
@@ -500,10 +504,7 @@ fn plot_angle_error_by_z(cache: &AngleDistanceCache, results: &Vec<(AngleTestPoi
     lines.push(line);
     plot_with_title(
         &format!("Error for dist = {:.2}", curr_dist),
-        &format!(
-            "generate_artifacts/output/distance_cache_{}_{}_{}_z_error_dist_{:.2}.png",
-            cache.params.dist.size, cache.params.view_dist.size, cache.params.angle.size, curr_dist
-        ),
+        &format!("{}/z_error_dist_{:.2}.png", folder_path, curr_dist),
         &lines,
         ((0., 1.), (0., 1.)),
     )
@@ -573,7 +574,7 @@ fn plot_paths(paths: Vec<Vec<[f32; 2]>>) {
     .unwrap();
 }
 
-fn main() {
+fn test_gpu_path() {
     //  generate_test_points();
     //generate_angle_texture(&distance_mapping, &z_mapping);
     //plot_angle_texture_stats(&distance_mapping, &z_mapping);
@@ -586,20 +587,11 @@ fn main() {
     // }
 
     let start = SystemTime::now();
-    let steps = 1 << 9;
-    let samples = 1 << 9;
-    let rendered_paths = 1 << 10;
-    let particle_count = 1 << 20;
+    let rendered_paths = 1 << 14;
+    let particle_count = 1 << 21;
 
-    let paths = run_main(particle_count, steps, samples);
+    let paths = run_main(particle_count);
 
-    let unfinished_paths = paths.iter().filter(|path| {
-        let last = path.last().unwrap()[0];
-        let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
-        dist > 1.5 && dist < 20.
-    });
-
-    let mut unfinished_index = 0;
     for (i, path) in paths.iter().enumerate() {
         let last = path.last().unwrap()[0];
         let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
@@ -608,7 +600,6 @@ fn main() {
                 "Unfinished! Index: {}, final Pos: {:?}, dist: {}, path: {:?}",
                 i, last, dist, 1
             );
-            unfinished_index = i;
         }
     }
     let unfinished_paths = paths.iter().filter(|path| {
@@ -617,30 +608,83 @@ fn main() {
         dist > 1.5 && dist < 20.
     });
     println!("Unfinished count: {}", unfinished_paths.count());
-    let unfinished_paths = paths.iter().filter(|path| {
-        let last = path.last().unwrap()[0];
-        let dist = (last[0] * last[0] + last[1] * last[1]).sqrt();
-        dist > 1.5 && dist < 20.
-    });
-    for pv in &paths[unfinished_index] {
-        println!("pos: {:?}", pv);
+
+    let mut passes = false;
+    for path in paths.iter() {
+        if passes {
+            break;
+        }
+        for j in 0..(path.len() - 1) {
+            let (pos1, pos2) = (Vec2::from(path[j][0]), Vec2::from(path[j + 1][0]));
+            let step = (pos2 - pos1).normalize();
+            let dot_ps = pos1.dot(step);
+            let delta = dot_ps * dot_ps + 1.5 * 1.5 - pos1.length_squared();
+            if delta < 0. {
+                continue;
+            }
+
+            let d = -dot_ps + delta.sqrt();
+            if (d < (pos2 - pos1).length() && pos2.length() > 1.5) {
+                println!("PASSES THROUGH BLACK HOLE!");
+                println!("path: {:?}", path);
+                println!("index: {:?}", j);
+                println!("steps: {:?}. {:?}", pos1, pos2);
+                passes = true;
+                break;
+            }
+        }
     }
 
-    println!("unfinished index: {:?}", unfinished_index);
+    let mut final_angle = -200.;
+    let mut plot_vec = Vec::new();
+    for path in paths {
+        let final_dir = path.last().unwrap()[1];
+        let angle = f32::atan2(final_dir[1], final_dir[0]);
+        if (angle - final_angle).abs() > 0.01 {
+            plot_vec.push(path.iter().map(|pv| [pv[0][0], pv[0][1]]).collect());
+            final_angle = angle;
+        }
+    }
 
-    let filtered_paths = paths
-        .iter()
-        .enumerate()
-        .filter(|(i, _)| i % (particle_count / rendered_paths) as usize == 0)
-        .map(|(_, path)| path.iter().map(|pv| [pv[0][0], pv[0][1]]).collect())
-        .collect();
-
-    plot_paths(filtered_paths);
+    plot_paths(plot_vec);
     println!("time taken (ms): {}", start.elapsed().unwrap().as_millis());
     // let dimensions = [1 << 6, 1 << 6, 1 << 6];
     // let cache = regenerate_angle_distance_cache(dimensions);
     // plot_cache_statistics(&cache);
     // let data = regenerate_angle_distance_test_points( &cache.params);
+    // let results = test_angle_distance_cache(&cache, &data);
+    // plot_angle_error_by_z(&cache, &results);
+}
+
+fn main() {
+    test_gpu_path();
+    // let dimensions = [1 << 6, 1 << 10, 1 << 7];
+    // let dist_bounds = [5.0, 30.0];
+    // let view_bounds = [0., 0.5_f32.sqrt()];
+    // let angle_bounds = [0.01 * TAU as f32 / 360.0, TAU as f32];
+    // let black_hole_radius = 1.5;
+    // let fov_degrees = 60.;
+
+    // let params = AngleDistanceCacheParams {
+    //     dist: DimensionParams {
+    //         size: dimensions[0],
+    //         bounds: dist_bounds,
+    //     },
+    //     view_dist: DimensionParams {
+    //         size: dimensions[1],
+    //         bounds: view_bounds,
+    //     },
+    //     angle: DimensionParams {
+    //         size: dimensions[2],
+    //         bounds: angle_bounds,
+    //     },
+    //     black_hole_radius,
+    //     fov_degrees,
+    // };
+    // let dimensions = [1 << 3, 1 << 3, 1 << 3];
+    // let cache = regenerate_angle_distance_cache(dimensions);
+    // plot_cache_statistics(&cache);
+    // let data = regenerate_angle_distance_test_points(&cache.params);
     // let results = test_angle_distance_cache(&cache, &data);
     // plot_angle_error_by_z(&cache, &results);
 }
