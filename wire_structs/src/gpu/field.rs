@@ -46,7 +46,9 @@ impl Field {
         Particle {
             pv: [p[0], p[1], v[0], v[1]],
             index: 0,
-            filler: [0, 0, 0],
+            black_hole_magnitude: self.magnitude,
+            black_hole_radius: self.radius,
+            filler: 0,
         }
     }
 }

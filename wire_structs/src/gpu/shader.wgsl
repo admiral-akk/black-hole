@@ -24,8 +24,8 @@ struct Particle {
     p: vec2<f32>,
     v: vec2<f32>,
     index: u32,
-    filler: f32,
-    filler1: f32,
+    black_hole_magnitude: f32,
+    black_hole_radius: f32,
     filler2: f32,
 }
 
@@ -65,15 +65,15 @@ fn intersection(start: Particle, end: Particle, dir: vec2<f32>) -> f32 {
     return -(dir.x*start.y-dir.y*start.x) / (diff.x*dir.y - diff.y*dir.x);
 }
 
-fn stop(particle: vec2<f32>) -> bool {
-    let dist = length(particle.xy);
+fn stop(particle: Particle) -> bool {
+    let dist = length(particle.p);
     // We add some error so that the geodesics that are on the edge of the schwarzchild radius don't get pulled in accidentally.
-    return dist <= 0.9 * field.radius || dist > 35.;
+    return dist <= 0.9 * particle.black_hole_radius || dist > 35.;
 }
 
 fn step_size(particle: Particle) -> f32 {
     let r = length(particle.p);
-    let m_4 = 6.0 * field.radius;
+    let m_4 = 6.0 * particle.black_hole_radius;
     if r < m_4{
         return 0.005;
     }
@@ -94,34 +94,38 @@ fn force(p: vec2<f32>, magnitude: f32) -> vec2<f32> {
 
 fn rk4(particle: Particle, h: f32, magnitude: f32) -> Particle {
     let k_0 = h * particle.v;
-    let l_0 = h * force(particle.p, magnitude);
+    let l_0 = h * force(particle.p, particle.black_hole_magnitude);
 
     let k_1 = h * (particle.v + 0.5 * l_0);
-    let l_1 = h * force(particle.p + 0.5 * k_0, magnitude);
+    let l_1 = h * force(particle.p + 0.5 * k_0, particle.black_hole_magnitude);
 
     let k_2 = h * (particle.v + 0.5 * l_1);
-    let l_2 = h * force(particle.p + 0.5 * k_1, magnitude);
+    let l_2 = h * force(particle.p + 0.5 * k_1, particle.black_hole_magnitude);
 
     let k_3 = h * (particle.v + l_2);
-    let l_3 = h * force(particle.p + k_2, magnitude);
+    let l_3 = h * force(particle.p + k_2, particle.black_hole_magnitude);
 
     let pv = 0.16666666 * vec4(
         (k_0 + 2.0 * k_1 + 2.0 * k_2 + k_3),
         (l_0 + 2.0 * l_1 + 2.0 * l_2 + l_3),
     );
 
-    return Particle(particle.p+pv.xy,particle.v+pv.zw,particle.index,0.,0.,0.);
+    var out = particle;
+    out.p = out.p+pv.xy;
+    out.v = out.v+pv.zw;
+
+    return out;
 }
 
-fn passes_through(pos1: vec2<f32>, pos2: vec2<f32>) -> vec2<f32> {
+fn passes_through(pos1: vec2<f32>, pos2: vec2<f32>, radius: f32) -> vec2<f32> {
     let step = normalize(pos2 - pos1);
     let dot_ps = dot(pos1, step);
-    let delta = dot_ps * dot_ps + field.radius * field.radius - length(pos1) * length(pos1);
+    let delta = dot_ps * dot_ps + radius * radius - length(pos1) * length(pos1);
     if delta < 0. {
         return pos2;
     }
     let d = -dot_ps + sqrt(delta);
-    if (d < length(pos2 - pos1) && length(pos2) > field.radius) {
+    if (d < length(pos2 - pos1) && length(pos2) > radius) {
         return pos1 - dot_ps * step;
     }
     return pos2;
@@ -141,9 +145,9 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
         }
     }
 
-    let end = Particle(passes_through(particle.p, delta_pv.p), delta_pv.v, delta_pv.index,0.,0.,0.);
-    // let h = step_size(particle+delta_pv);
-    // let delta_pv = rk4(particle, h);
+    var end = particle;
+    end.p = passes_through(particle.p, delta_pv.p, particle.black_hole_radius);
+    end.v = delta_pv.v;
     return end;
 }
 
@@ -158,15 +162,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             return;
         }
         var particle = particles.data[index];
-        var start_pos = particle.p;
-        if (stop(start_pos)) { continue; }
+        if (stop(particle)) { continue; }
         if (particle.index == arrayLength(&lines.lines) - 1u) {
             continue;
         }
         var i = 0u;
         let l = lines.lines[particle.index].direction;
         loop {
-            var next = step_particle(particle, field.magnitude);
+            var next = step_particle(particle, particle.black_hole_magnitude);
             let t = intersection(particle, next, l);
             let crossed = t >= 0. && t <= 1.;
             if (crossed_line(next,l)) {
