@@ -48,10 +48,8 @@ struct AnglePaths {
 @group(0) @binding(0) 
 var<storage, read_write> out_path: AnglePaths;
 @group(0) @binding(1) 
-var<storage, read> field: Field;
-@group(0) @binding(2) 
 var<storage, read_write> particles: Particles;
-@group(0) @binding(3) 
+@group(0) @binding(2) 
 var<storage, read> lines: AngleLines;
 
 

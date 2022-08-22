@@ -57,16 +57,6 @@ impl SimulatorState {
                     binding: 1,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: false },
                         has_dynamic_offset: false,
                         min_binding_size: None,
@@ -74,7 +64,7 @@ impl SimulatorState {
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
-                    binding: 3,
+                    binding: 2,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -166,14 +156,10 @@ impl SimulatorState {
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,
-                            resource: field_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
                             resource: particle_buffer.as_entire_binding(),
                         },
                         wgpu::BindGroupEntry {
-                            binding: 3,
+                            binding: 2,
                             resource: angle_lines_buffer.as_entire_binding(),
                         },
                     ],
