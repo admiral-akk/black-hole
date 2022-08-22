@@ -199,7 +199,7 @@ impl SimulatorState {
                     let angle = MIN_ANGLE + (MAX_ANGLE - MIN_ANGLE) * a as f32 / (steps - 1) as f32;
                     let angle_dir = [angle.sin(), -angle.cos()];
                     let dist = data[i + a as usize * path_len];
-                    if dist > 1.5 {
+                    if dist > 1.0 {
                         p.push([[dist * angle_dir[0], dist * angle_dir[1]], [0., 0.]]);
                     }
                 }
@@ -249,7 +249,7 @@ async fn run(particles: Vec<Particle>, angle_count: u32) -> Vec<Vec<[[f32; 2]; 2
 }
 
 pub fn simulate_particles(particles: Vec<Particle>) -> Vec<Vec<[[f32; 2]; 2]>> {
-    return pollster::block_on(run(particles, 1 << 10));
+    return pollster::block_on(run(particles, 1 << 8));
 }
 
 pub fn run_main(particle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
@@ -260,5 +260,5 @@ pub fn run_main(particle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
         .map(|i_01| Vec2::new(i_01, 1.).normalize())
         .map(|v| field.spawn_particle(20. * Vec2::NEG_Y, v))
         .collect();
-    return pollster::block_on(run(particles, 1 << 10));
+    return pollster::block_on(run(particles, 1 << 8));
 }

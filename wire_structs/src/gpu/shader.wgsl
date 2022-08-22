@@ -70,24 +70,15 @@ fn stop(particle: Particle) -> bool {
 }
 
 fn step_size(particle: Particle) -> f32 {
-    let r = length(particle.p);
-    let m_4 = 6.0 * particle.black_hole_radius;
-    if r < m_4{
-        return 0.005;
-    }
-    if (dot(particle.p, particle.v) < 0.) {
-        return 0.1 * r + 0.005;
-    }
-    return 0.1 * (r - m_4) + 0.005;
+    return 0.005;
 } 
 
 
 fn force(p: vec2<f32>, magnitude: f32) -> vec2<f32> {
     let diff = -p;
-    let len = length(diff);
-    var len_5 = len * len;
-    len_5 = len_5 * len_5 * len;
-    return normalize(diff) * magnitude / len_5;
+    let len = dot(diff,diff);
+    let len_6 = len * len*len;
+    return diff * magnitude / len_6;
 }
 
 fn rk4(particle: Particle, h: f32, magnitude: f32) -> Particle {
@@ -116,30 +107,38 @@ fn rk4(particle: Particle, h: f32, magnitude: f32) -> Particle {
 }
 
 fn passes_through(pos1: vec2<f32>, pos2: vec2<f32>, radius: f32) -> vec2<f32> {
-    let step = normalize(pos2 - pos1);
+    let diff = pos2-pos1;
+    let step = normalize(diff);
     let dot_ps = dot(pos1, step);
-    let delta = dot_ps * dot_ps + radius * radius - length(pos1) * length(pos1);
+    let rad_sq = radius*radius;
+    let delta = dot_ps * dot_ps + rad_sq - dot(pos1,pos1);
     if delta < 0. {
         return pos2;
     }
-    let d = -dot_ps + sqrt(delta);
-    if (d < length(pos2 - pos1) && length(pos2) > radius) {
-        return pos1 - dot_ps * step;
+    let d = -dot_ps - sqrt(delta);
+    let t = d / length(diff);
+    if (t >= 0.) {
+        return pos1+ clamp(t,0.,1.) * diff;
     }
     return pos2;
 }
+
 fn step_particle(particle: Particle, magnitude: f32) -> Particle {
     var h = step_size(particle);
-    var delta_pv = rk4(particle, h, magnitude);
-    var delta_pv2 = rk4(particle, 0.5 * h, magnitude);
-    delta_pv2 = rk4(delta_pv2, 0.5 * h, magnitude);
+    var delta_pv = particle;
     loop {
         delta_pv = rk4(particle, h, magnitude);
-        delta_pv2 = rk4(particle, 0.5 * h, magnitude);
+        var delta_pv2 = rk4(particle, 0.5 * h, magnitude);
         delta_pv2 = rk4(delta_pv2, 0.5 * h, magnitude);
+        let diff = vec4(delta_pv.p,delta_pv.v) - vec4(delta_pv2.p,delta_pv2.v);
         continuing {
-            h *= 0.125;
-            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && length(delta_pv.p - particle.p) < 0.1 && length(delta_pv.p - delta_pv2.p) < 0.1 && length(delta_pv.v - delta_pv2.v) < 0.1;
+            h *= 0.5;
+            // If it crosses the next line, then we've gone too far. We only
+            // want to cross one line at a time.
+
+            // If the half-step RK4 approximation differs too much from the full step,
+            // we've accumulated too much error.
+            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.01 && length(delta_pv.p-particle.p) < 0.02;
         }
     }
 
@@ -152,13 +151,15 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
 @compute @workgroup_size(256, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dim_y = arrayLength(&particles.data);
-    let iterations = dim_y / 256u + 1u;
     let start_index = global_id.x;
+    var iterations = dim_y / 256u;
+    // If the particle count isn't divisible evenly between the workgroups, then
+    // we allocate an additional particle to the lower workgroups.
+    if (dim_y % 256u > global_id.x) {
+        iterations++;
+    }
     for (var i = 0u; i < iterations; i++) {
         let index = start_index + i * 256u;
-        if index >= dim_y {
-            return;
-        }
         var particle = particles.data[index];
         if (stop(particle)) { continue; }
         if (particle.index == arrayLength(&lines.lines) - 1u) {
@@ -169,11 +170,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         loop {
             var next = step_particle(particle, particle.black_hole_magnitude);
             let t = intersection(particle, next, l);
-            let crossed = t >= 0. && t <= 1.;
             if (crossed_line(next,l)) {
                 let pos = particle.p + (next.p-particle.p)*t;
                 out_path.dist[index + particle.index*dim_y] = length(pos); 
-                next.index =next.index + 1u;
+                next.index = next.index + 1u;
             } 
             particle = next;
             continuing {

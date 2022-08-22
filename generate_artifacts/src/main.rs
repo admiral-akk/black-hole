@@ -639,7 +639,7 @@ fn test_gpu_path() {
     for path in paths {
         let final_dir = path.last().unwrap()[1];
         let angle = f32::atan2(final_dir[1], final_dir[0]);
-        if (final_angle - angle).abs() > 0.02 {
+        if (final_angle - angle).abs() > 0.002 {
             final_paths.push(path);
             final_angle = angle;
         }
