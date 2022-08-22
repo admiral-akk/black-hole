@@ -2206,6 +2206,7 @@ dependencies = [
  "web-sys",
  "wgpu",
  "winit",
+ "wire-structs",
 ]
 
 [[package]]

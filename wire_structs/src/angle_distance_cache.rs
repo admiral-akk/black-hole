@@ -47,6 +47,14 @@ pub struct AngleDistanceCacheParams {
 }
 
 impl AngleDistanceCacheParams {
+    pub fn dimensions(&self) -> [u32; 3] {
+        [
+            self.angle.size as u32,
+            self.view_dist.size as u32,
+            self.dist.size as u32,
+        ]
+    }
+
     pub fn test_name(&self) -> String {
         format!(
             "dist_{:.1}_{:.1}_view_{:.4}_{:.4}_angle_{:.4}_{:.4}_radius_{:.1}",
