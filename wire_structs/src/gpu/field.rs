@@ -45,6 +45,8 @@ impl Field {
         let p = p.to_array();
         Particle {
             pv: [p[0], p[1], v[0], v[1]],
+            index: 0,
+            filler: [0, 0, 0],
         }
     }
 }

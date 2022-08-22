@@ -587,8 +587,7 @@ fn test_gpu_path() {
     // }
 
     let start = SystemTime::now();
-    let rendered_paths = 1 << 14;
-    let particle_count = 1 << 21;
+    let particle_count = 1 << 10;
 
     let paths = run_main(particle_count);
 
@@ -635,18 +634,23 @@ fn test_gpu_path() {
         }
     }
 
+    let mut final_paths = Vec::new();
     let mut final_angle = -200.;
-    let mut plot_vec = Vec::new();
     for path in paths {
         let final_dir = path.last().unwrap()[1];
         let angle = f32::atan2(final_dir[1], final_dir[0]);
-        if (angle - final_angle).abs() > 0.01 {
-            plot_vec.push(path.iter().map(|pv| [pv[0][0], pv[0][1]]).collect());
+        if (final_angle - angle).abs() > 0.02 {
+            final_paths.push(path);
             final_angle = angle;
         }
     }
 
-    plot_paths(plot_vec);
+    plot_paths(
+        final_paths
+            .iter()
+            .map(|path| path.iter().map(|v| v[0]).collect())
+            .collect(),
+    );
     println!("time taken (ms): {}", start.elapsed().unwrap().as_millis());
     // let dimensions = [1 << 6, 1 << 6, 1 << 6];
     // let cache = regenerate_angle_distance_cache(dimensions);

@@ -14,9 +14,6 @@
 //
 // Also licensed under MIT license, at your choice.
 
-struct DataBuf {
-   data: array<f32>,
-};
 
 struct Field {
     magnitude: f32,
@@ -26,18 +23,47 @@ struct Field {
 struct Particle {
     p: vec2<f32>,
     v: vec2<f32>,
+    index: u32,
+    filler: f32,
+    filler1: f32,
+    filler2: f32,
 }
 
 struct Particles {
     data: array<Particle>,
 }
 
+struct AngleLine {
+    direction: vec2<f32>,
+    filler: vec2<f32>,
+}
+struct AngleLines {
+    lines: array<AngleLine>,
+}
+
+struct AnglePaths {
+    dist: array<f32>,
+}
+
 @group(0) @binding(0) 
-var<storage, read_write> v_indices: DataBuf;
+var<storage, read_write> out_path: AnglePaths;
 @group(0) @binding(1) 
 var<storage, read> field: Field;
 @group(0) @binding(2) 
 var<storage, read_write> particles: Particles;
+@group(0) @binding(3) 
+var<storage, read> lines: AngleLines;
+
+
+fn crossed_line(particle: Particle, dir: vec2<f32>) -> bool {
+ return particle.p.x * dir.y - particle.p.y * dir.x <= 0.;
+}
+
+fn intersection(start: Particle, end: Particle, dir: vec2<f32>) -> f32 {
+    let start = start.p;
+    let diff = end.p-start;
+    return -(dir.x*start.y-dir.y*start.x) / (diff.x*dir.y - diff.y*dir.x);
+}
 
 fn stop(particle: vec2<f32>) -> bool {
     let dist = length(particle.xy);
@@ -84,18 +110,7 @@ fn rk4(particle: Particle, h: f32, magnitude: f32) -> Particle {
         (l_0 + 2.0 * l_1 + 2.0 * l_2 + l_3),
     );
 
-    return Particle(particle.p+pv.xy,particle.v+pv.zw);
-}
-
-fn closest(pos1: vec2<f32>, pos2: vec2<f32>) -> vec2<f32> {
-
-    let step = normalize(pos2 - pos1);
-    let dot_ps = dot(pos1, step);
-    let delta = dot(pos1, pos1) - dot_ps * dot_ps;
-    if (field.radius * field.radius >= delta) {
-        return pos1 - (dot_ps - sqrt(delta) / 2.) * step;
-    }
-    return  pos2;
+    return Particle(particle.p+pv.xy,particle.v+pv.zw,particle.index,0.,0.,0.);
 }
 
 fn passes_through(pos1: vec2<f32>, pos2: vec2<f32>) -> vec2<f32> {
@@ -105,7 +120,6 @@ fn passes_through(pos1: vec2<f32>, pos2: vec2<f32>) -> vec2<f32> {
     if delta < 0. {
         return pos2;
     }
-
     let d = -dot_ps + sqrt(delta);
     if (d < length(pos2 - pos1) && length(pos2) > field.radius) {
         return pos1 - dot_ps * step;
@@ -123,11 +137,11 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
         delta_pv2 = rk4(delta_pv2, 0.5 * h, magnitude);
         continuing {
             h *= 0.125;
-            break if length(delta_pv.p - particle.p) < 0.1 && length(delta_pv.p - delta_pv2.p) < 0.1 && length(delta_pv.v - delta_pv2.v) < 0.1;
-                }
+            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && length(delta_pv.p - particle.p) < 0.1 && length(delta_pv.p - delta_pv2.p) < 0.1 && length(delta_pv.v - delta_pv2.v) < 0.1;
+        }
     }
 
-    let end = Particle(passes_through(particle.p, delta_pv.p), delta_pv.v);
+    let end = Particle(passes_through(particle.p, delta_pv.p), delta_pv.v, delta_pv.index,0.,0.,0.);
     // let h = step_size(particle+delta_pv);
     // let delta_pv = rk4(particle, h);
     return end;
@@ -135,20 +149,36 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
 
 @compute @workgroup_size(256, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let iterations = u32(arrayLength(&particles.data) / (256u));
+    let dim_y = arrayLength(&particles.data);
+    let iterations = dim_y / 256u + 1u;
     let start_index = global_id.x;
     for (var i = 0u; i < iterations; i++) {
         let index = start_index + i * 256u;
-        var next_particle = particles.data[index];
-        var start_pos = next_particle.p;
+        if index >= dim_y {
+            return;
+        }
+        var particle = particles.data[index];
+        var start_pos = particle.p;
         if (stop(start_pos)) { continue; }
+        if (particle.index == arrayLength(&lines.lines) - 1u) {
+            continue;
+        }
         var i = 0u;
+        let l = lines.lines[particle.index].direction;
         loop {
-            next_particle = step_particle(next_particle, field.magnitude);
+            var next = step_particle(particle, field.magnitude);
+            let t = intersection(particle, next, l);
+            let crossed = t >= 0. && t <= 1.;
+            if (crossed_line(next,l)) {
+                let pos = particle.p + (next.p-particle.p)*t;
+                out_path.dist[index + particle.index*dim_y] = length(pos); 
+                next.index =next.index + 1u;
+            } 
+            particle = next;
             continuing {
-                break if true;// stop(next_particle.xy) || length(start_pos-next_particle.xy) > 0.1;
+                break if true;
             }
         }
-        particles.data[index] = next_particle;
+        particles.data[index] = particle;
     }
 }
