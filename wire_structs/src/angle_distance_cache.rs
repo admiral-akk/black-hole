@@ -75,19 +75,9 @@ impl AngleDistanceCacheParams {
         )
     }
 
-    pub fn to_z(&self, view_coord: f32) -> f32 {
-        let view_width = 2. * (self.fov_degrees * TAU / 360.).tan();
-        1. / (1. + view_width * 2.0_f32.sqrt() * view_coord).sqrt()
-    }
-
     pub fn to_vec2(&self, view_coord: f32) -> Vec2 {
         let view_width = 2. * (self.fov_degrees * TAU / 360.).tan();
         Vec2::new(view_width * view_coord, 1.).normalize()
-    }
-
-    fn to_view(&self, z: f32) -> f32 {
-        let view_width = 2. * (self.fov_degrees * TAU / 360.).tan();
-        (1. / (z * z) - 1.) / (view_width * 2.0_f32.sqrt())
     }
 }
 
@@ -144,7 +134,7 @@ impl AngleDistanceCache {
                 );
                 let mut view_dist: Vec<f32> = Vec::new();
                 let view_coord = views[view];
-                let z = params.to_z(view_coord);
+                let z = params.to_vec2(view_coord)[1];
                 let response =
                     cast_ray_steps_response(z as f64, dist as f64, params.black_hole_radius as f64);
                 let all_angles = response.get_angle_dist().get_all_dist(&angles);
@@ -168,17 +158,6 @@ impl AngleDistanceCache {
 
         AngleDistanceCache { distances, params }
     }
-}
-
-fn view_to_particle(
-    view: &Vec<f32>,
-    field: &Field,
-    dist: f32,
-    params: &AngleDistanceCacheParams,
-) -> Vec<Particle> {
-    view.iter()
-        .map(|v| field.spawn_particle(dist * Vec2::NEG_Y, Vec2::new(params.to_z(*v), 1.)))
-        .collect()
 }
 
 pub fn generate_particles(

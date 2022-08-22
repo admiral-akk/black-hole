@@ -1,4 +1,4 @@
-use std::fs;
+use std::{f64::consts::TAU, fs};
 
 use test_utils::plot_with_title;
 use wire_structs::angle_distance_cache::AngleDistanceCache;
@@ -36,12 +36,12 @@ fn plot_error(cache: &AngleDistanceCache, mut plots: Vec<Vec<Vec<(f32, f32)>>>, 
     );
     fs::create_dir_all(folder_path).unwrap();
     for (i, lines) in plots.iter_mut().enumerate() {
-        lines.iter_mut().for_each(|line| normalize_line_z(line));
+        lines.iter_mut().for_each(|line| {});
         plot_with_title(
             &format!("Error for dist = {:.2}", dists[i]),
             &format!("{}/dist_{:.2}.png", folder_path, dists[i]),
             &lines,
-            ((0., 1.), (0., 5.)),
+            ((0., TAU), (0., 5.)),
         )
         .unwrap();
         lines.iter_mut().for_each(|line| log_error(line));
@@ -49,7 +49,7 @@ fn plot_error(cache: &AngleDistanceCache, mut plots: Vec<Vec<Vec<(f32, f32)>>>, 
             &format!("Error for dist = {:.2}", dists[i]),
             &format!("{}/log_error_dist_{:.2}.png", folder_path, dists[i]),
             &lines,
-            ((0., 1.), (0., 5.)),
+            ((0., TAU), (0., 5.)),
         )
         .unwrap();
     }
@@ -65,13 +65,13 @@ pub fn plot_angle_error_by_z(
     filtered.sort_by(|p_1, p_2| {
         let order = p_1.0.dist.partial_cmp(&p_2.0.dist).unwrap();
         if order.is_eq() {
-            let order = p_1.0.target_angle.partial_cmp(&p_2.0.target_angle).unwrap();
+            let order = p_1
+                .0
+                .view_port_coord
+                .partial_cmp(&p_2.0.view_port_coord)
+                .unwrap();
             if order.is_eq() {
-                return p_1
-                    .0
-                    .view_port_coord
-                    .partial_cmp(&p_2.0.view_port_coord)
-                    .unwrap();
+                return p_1.0.target_angle.partial_cmp(&p_2.0.target_angle).unwrap();
             } else {
                 return order;
             }
@@ -85,7 +85,7 @@ pub fn plot_angle_error_by_z(
         cache.params.dist.size, cache.params.view_dist.size, cache.params.angle.size
     );
     fs::create_dir_all(folder_path).unwrap();
-    let mut curr_angle = results[0].0.target_angle;
+    let mut curr_view = results[0].0.view_port_coord;
     let mut curr_dist = results[0].0.dist;
     let mut plots = Vec::new();
     let mut dists = Vec::new();
@@ -97,14 +97,14 @@ pub fn plot_angle_error_by_z(
             plots.push(lines);
             dists.push(curr_dist);
             curr_dist = point.0.dist;
-            curr_angle = point.0.target_angle;
+            curr_view = point.0.target_angle;
             lines = Vec::new();
             line = Vec::new();
         }
-        if point.0.target_angle != curr_angle {
+        if point.0.view_port_coord != curr_view {
             lines.push(line);
             curr_dist = point.0.dist;
-            curr_angle = point.0.target_angle;
+            curr_view = point.0.view_port_coord;
             line = Vec::new();
         }
         if point.0.dist_at_angle.is_none() {
@@ -118,8 +118,13 @@ pub fn plot_angle_error_by_z(
         if point.1.is_none() {
             continue;
         }
+        let approx = point.1.unwrap();
+        if 2. > approx || approx > 12. {
+            continue;
+        }
         let diff = (point.1.unwrap() - val as f32).abs();
-        line.push((point.0.view_port_coord as f32, (diff + 1.).log2()));
+
+        line.push((point.0.target_angle as f32, diff));
     }
     dists.push(curr_dist);
     lines.push(line);

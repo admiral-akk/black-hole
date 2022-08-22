@@ -6,7 +6,7 @@ use wire_structs::{
     path_integration::path::cast_ray_steps_response,
 };
 
-use super::angle_test_point::AngleTestPoint;
+use super::{angle_test_point::AngleTestPoint, test_stats::plot_test_statistics};
 
 pub fn regenerate_angle_distance_test_points(
     params: &AngleDistanceCacheParams,
@@ -42,6 +42,7 @@ pub fn regenerate_angle_distance_test_points(
     let mut test_points = Vec::new();
     let dists = dists.generate_list();
     let views = views.generate_list();
+    plot_test_statistics(folder_path, &result, &dists, &views, &angles);
     for (dist_index, dist) in dists.iter().enumerate() {
         let result = &result[dist_index * views.len()..(dist_index + 1) * views.len()];
         for (view_index, view) in views.iter().enumerate() {
