@@ -19,6 +19,13 @@ pub struct SimulatorState {
     pipeline: ComputePipeline,
     queue: Queue,
 }
+
+pub struct SimulatedRay {
+    pub angle_dist: Vec<f32>,
+    pub final_pos: [f32; 2],
+    pub final_dir: [f32; 2],
+}
+
 impl SimulatorState {
     pub async fn new() -> Self {
         let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
@@ -98,10 +105,10 @@ impl SimulatorState {
 
     pub async fn simulate_particles(
         &self,
-        particles: Vec<Particle>,
+        particles: &[Particle],
         steps: u32,
         max_distance: f32,
-    ) -> Vec<Vec<[[f32; 2]; 2]>> {
+    ) -> Vec<SimulatedRay> {
         let device = &self.device;
         let bind_group_layout = &self.bind_group_layout;
         let pipeline = &self.pipeline;
@@ -140,7 +147,8 @@ impl SimulatorState {
 
         let start = SystemTime::now();
         let step_count = 1 << 14;
-        for i in 0..step_count {
+        let pieces = i32::max(step_count >> 10, 1);
+        for step in 0..step_count {
             let mut encoder = device.create_command_encoder(&Default::default());
             {
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -166,7 +174,15 @@ impl SimulatorState {
                 cpass.set_bind_group(0, &bind_group, &[]);
                 cpass.dispatch_workgroups(256, 1, 1);
             }
-            queue.submit(Some(encoder.finish()));
+            let index = queue.submit(Some(encoder.finish()));
+            if (step + 1) % (step_count / pieces) == 0 {
+                println!(
+                    "Waiting on GPU, ({}/{})",
+                    (step + 1) / (step_count / pieces),
+                    pieces
+                );
+                device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+            }
         }
         let mut encoder = device.create_command_encoder(&Default::default());
         let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -179,9 +195,13 @@ impl SimulatorState {
         encoder.copy_buffer_to_buffer(&output_buffer, 0, &staging_buffer, 0, output_size);
         let index = queue.submit(Some(encoder.finish()));
 
-        let mut paths = Vec::new();
-        for p in &particles {
-            paths.push(Vec::from([[[p.pv[0], p.pv[1]], [p.pv[2], p.pv[3]]]]));
+        let mut rays = Vec::new();
+        for p in particles {
+            rays.push(SimulatedRay {
+                angle_dist: Vec::new(),
+                final_pos: [0., 0.],
+                final_dir: [0., 0.],
+            });
         }
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
@@ -189,19 +209,17 @@ impl SimulatorState {
         buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
         device.poll(wgpu::Maintain::Wait);
         println!("time taken (ms): {}", start.elapsed().unwrap().as_millis());
+        println!("Extracting paths");
 
-        let path_len = paths.len();
+        let path_len = rays.len();
         if let Some(Ok(())) = receiver.receive().await {
             let data_raw = &*buffer_slice.get_mapped_range();
             let data: &[f32] = bytemuck::cast_slice(data_raw);
-            for (i, p) in paths.iter_mut().enumerate() {
+            for (i, r) in rays.iter_mut().enumerate() {
                 for a in 0..steps {
-                    let angle = MIN_ANGLE + (MAX_ANGLE - MIN_ANGLE) * a as f32 / (steps - 1) as f32;
-                    let angle_dir = [angle.sin(), -angle.cos()];
                     let dist = data[i + a as usize * path_len];
-                    if dist > 1.0 {
-                        p.push([[dist * angle_dir[0], dist * angle_dir[1]], [0., 0.]]);
-                    }
+
+                    r.angle_dist.push(dist);
                 }
             }
         }
@@ -221,6 +239,7 @@ impl SimulatorState {
         );
         let index = queue.submit(Some(encoder.finish()));
         device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+        println!("Extracting final dir");
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
         let buffer_slice = staging_particle_buffer.slice(..);
@@ -231,28 +250,45 @@ impl SimulatorState {
         if let Some(Ok(())) = receiver.receive().await {
             let data_raw = &*buffer_slice.get_mapped_range();
             let data: &[Particle] = bytemuck::cast_slice(data_raw);
-            for (i, path) in paths.iter_mut().enumerate() {
+            for (i, r) in rays.iter_mut().enumerate() {
                 let d = data[i];
-                path.push([[d.pv[0], d.pv[1]], [d.pv[2], d.pv[3]]]);
+                r.final_pos = [d.pv[0], d.pv[1]];
+                r.final_dir = [d.pv[2], d.pv[3]];
             }
         }
 
-        return paths;
+        return rays;
     }
 }
 
-async fn run(particles: Vec<Particle>, angle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
+const MAX_PARTICLES: usize = 1 << 14;
+async fn run(particles: Vec<Particle>, angle_count: u32) -> Vec<SimulatedRay> {
     let simulator = SimulatorState::new().await;
-    return simulator
-        .simulate_particles(particles, angle_count, 30.0)
-        .await;
+    let mut rays = Vec::new();
+    let mut max_i = particles.len() / MAX_PARTICLES;
+    if particles.len() != MAX_PARTICLES * max_i {
+        max_i += 1;
+    }
+    for i in 0..max_i {
+        println!("Generating rays, partition: {}/{}", i + 1, max_i);
+        let mut ray_part = simulator
+            .simulate_particles(
+                &particles
+                    [(i * MAX_PARTICLES)..usize::min((i + 1) * MAX_PARTICLES, particles.len())],
+                angle_count,
+                30.0,
+            )
+            .await;
+        rays.append(&mut ray_part);
+    }
+    return rays;
 }
 
-pub fn simulate_particles(particles: Vec<Particle>) -> Vec<Vec<[[f32; 2]; 2]>> {
-    return pollster::block_on(run(particles, 1 << 8));
+pub fn simulate_particles(particles: Vec<Particle>, angle_count: u32) -> Vec<SimulatedRay> {
+    return pollster::block_on(run(particles, angle_count));
 }
 
-pub fn run_main(particle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
+pub fn run_main(particle_count: u32) -> Vec<SimulatedRay> {
     let field = Field::new(1.5, 5.);
     let particles: Vec<crate::gpu::particle::Particle> = (0..particle_count)
         .into_iter()

@@ -138,7 +138,7 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
 
             // If the half-step RK4 approximation differs too much from the full step,
             // we've accumulated too much error.
-            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.01 && length(delta_pv.p-particle.p) < 0.02;
+            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.01;
         }
     }
 

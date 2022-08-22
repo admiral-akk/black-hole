@@ -80,6 +80,11 @@ impl AngleDistanceCacheParams {
         1. / (1. + view_width * 2.0_f32.sqrt() * view_coord).sqrt()
     }
 
+    pub fn to_vec2(&self, view_coord: f32) -> Vec2 {
+        let view_width = 2. * (self.fov_degrees * TAU / 360.).tan();
+        Vec2::new(view_width * view_coord, 1.).normalize()
+    }
+
     fn to_view(&self, z: f32) -> f32 {
         let view_width = 2. * (self.fov_degrees * TAU / 360.).tan();
         (1. / (z * z) - 1.) / (view_width * 2.0_f32.sqrt())
@@ -176,6 +181,39 @@ fn view_to_particle(
         .collect()
 }
 
+pub fn generate_particles(
+    dist: &DimensionParams,
+    view: &DimensionParams,
+    params: &AngleDistanceCacheParams,
+) -> Vec<Particle> {
+    let dists = dist.generate_list();
+    let views = view.generate_list();
+    let mut particles = Vec::new();
+    for d in 0..dists.len() {
+        let dist = dists[d];
+        let field = Field::new(1.5, dist as f64);
+        for v in 0..views.len() {
+            let view = views[v];
+            particles.push(field.spawn_particle(dist * Vec2::NEG_Y, params.to_vec2(view)));
+        }
+    }
+    particles
+}
+
+fn handle_zeros(angle_dist: &mut Vec<f32>, angles: &Vec<f32>, final_pos: [f32; 2]) {
+    for i in 0..angle_dist.len() {
+        if angle_dist[i] >= 1. {
+            continue;
+        }
+        if i < 2 {
+            continue;
+        }
+        if angle_dist[i - 1] > 5. {
+            angle_dist[i] = 2. * angle_dist[i - 1] - angle_dist[i - 2];
+        }
+    }
+}
+
 impl AngleDistanceCache {
     pub fn generate_angle_distance_cache_gpu(
         params: AngleDistanceCacheParams,
@@ -183,38 +221,20 @@ impl AngleDistanceCache {
         let dists = params.dist.generate_list();
         let views = params.view_dist.generate_list();
         let angles = params.angle.generate_list();
-
+        let particles = generate_particles(&params.dist, &params.view_dist, &params);
+        let rays = simulate_particles(particles, angles.len() as u32);
         let mut distances: Vec<Vec<Vec<f32>>> = Vec::new();
         for d in 0..dists.len() {
-            let mut camera_dist: Vec<Vec<f32>> = Vec::new();
-            let dist = dists[d];
-            let field = Field::new(1.5, dist as f64);
-            let particles = view_to_particle(&views, &field, dist, &params);
-            let paths = simulate_particles(particles);
-            for (i, path) in paths.iter().enumerate() {
-                let angle_path = AnglePath::new(
-                    &path
-                        .iter()
-                        .map(|v| DVec3::new(v[0][0] as f64, 0., v[0][1] as f64))
-                        .collect(),
-                );
-                let angles = angle_path.get_all_dist(&angles);
-                let mut view_dist: Vec<f32> = Vec::new();
-                println!("Distance: ({}/{}, {}/{})", d, dists.len(), i, paths.len());
-                for a in 0..angles.len() {
-                    let distance = match angles[a] {
-                        Some(distance) => distance as f32,
-                        None => match angle_path.hits_black_hole {
-                            true => 0.,
-                            false => params.dist.bounds[1],
-                        },
-                    };
+            let mut fixed_distance = Vec::new();
+            let paths = &rays[(d * views.len())..((d + 1) * views.len())];
+            for v in 0..views.len() {
+                let ray = &paths[v];
 
-                    view_dist.push(distance);
-                }
-                camera_dist.push(view_dist);
+                let mut angle_dist = ray.angle_dist.clone();
+                handle_zeros(&mut angle_dist, &angles, ray.final_pos);
+                fixed_distance.push(angle_dist);
             }
-            distances.push(camera_dist);
+            distances.push(fixed_distance);
         }
 
         AngleDistanceCache { distances, params }
