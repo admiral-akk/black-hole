@@ -190,7 +190,7 @@ impl AngleDistanceCache {
             let dist = dists[d];
             let field = Field::new(1.5, dist as f64);
             let particles = view_to_particle(&views, &field, dist, &params);
-            let paths = simulate_particles(particles, &field);
+            let paths = simulate_particles(particles);
             for (i, path) in paths.iter().enumerate() {
                 let angle_path = AnglePath::new(
                     &path

@@ -99,7 +99,6 @@ impl SimulatorState {
     pub async fn simulate_particles(
         &self,
         particles: Vec<Particle>,
-        field: &Field,
         steps: u32,
         max_distance: f32,
     ) -> Vec<Vec<[[f32; 2]; 2]>> {
@@ -107,8 +106,6 @@ impl SimulatorState {
         let bind_group_layout = &self.bind_group_layout;
         let pipeline = &self.pipeline;
         let queue = &self.queue;
-
-        let (field_buffer, _) = field.to_buffer(device);
 
         let particle_bytes = bytemuck::cast_slice(&particles);
         let particle_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -244,15 +241,15 @@ impl SimulatorState {
     }
 }
 
-async fn run(particles: Vec<Particle>, field: &Field, angle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
+async fn run(particles: Vec<Particle>, angle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
     let simulator = SimulatorState::new().await;
     return simulator
-        .simulate_particles(particles, field, angle_count, 30.0)
+        .simulate_particles(particles, angle_count, 30.0)
         .await;
 }
 
-pub fn simulate_particles(particles: Vec<Particle>, field: &Field) -> Vec<Vec<[[f32; 2]; 2]>> {
-    return pollster::block_on(run(particles, &field, 1 << 10));
+pub fn simulate_particles(particles: Vec<Particle>) -> Vec<Vec<[[f32; 2]; 2]>> {
+    return pollster::block_on(run(particles, 1 << 10));
 }
 
 pub fn run_main(particle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
@@ -263,5 +260,5 @@ pub fn run_main(particle_count: u32) -> Vec<Vec<[[f32; 2]; 2]>> {
         .map(|i_01| Vec2::new(i_01, 1.).normalize())
         .map(|v| field.spawn_particle(20. * Vec2::NEG_Y, v))
         .collect();
-    return pollster::block_on(run(particles, &field, 1 << 10));
+    return pollster::block_on(run(particles, 1 << 10));
 }
