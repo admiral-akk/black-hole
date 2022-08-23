@@ -136,7 +136,7 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
             // we've accumulated too much error.
 
             // if we're close to the black hole, we want to step much slower.
-            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.000001 && dot(delta_p,delta_p) < 0.00000001; 
+            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.0001 && dot(delta_p,delta_p) < 0.00000001; 
         }
     }
 

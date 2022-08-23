@@ -53,6 +53,9 @@ pub fn plot_cache_statistics(cache: &AngleDistanceCache) {
             let mut path = Vec::new();
             for (a_index, angle) in angles.iter().enumerate() {
                 let val = cache.distances[d_index][v_index][a_index];
+                if val <= 0. {
+                    continue;
+                }
                 let (x, y) = (angle.sin() * val, -angle.cos() * val);
                 path.push((x, y));
             }

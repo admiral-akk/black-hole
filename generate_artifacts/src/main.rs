@@ -312,7 +312,7 @@ fn regenerate_angle_distance_cache(dimensions: [usize; 3]) -> AngleDistanceCache
         return de;
     }
 
-    let cache = AngleDistanceCache::generate_angle_distance_cache_gpu(params);
+    let cache = AngleDistanceCache::generate_angle_distance_cache_gpu(&params);
     //let cache = AngleDistanceCache::generate_angle_distance_cache(params);
 
     //ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
@@ -341,7 +341,7 @@ fn test_angle_distance_cache(
         .collect()
 }
 fn main() {
-    let dimensions = [32, 128, 128];
+    let dimensions = [32, 1024, 128];
     let cache = regenerate_angle_distance_cache(dimensions);
     plot_cache_statistics(&cache);
     let data = regenerate_angle_distance_test_points(&cache.params);
