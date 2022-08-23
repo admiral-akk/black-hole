@@ -305,24 +305,23 @@ fn regenerate_angle_distance_cache(dimensions: [usize; 3]) -> AngleDistanceCache
         fov_degrees,
     };
     let path = format!(
-        "generate_artifacts/output/angle_distance_cache_{}.cbor",
+        "generate_artifacts/output/angle_distance_cache_{}.txt",
         params.cache_name()
     );
     let cache = fs::read(&path);
     if cache.is_ok() {
         println!("Found existing cache!");
         let cache = cache.unwrap();
-        let de: AngleDistanceCache = ciborium::de::from_reader(&*cache).unwrap();
-        //let de: AngleDistanceCache = serde_json::from_slice(&cache).unwrap();
+        //let de: AngleDistanceCache = ciborium::de::from_reader(&*cache).unwrap();
+        let de: AngleDistanceCache = serde_json::from_slice(&cache).unwrap();
         return de;
     }
 
     let cache = AngleDistanceCache::generate_angle_distance_cache_gpu(params);
     //let cache = AngleDistanceCache::generate_angle_distance_cache(params);
 
-    let mut buffer = Vec::new();
-    ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
-    //let buffer = serde_json::to_string(&cache).unwrap();
+    //ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
+    let buffer = serde_json::to_string(&cache).unwrap();
     fs::write(&path, buffer).expect("Unable to write file");
     return cache;
 }
@@ -347,7 +346,7 @@ fn test_angle_distance_cache(
         .collect()
 }
 fn main() {
-    let dimensions = [16, 1024, 64];
+    let dimensions = [32, 512, 128];
     let cache = regenerate_angle_distance_cache(dimensions);
     plot_cache_statistics(&cache);
     let data = regenerate_angle_distance_test_points(&cache.params);

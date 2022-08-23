@@ -131,6 +131,7 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
         var delta_pv2 = rk4(particle, 0.5 * h, magnitude);
         delta_pv2 = rk4(delta_pv2, 0.5 * h, magnitude);
         let diff = vec4(delta_pv.p,delta_pv.v) - vec4(delta_pv2.p,delta_pv2.v);
+        let delta_p = delta_pv.p-particle.p;
         continuing {
             h *= 0.5;
             // If it crosses the next line, then we've gone too far. We only
@@ -138,7 +139,7 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
 
             // If the half-step RK4 approximation differs too much from the full step,
             // we've accumulated too much error.
-            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.01;
+            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.01 && dot(delta_p,delta_p) < 0.0001; 
         }
     }
 

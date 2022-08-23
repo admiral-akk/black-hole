@@ -84,12 +84,41 @@ impl AngleDistanceCacheParams {
     }
 
     pub fn to_vec2(&self, view_coord: f32) -> Vec2 {
-        let view_width = 2. * (self.fov_degrees * TAU / 360.).tan();
+        let view_coord = map_view_coord(view_coord, &self.view_dist);
+        let view_width = (self.fov_degrees * TAU / 360.).tan();
         Vec2::new(view_width * view_coord, 1.).normalize()
+    }
+
+    fn index_01_to_sample_params(
+        &self,
+        dist: f32,
+        view_coord: f32,
+        angle: f32,
+    ) -> ([(usize, f32); 2], [(usize, f32); 2], [(usize, f32); 2]) {
+        let dists = index_01_to_sample_params(dist, &self.dist);
+        let zs =
+            index_01_to_sample_params(map_view_coord(view_coord, &self.view_dist), &self.view_dist);
+        let angles = index_01_to_sample_params(angle, &self.angle);
+        (dists, zs, angles)
     }
 }
 
-fn index_01_to_sample_params(index_01: f64, dimension: &DimensionParams) -> [(usize, f32); 2] {
+const M_1: f32 = 0.05;
+const M_2: f32 = 0.9;
+const P_1: f32 = 0.05;
+const P_2: f32 = 0.3;
+
+fn map_view_coord(view_coord: f32, view_dist: &DimensionParams) -> f32 {
+    let (min, delta) = &view_dist.min_delta();
+    let view_01 = (view_coord - min) / delta;
+    let l_1 = P_1 * view_01 / M_1;
+    let l_2 = (P_2 - P_1) * (view_01 - M_1) / (M_2 - M_1) + P_1;
+    let l_3 = (1. - P_2) * (view_01 - M_2) / (1. - M_2) + P_2;
+    let view_01 = f32::max(f32::min(l_1, l_2), l_3);
+    view_01 * delta + min
+}
+
+fn index_01_to_sample_params(index_01: f32, dimension: &DimensionParams) -> [(usize, f32); 2] {
     let len = dimension.size;
     let (min, delta) = dimension.min_delta();
     let index_01 = (index_01 as f32 - min) / delta * (len - 1) as f32;
@@ -107,9 +136,11 @@ impl AngleDistanceCache {
         if !self.params.view_dist.in_bounds(view_z) {
             return None;
         }
-        let dists = index_01_to_sample_params(dist, &self.params.dist);
-        let zs = index_01_to_sample_params(view_z as f64, &self.params.view_dist);
-        let angles = index_01_to_sample_params(angle, &self.params.angle);
+        let (dists, zs, angles) = self.params.index_01_to_sample_params(
+            dist as f32,
+            view_port_coord as f32,
+            angle as f32,
+        );
         let mut val = 0.;
         for (d, dw) in dists {
             for (z, zw) in zs {

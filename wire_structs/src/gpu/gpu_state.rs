@@ -4,9 +4,9 @@ use std::{
 };
 
 use glam::Vec2;
-use wgpu::{util::DeviceExt, BindGroupLayout, ComputePipeline, Device, Queue};
+use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Queue};
 
-use bytemuck;
+use bytemuck::{self, Pod};
 
 use crate::gpu::{angle_line::AngleLine, field::Field, particle::Particle};
 
@@ -103,6 +103,33 @@ impl SimulatorState {
         }
     }
 
+    async fn retrieve_values<T: Pod>(&self, source_buffer: &Buffer, len: u64) -> Vec<T> {
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        let staging_particle_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: len,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        encoder.copy_buffer_to_buffer(&source_buffer, 0, &staging_particle_buffer, 0, len);
+        let index = self.queue.submit(Some(encoder.finish()));
+        println!("Extracting final dir");
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = staging_particle_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+
+        self.device
+            .poll(wgpu::Maintain::WaitForSubmissionIndex(index));
+
+        if let Some(Ok(())) = receiver.receive().await {
+            let data_raw = &*buffer_slice.get_mapped_range();
+            return bytemuck::cast_slice(data_raw).to_vec();
+        } else {
+            panic!("Couldn't retrieve values!");
+        }
+    }
+
     pub async fn simulate_particles(
         &self,
         particles: &[Particle],
@@ -184,80 +211,21 @@ impl SimulatorState {
                 device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
             }
         }
-        let mut encoder = device.create_command_encoder(&Default::default());
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: output_size,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        encoder.copy_buffer_to_buffer(&output_buffer, 0, &staging_buffer, 0, output_size);
-        let index = queue.submit(Some(encoder.finish()));
-
-        let mut rays = Vec::new();
-        for p in particles {
-            rays.push(SimulatedRay {
-                angle_dist: Vec::new(),
-                final_pos: [0., 0.],
-                final_dir: [0., 0.],
-            });
-        }
-
-        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        let buffer_slice = staging_buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        device.poll(wgpu::Maintain::Wait);
-        println!("time taken (ms): {}", start.elapsed().unwrap().as_millis());
-        println!("Extracting paths");
-
-        let path_len = rays.len();
-        if let Some(Ok(())) = receiver.receive().await {
-            let data_raw = &*buffer_slice.get_mapped_range();
-            let data: &[f32] = bytemuck::cast_slice(data_raw);
-            for (i, r) in rays.iter_mut().enumerate() {
-                for a in 0..steps {
-                    let dist = data[i + a as usize * path_len];
-
-                    r.angle_dist.push(dist);
-                }
-            }
-        }
-        let mut encoder = device.create_command_encoder(&Default::default());
-        let staging_particle_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: particle_bytes.len() as u64,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-        encoder.copy_buffer_to_buffer(
-            &particle_buffer,
-            0,
-            &staging_particle_buffer,
-            0,
-            particle_bytes.len() as u64,
-        );
-        let index = queue.submit(Some(encoder.finish()));
-        device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
-        println!("Extracting final dir");
-
-        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        let buffer_slice = staging_particle_buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        device.poll(wgpu::Maintain::Wait);
-        println!("time taken (ms): {}", start.elapsed().unwrap().as_millis());
-
-        if let Some(Ok(())) = receiver.receive().await {
-            let data_raw = &*buffer_slice.get_mapped_range();
-            let data: &[Particle] = bytemuck::cast_slice(data_raw);
-            for (i, r) in rays.iter_mut().enumerate() {
-                let d = data[i];
-                r.final_pos = [d.pv[0], d.pv[1]];
-                r.final_dir = [d.pv[2], d.pv[3]];
-            }
-        }
-
-        return rays;
+        let particles: Vec<Particle> = self
+            .retrieve_values(&particle_buffer, particle_bytes.len() as u64)
+            .await;
+        let distances: Vec<f32> = self.retrieve_values(&output_buffer, output_size).await;
+        particles
+            .iter()
+            .enumerate()
+            .map(|(i, p)| SimulatedRay {
+                angle_dist: (0..steps)
+                    .map(|a| distances[i + a as usize * particles.len()])
+                    .collect(),
+                final_pos: [p.pv[0], p.pv[1]],
+                final_dir: [p.pv[2], p.pv[3]],
+            })
+            .collect()
     }
 }
 
