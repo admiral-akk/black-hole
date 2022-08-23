@@ -134,7 +134,9 @@ fn step_particle(particle: Particle, magnitude: f32) -> Particle {
 
             // If the half-step RK4 approximation differs too much from the full step,
             // we've accumulated too much error.
-            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.01 && dot(delta_p,delta_p) < 0.0001; 
+
+            // if we're close to the black hole, we want to step much slower.
+            break if !crossed_line(delta_pv, lines.lines[particle.index + 1u].direction) && dot(diff,diff) < 0.000001 && dot(delta_p,delta_p) < 0.00000001; 
         }
     }
 

@@ -31,6 +31,7 @@ pub struct SimulatorState {
     queue: Queue,
 }
 
+#[derive(Debug)]
 pub struct SimulatedRay {
     pub angle_dist: Vec<f32>,
     pub final_pos: [f32; 2],
@@ -185,7 +186,7 @@ impl SimulatorState {
         });
 
         let _start = SystemTime::now();
-        let step_count = 1 << 14;
+        let step_count = 1 << 18;
         let pieces = i32::max(step_count >> 10, 1);
         for step in 0..step_count {
             let mut encoder = device.create_command_encoder(&Default::default());

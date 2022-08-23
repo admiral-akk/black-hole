@@ -317,7 +317,7 @@ fn regenerate_angle_distance_cache(dimensions: [usize; 3]) -> AngleDistanceCache
 
     //ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
     let buffer = serde_json::to_string(&cache).unwrap();
-    fs::write(&path, buffer).expect("Unable to write file");
+    //fs::write(&path, buffer).expect("Unable to write file");
     return cache;
 }
 
@@ -341,7 +341,7 @@ fn test_angle_distance_cache(
         .collect()
 }
 fn main() {
-    let dimensions = [32, 256, 64];
+    let dimensions = [32, 128, 128];
     let cache = regenerate_angle_distance_cache(dimensions);
     plot_cache_statistics(&cache);
     let data = regenerate_angle_distance_test_points(&cache.params);
