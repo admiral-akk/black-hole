@@ -4,12 +4,28 @@ use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Qu
 
 use bytemuck::{self, Pod};
 
-use crate::{dimension_params::DimensionParams, gpu::angle_line::AngleLine};
+use crate::dimension_params::DimensionParams;
 
 use super::field::Particle;
 
 pub const MIN_ANGLE: f32 = 0.01 * TAU / 360.0;
 pub const MAX_ANGLE: f32 = TAU;
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct AngleLine {
+    pub dir: [f32; 2],
+    pub temp: [f32; 2],
+}
+
+impl AngleLine {
+    pub fn new(angle: f32) -> Self {
+        Self {
+            dir: [angle.sin(), -angle.cos()],
+            temp: [0.; 2],
+        }
+    }
+}
 
 pub struct SimulatorState {
     device: Device,

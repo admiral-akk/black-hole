@@ -46,7 +46,7 @@ impl Field {
             index: 0,
             black_hole_magnitude: self.magnitude,
             black_hole_radius: self.radius,
-            max_distance: 40.0,
+            max_distance: 60.0,
         }
     }
 }
