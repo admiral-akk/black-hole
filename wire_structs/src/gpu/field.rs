@@ -46,7 +46,7 @@ impl Field {
             index: 0,
             black_hole_magnitude: self.magnitude,
             black_hole_radius: self.radius,
-            filler: 0,
+            max_distance: 40.0,
         }
     }
 }
@@ -58,5 +58,5 @@ pub struct Particle {
     pub index: u32,
     pub black_hole_magnitude: f32,
     pub black_hole_radius: f32,
-    filler: u32,
+    pub max_distance: f32,
 }

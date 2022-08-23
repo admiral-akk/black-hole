@@ -15,18 +15,13 @@
 // Also licensed under MIT license, at your choice.
 
 
-struct Field {
-    magnitude: f32,
-    radius: f32,
-}
-
 struct Particle {
     p: vec2<f32>,
     v: vec2<f32>,
     index: u32,
     black_hole_magnitude: f32,
     black_hole_radius: f32,
-    filler2: f32,
+    max_distance: f32,
 }
 
 struct Particles {
@@ -66,7 +61,7 @@ fn intersection(start: Particle, end: Particle, dir: vec2<f32>) -> f32 {
 fn stop(particle: Particle) -> bool {
     let dist = length(particle.p);
     // We add some error so that the geodesics that are on the edge of the schwarzchild radius don't get pulled in accidentally.
-    return dist <= 0.9 * particle.black_hole_radius || dist > 35.;
+    return dist <= 0.9 * particle.black_hole_radius || dist > particle.max_distance;
 }
 
 fn step_size(particle: Particle) -> f32 {
