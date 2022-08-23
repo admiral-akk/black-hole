@@ -22,7 +22,6 @@ use test_utils::{plot_trajectories, plot_with_title};
 use wire_structs::angle_distance_cache::{
     AngleDistanceCache, AngleDistanceCacheParams, DimensionParams,
 };
-use wire_structs::gpu::gpu_state::run_main;
 
 mod factory;
 mod final_direction_cache;

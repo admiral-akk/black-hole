@@ -1,14 +1,10 @@
-use std::{
-    f32::consts::TAU,
-    time::{Instant, SystemTime},
-};
+use std::{f32::consts::TAU, time::SystemTime};
 
-use glam::Vec2;
 use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Queue};
 
 use bytemuck::{self, Pod};
 
-use crate::gpu::{angle_line::AngleLine, field::Field, particle::Particle};
+use crate::gpu::{angle_line::AngleLine, particle::Particle};
 
 pub const MIN_ANGLE: f32 = 0.01 * TAU / 360.0;
 pub const MAX_ANGLE: f32 = TAU;
@@ -254,15 +250,4 @@ async fn run(particles: Vec<Particle>, angle_count: u32) -> Vec<SimulatedRay> {
 
 pub fn simulate_particles(particles: Vec<Particle>, angle_count: u32) -> Vec<SimulatedRay> {
     return pollster::block_on(run(particles, angle_count));
-}
-
-pub fn run_main(particle_count: u32) -> Vec<SimulatedRay> {
-    let field = Field::new(1.5, 5.);
-    let particles: Vec<crate::gpu::particle::Particle> = (0..particle_count)
-        .into_iter()
-        .map(|i| i as f32 / (particle_count - 1) as f32)
-        .map(|i_01| Vec2::new(i_01, 1.).normalize())
-        .map(|v| field.spawn_particle(20. * Vec2::NEG_Y, v))
-        .collect();
-    return pollster::block_on(run(particles, 1 << 8));
 }
