@@ -4,7 +4,7 @@ use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Qu
 
 use bytemuck::{self, Pod};
 
-use crate::gpu::angle_line::AngleLine;
+use crate::{dimension_params::DimensionParams, gpu::angle_line::AngleLine};
 
 use super::field::Particle;
 
@@ -131,8 +131,8 @@ impl SimulatorState {
     pub async fn simulate_particles(
         &self,
         particles: &[Particle],
-        steps: u32,
-        _max_distance: f32,
+        angles: &DimensionParams,
+        distances: &DimensionParams,
     ) -> Vec<SimulatedRay> {
         let device = &self.device;
         let bind_group_layout = &self.bind_group_layout;
@@ -148,7 +148,7 @@ impl SimulatorState {
                 | wgpu::BufferUsages::COPY_SRC,
         });
 
-        let output_size = 4 * steps as u64 * particles.len() as u64;
+        let output_size = 4 * angles.size as u64 * particles.len() as u64;
 
         println!("Output size: {}", output_size);
         let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -158,9 +158,10 @@ impl SimulatorState {
             mapped_at_creation: false,
         });
 
-        let angle_lines: Vec<AngleLine> = (0..=steps)
+        let (min, delta) = angles.min_delta();
+        let angle_lines: Vec<AngleLine> = (0..=angles.size)
             .map(|a| {
-                let angle = MIN_ANGLE + (MAX_ANGLE - MIN_ANGLE) * a as f32 / (steps - 1) as f32;
+                let angle = min + delta * a as f32 / (angles.size - 1) as f32;
                 AngleLine::new(angle)
             })
             .collect();
@@ -217,7 +218,7 @@ impl SimulatorState {
             .iter()
             .enumerate()
             .map(|(i, p)| SimulatedRay {
-                angle_dist: (0..steps)
+                angle_dist: (0..angles.size)
                     .map(|a| distances[i + a as usize * particles.len()])
                     .collect(),
                 final_pos: [p.pv[0], p.pv[1]],
@@ -227,29 +228,41 @@ impl SimulatorState {
     }
 }
 
-const MAX_PARTICLES: usize = 1 << 14;
-async fn run(particles: Vec<Particle>, angle_count: u32) -> Vec<SimulatedRay> {
+// This is about 4 million points, each of which takes ~2 bytes. If we do more, it can crash.
+// Todo: try a backout technique?
+const MAX_PROBLEM_SIZE: usize = 1 << 22;
+async fn run(
+    particles: Vec<Particle>,
+    angles: &DimensionParams,
+    distances: &DimensionParams,
+) -> Vec<SimulatedRay> {
     let simulator = SimulatorState::new().await;
     let mut rays = Vec::new();
-    let mut max_i = particles.len() / MAX_PARTICLES;
-    if particles.len() != MAX_PARTICLES * max_i {
-        max_i += 1;
+
+    let particles_per_problem = MAX_PROBLEM_SIZE / angles.size;
+
+    let mut problem_count = particles.len() / particles_per_problem;
+    if particles.len() != problem_count * particles_per_problem {
+        problem_count += 1;
     }
-    for i in 0..max_i {
-        println!("Generating rays, partition: {}/{}", i + 1, max_i);
+    for i in 0..problem_count {
+        let min = i * particles_per_problem;
+        let max = usize::min(min + particles_per_problem, particles.len());
+        let particles = &particles[min..max];
+
+        println!("Generating rays, partition: {}/{}", i + 1, problem_count);
         let mut ray_part = simulator
-            .simulate_particles(
-                &particles
-                    [(i * MAX_PARTICLES)..usize::min((i + 1) * MAX_PARTICLES, particles.len())],
-                angle_count,
-                30.0,
-            )
+            .simulate_particles(particles, angles, distances)
             .await;
         rays.append(&mut ray_part);
     }
     return rays;
 }
 
-pub fn simulate_particles(particles: Vec<Particle>, angle_count: u32) -> Vec<SimulatedRay> {
-    return pollster::block_on(run(particles, angle_count));
+pub fn simulate_particles(
+    particles: Vec<Particle>,
+    angles: &DimensionParams,
+    distances: &DimensionParams,
+) -> Vec<SimulatedRay> {
+    return pollster::block_on(run(particles, angles, distances));
 }

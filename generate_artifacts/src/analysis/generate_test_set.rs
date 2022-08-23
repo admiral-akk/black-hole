@@ -34,14 +34,14 @@ pub fn regenerate_angle_distance_test_points(
     let angles = DimensionParams {
         size: 61,
         bounds: params.angle.bounds,
-    }
-    .generate_list();
+    };
 
     let particles = generate_particles(&dists, &views, params);
-    let result = simulate_particles(particles, 61);
+    let result = simulate_particles(particles, &angles, &dists);
     let mut test_points = Vec::new();
     let dists = dists.generate_list();
     let views = views.generate_list();
+    let angles = angles.generate_list();
     plot_test_statistics(folder_path, &result, &dists, &views, &angles);
     for (dist_index, dist) in dists.iter().enumerate() {
         let result = &result[dist_index * views.len()..(dist_index + 1) * views.len()];

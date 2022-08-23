@@ -221,7 +221,7 @@ impl AngleDistanceCache {
         let views = params.view_dist.generate_list();
         let angles = params.angle.generate_list();
         let particles = generate_particles(&params.dist, &params.view_dist, &params);
-        let rays = simulate_particles(particles, angles.len() as u32);
+        let rays = simulate_particles(particles, &params.angle, &params.dist);
         let mut distances: Vec<Vec<Vec<f32>>> = Vec::new();
         for d in 0..dists.len() {
             let mut fixed_distance = Vec::new();
