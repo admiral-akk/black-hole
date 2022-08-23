@@ -22,6 +22,16 @@ impl DimensionParams {
         self.bounds[0] <= val && val <= self.bounds[1]
     }
 
+    pub fn index_to_val(&self, index: usize) -> f32 {
+        let (min, delta) = self.min_delta();
+        delta * index as f32 / (self.size - 1) as f32 + min
+    }
+
+    pub fn val_to_01(&self, val: f32) -> f32 {
+        let (min, delta) = self.min_delta();
+        (val - min) / delta
+    }
+
     pub fn val_to_sample_params(&self, index_01: f32) -> [(usize, f32); 2] {
         let len = self.size;
         let (min, delta) = self.min_delta();

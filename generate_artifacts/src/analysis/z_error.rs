@@ -1,7 +1,6 @@
 use std::{f64::consts::TAU, fs};
 
 use test_utils::plot_with_title;
-use wire_structs::angle_distance_cache::AngleDistanceCache;
 
 use super::angle_test_point::AngleTestPoint;
 

@@ -4,7 +4,7 @@ use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Qu
 
 use bytemuck::{self, Pod};
 
-use crate::dimension_params::DimensionParams;
+use crate::sampler::dimension_params::DimensionParams;
 
 use super::field::Particle;
 
@@ -146,7 +146,7 @@ impl SimulatorState {
         &self,
         particles: &[Particle],
         angles: &DimensionParams,
-        distances: &DimensionParams,
+        max_distance: f32,
     ) -> Vec<SimulatedRay> {
         let device = &self.device;
         let bind_group_layout = &self.bind_group_layout;
@@ -248,7 +248,7 @@ const MAX_PROBLEM_SIZE: usize = 1 << 22;
 async fn run(
     particles: Vec<Particle>,
     angles: &DimensionParams,
-    distances: &DimensionParams,
+    max_distance: f32,
 ) -> Vec<SimulatedRay> {
     let simulator = SimulatorState::new().await;
     let mut rays = Vec::new();
@@ -266,7 +266,7 @@ async fn run(
 
         println!("Generating rays, partition: {}/{}", i + 1, problem_count);
         let mut ray_part = simulator
-            .simulate_particles(particles, angles, distances)
+            .simulate_particles(particles, angles, max_distance)
             .await;
         rays.append(&mut ray_part);
     }
@@ -276,7 +276,7 @@ async fn run(
 pub fn simulate_particles(
     particles: Vec<Particle>,
     angles: &DimensionParams,
-    distances: &DimensionParams,
+    max_distance: f32,
 ) -> Vec<SimulatedRay> {
-    return pollster::block_on(run(particles, angles, distances));
+    return pollster::block_on(run(particles, angles, max_distance));
 }

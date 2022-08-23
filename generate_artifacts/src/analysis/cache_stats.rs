@@ -1,7 +1,6 @@
 use std::{f64::consts::TAU, fs};
 
 use test_utils::plot_with_title;
-use wire_structs::angle_distance_cache::AngleDistanceCache;
 
 fn plot_distances(folder_path: &String, distance_plots: Vec<(Vec<Vec<(f32, f32)>>, f32)>) {
     for (plot, dist) in distance_plots {
