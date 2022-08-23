@@ -3,7 +3,6 @@ use std::fs;
 use wire_structs::{
     angle_distance_cache::{generate_particles, AngleDistanceCacheParams, DimensionParams},
     gpu::gpu_state::simulate_particles,
-    path_integration::path::cast_ray_steps_response,
 };
 
 use super::{angle_test_point::AngleTestPoint, test_stats::plot_test_statistics};

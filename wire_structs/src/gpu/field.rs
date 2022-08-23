@@ -1,4 +1,4 @@
-use glam::{DVec3, Vec2};
+use glam::{Vec2};
 use wgpu::{util::DeviceExt, Buffer, Device};
 
 use super::particle::Particle;

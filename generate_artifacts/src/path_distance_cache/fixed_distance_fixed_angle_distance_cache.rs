@@ -35,7 +35,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
 
 impl FixedDistanceFixedAngleDistanceCache {
     pub fn compute_new(
-        cache_size: usize,
+        _cache_size: usize,
         camera_distance: f64,
         black_hole_radius: f64,
         disc_bounds: (f64, f64),
@@ -201,7 +201,7 @@ fn find_z_bounds_for_angle(
         upper = upper_2.0;
     }
 
-    let bounds = (lower, upper);
+    let _bounds = (lower, upper);
 
     (0., 1.)
     //bounds

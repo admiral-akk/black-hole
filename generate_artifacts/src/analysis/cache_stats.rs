@@ -49,7 +49,7 @@ pub fn plot_cache_statistics(cache: &AngleDistanceCache) {
         let mut distance_plot = Vec::new();
         let mut path_plot = Vec::new();
         let mut data_per = Vec::new();
-        for (v_index, view) in views.iter().enumerate() {
+        for (v_index, _view) in views.iter().enumerate() {
             let mut path = Vec::new();
             for (a_index, angle) in angles.iter().enumerate() {
                 let val = cache.distances[d_index][v_index][a_index];

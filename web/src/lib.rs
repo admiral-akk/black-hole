@@ -226,7 +226,7 @@ pub struct RenderState {
 fn update_params(black_hole_params: &mut BlackHoleParams, new_params: &RenderParams) {
     let target_distance = 27. * new_params.ui_params.zoom_sum as f32 + 3.0;
     let current_distance = black_hole_params.distance;
-    let distance = (0.9 * current_distance + 0.1 * target_distance);
+    let distance = 0.9 * current_distance + 0.1 * target_distance;
     let vertical_fov_degrees = 90.0;
     let black_hole_radius = 1.5;
     let cache_width: i32 = 1024;
@@ -589,7 +589,7 @@ impl UIParams {
             .fold(IVec2::ZERO, |a, b| a + b);
 
         // adding/removing touches doesn't change the view
-        let center_diff = (new_center - self.curr_touch_center);
+        let center_diff = new_center - self.curr_touch_center;
         if !changes {
             // Pan
             self.move_view((center_diff.x, center_diff.y));

@@ -29,7 +29,7 @@ pub fn plot_test_statistics(
     for (d_index, dist) in dists.iter().enumerate() {
         let rays = &rays[d_index * views.len()..(d_index + 1) * views.len()];
         let mut path_plot = Vec::new();
-        for (v_index, view) in views.iter().enumerate() {
+        for (v_index, _view) in views.iter().enumerate() {
             let mut path = Vec::new();
             for (a_index, angle) in angles.iter().enumerate() {
                 let val = rays[v_index].angle_dist[a_index];

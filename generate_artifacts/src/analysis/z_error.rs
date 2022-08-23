@@ -36,7 +36,7 @@ fn plot_error(cache: &AngleDistanceCache, mut plots: Vec<Vec<Vec<(f32, f32)>>>, 
     );
     fs::create_dir_all(folder_path).unwrap();
     for (i, lines) in plots.iter_mut().enumerate() {
-        lines.iter_mut().for_each(|line| {});
+        lines.iter_mut().for_each(|_line| {});
         plot_with_title(
             &format!("Error for dist = {:.2}", dists[i]),
             &format!("{}/dist_{:.2}.png", folder_path, dists[i]),
@@ -61,7 +61,7 @@ pub fn plot_angle_error_by_z(
 ) {
     println!("Generating z error plots");
     let mut filtered: Vec<&(AngleTestPoint, Option<f32>)> =
-        results.iter().filter(|p| true).collect();
+        results.iter().filter(|_p| true).collect();
     filtered.sort_by(|p_1, p_2| {
         let order = p_1.0.dist.partial_cmp(&p_2.0.dist).unwrap();
         if order.is_eq() {

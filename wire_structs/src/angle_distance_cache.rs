@@ -6,12 +6,12 @@ pub struct AngleDistanceCache {
     pub params: AngleDistanceCacheParams,
 }
 
-use glam::{DVec3, Vec2};
+use glam::{Vec2};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     gpu::{field::Field, gpu_state::simulate_particles, particle::Particle},
-    path_integration::{path::cast_ray_steps_response, response::AnglePath},
+    path_integration::{path::cast_ray_steps_response},
 };
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct DimensionParams {
@@ -178,7 +178,7 @@ impl AngleDistanceCache {
                     cast_ray_steps_response(z as f64, dist as f64, params.black_hole_radius as f64);
                 let all_angles = response.get_angle_dist().get_all_dist(&angles);
                 for a in 0..angles.len() {
-                    let angle = angles[a];
+                    let _angle = angles[a];
 
                     let distance = match all_angles[a] {
                         Some(distance) => distance as f32,
@@ -218,7 +218,7 @@ pub fn generate_particles(
     particles
 }
 
-fn handle_zeros(angle_dist: &mut Vec<f32>, angles: &Vec<f32>, final_pos: [f32; 2]) {
+fn handle_zeros(angle_dist: &mut Vec<f32>, _angles: &Vec<f32>, _final_pos: [f32; 2]) {
     for i in 0..angle_dist.len() {
         if angle_dist[i] >= 1. {
             continue;

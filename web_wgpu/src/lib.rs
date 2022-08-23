@@ -1,25 +1,22 @@
-use generate_artifacts::{black_hole_cache::BlackHoleCache, path_distance_cache::distance_cache};
+use generate_artifacts::{black_hole_cache::BlackHoleCache};
 use glam::Mat4;
 use shader::{
     black_hole::BlackHole,
     full_float_texture::FullFloatTexture,
-    half_float_texture::HalfFloatTexture,
     render_params::RenderParams,
     small_float_texture::SmallFloatTexture,
     texture::Texture,
     vertex::{Vertex, INDICES, VERTICES},
 };
 use wgpu::{
-    util::DeviceExt, BindGroupLayoutDescriptor, BlendState, ColorWrites, DepthBiasState,
-    DepthStencilState, Features, Operations, RenderPassDepthStencilAttachment, StencilFaceState,
-    StencilOperation, StencilState, TextureFormat,
+    util::DeviceExt,
+    DepthStencilState, Features, Operations, RenderPassDepthStencilAttachment, StencilState,
 };
 use winit::{
-    dpi::LogicalSize,
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::Window,
-    window::{self, WindowBuilder},
+    window::{WindowBuilder},
 };
 
 mod shader;
@@ -773,10 +770,10 @@ impl State {
     fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
             WindowEvent::MouseWheel {
-                device_id,
+                device_id: _,
                 delta,
-                phase,
-                modifiers,
+                phase: _,
+                modifiers: _,
             } => match delta {
                 MouseScrollDelta::LineDelta(lines, rows) => {
                     let bounds = self.params.0.distance_bounds;
@@ -798,9 +795,9 @@ impl State {
                 }
             },
             WindowEvent::CursorMoved {
-                device_id,
+                device_id: _,
                 position,
-                modifiers,
+                modifiers: _,
             } => {
                 let pos = [position.x as f32, position.y as f32];
 

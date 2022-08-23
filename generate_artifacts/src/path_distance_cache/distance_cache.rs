@@ -2,12 +2,12 @@ use std::f64::consts::TAU;
 
 use serde::{Deserialize, Serialize};
 
-use crate::path_distance_cache::fixed_distance_fixed_angle_distance_cache::MIN_ANGLE;
+
 
 use super::{
     fixed_distance_distance_cache::{FixedDistanceDistanceCache, DISTANCE_CACHE_SIZE},
     fixed_distance_fixed_angle_distance_cache::{
-        FixedDistanceFixedAngleDistanceCache, ANGLE_DISTANCE_CACHE_SIZE,
+        ANGLE_DISTANCE_CACHE_SIZE,
     },
 };
 
@@ -33,7 +33,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
 }
 impl DistanceCache {
     pub fn compute_new(
-        cache_size: (usize, usize, usize),
+        _cache_size: (usize, usize, usize),
         distance_bounds: (f64, f64),
         black_hole_radius: f64,
         disc_bounds: (f64, f64),
@@ -92,7 +92,7 @@ impl DistanceCache {
 
 #[cfg(test)]
 mod tests {
-    use std::{f64::consts::TAU, fs};
+    use std::{f64::consts::TAU};
 
     use serde::{Deserialize, Serialize};
     use test_utils::plot_trajectories;

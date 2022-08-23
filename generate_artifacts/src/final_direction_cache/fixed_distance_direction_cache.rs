@@ -3,7 +3,7 @@ use std::f64::consts::TAU;
 use crate::path_integration2::{
     path::cast_ray_steps_response,
     path::find_optimal_z,
-    response::{Response, ToAngle},
+    response::{Response},
 };
 use glam::DVec3;
 use serde::{Deserialize, Serialize};
@@ -16,14 +16,14 @@ const POW_F: f64 = 32.0;
 
 fn index_to_z_01(i: usize, cache_size: usize) -> f64 {
     let z_01 = (i as f64) / (cache_size - 1) as f64;
-    let mut z_01_high = z_01.powf(1. / POW_F).clamp(0., 1.);
-    let mut z_01_low = (LINEAR_SCALE * z_01).clamp(0., 1.);
+    let z_01_high = z_01.powf(1. / POW_F).clamp(0., 1.);
+    let z_01_low = (LINEAR_SCALE * z_01).clamp(0., 1.);
     f64::min(z_01_low, z_01_high)
 }
 
 fn z_01_to_left_index(z_01: f64, cache_size: usize) -> (usize, f64) {
-    let mut z_01_high = z_01.powf(POW_F).clamp(0., 1.);
-    let mut z_01_low = (z_01 / LINEAR_SCALE).clamp(0., 1.);
+    let z_01_high = z_01.powf(POW_F).clamp(0., 1.);
+    let z_01_low = (z_01 / LINEAR_SCALE).clamp(0., 1.);
 
     let z_01 = f64::max(z_01_low, z_01_high) * (cache_size - 1) as f64;
 
@@ -37,7 +37,7 @@ fn index_to_z(max_z: f64, min_z: f64, i: usize, cache_size: usize) -> f64 {
     (max_z - min_z) * float_01 + min_z
 }
 fn z_to_left_index(max_z: f64, min_z: f64, z: f64, cache_size: usize) -> (usize, f64) {
-    let z_01 = ((z - min_z) / (max_z - min_z));
+    let z_01 = (z - min_z) / (max_z - min_z);
     z_01_to_left_index(z_01, cache_size)
 }
 

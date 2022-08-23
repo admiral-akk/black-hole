@@ -57,7 +57,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
 }
 impl FixedDistanceDistanceCache {
     pub fn compute_new(
-        cache_size: (usize, usize),
+        _cache_size: (usize, usize),
         camera_distance: f64,
         black_hole_radius: f64,
         disc_bounds: (f64, f64),
@@ -77,7 +77,7 @@ impl FixedDistanceDistanceCache {
             );
             angle_to_z_to_distance.push(z_to_distance_cache);
         }
-        let min_z = find_grazing_z(camera_distance, black_hole_radius, disc_bounds.1);
+        let _min_z = find_grazing_z(camera_distance, black_hole_radius, disc_bounds.1);
         FixedDistanceDistanceCache {
             min_angle: MIN_ANGLE,
             min_z: 0.0,
@@ -102,7 +102,7 @@ impl FixedDistanceDistanceCache {
         let left = &self.angle_to_z_to_distance[index];
         let right = &self.angle_to_z_to_distance[index + 1];
         let z_bound = self.get_z_bounds(angle_01);
-        let diff = z_bound.1 - z_bound.0;
+        let _diff = z_bound.1 - z_bound.0;
         let z_01 = (z - z_bound.0) / (z_bound.1 - z_bound.0);
         Some(t * right.get_dist(z_01) + (1. - t) * left.get_dist(z_01))
     }
@@ -110,7 +110,7 @@ impl FixedDistanceDistanceCache {
 
 #[cfg(test)]
 mod tests {
-    use std::{f64::consts::TAU, fs};
+    use std::{f64::consts::TAU};
 
     use serde::{Deserialize, Serialize};
     use test_utils::plot_trajectories;

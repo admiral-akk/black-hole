@@ -130,7 +130,7 @@ impl SimulatorState {
         &self,
         particles: &[Particle],
         steps: u32,
-        max_distance: f32,
+        _max_distance: f32,
     ) -> Vec<SimulatedRay> {
         let device = &self.device;
         let bind_group_layout = &self.bind_group_layout;
@@ -168,7 +168,7 @@ impl SimulatorState {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
 
-        let start = SystemTime::now();
+        let _start = SystemTime::now();
         let step_count = 1 << 14;
         let pieces = i32::max(step_count >> 10, 1);
         for step in 0..step_count {

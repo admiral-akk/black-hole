@@ -1,4 +1,4 @@
-use std::f64::consts::TAU;
+
 
 use glam::DVec3;
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,7 @@ fn index_to_float_01(index: usize, vec_len: usize) -> f64 {
 
 impl DirectionCache {
     pub fn compute_new(
-        cache_size: (usize, usize),
+        _cache_size: (usize, usize),
         distance_bounds: (f64, f64),
         black_hole_radius: f64,
     ) -> Self {

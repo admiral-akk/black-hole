@@ -1,9 +1,9 @@
-use std::f32::consts::PI;
+
 use std::f64::consts::TAU;
-use std::fmt::format;
+
 use std::fs::{self};
-use std::path::Path;
-use std::time::SystemTime;
+
+
 
 use generate_artifacts::analysis::angle_test_point::AngleTestPoint;
 use generate_artifacts::analysis::cache_stats::plot_cache_statistics;
@@ -16,9 +16,9 @@ use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 use generate_artifacts::texture::texture_2d::{
     generate_final_angle_texture, sample_final_angle_texture, IndexMapping, Texture2D,
 };
-use glam::Vec2;
+
 use serde::{Deserialize, Serialize};
-use test_utils::{plot_trajectories, plot_with_title};
+use test_utils::{plot_trajectories};
 use wire_structs::angle_distance_cache::{
     AngleDistanceCache, AngleDistanceCacheParams, DimensionParams,
 };
@@ -59,7 +59,7 @@ const DIST_TEST_POINTS: usize = 50;
 const ANGLE_TEST_POINTS: usize = 45;
 const Z_TEST_POINTS: usize = 2000;
 use crate::path_integration2::path::cast_ray_steps_response;
-use generate_artifacts::path_integration2::response::ToAngle;
+
 const ANGLE_CACHE_PATH: &str = "generate_artifacts/output/angle_cache.txt";
 const ANGLE_PLOT_Z_PATH: &str = "generate_artifacts/output/angle_cache_z_bound.png";
 const ANGLE_ERROR_PLOT_PATH: &str = "generate_artifacts/output/angle_error.png";
