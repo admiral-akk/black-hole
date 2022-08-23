@@ -2,10 +2,6 @@ use std::f64::consts::TAU;
 
 use std::fs::{self};
 
-use generate_artifacts::analysis::angle_test_point::AngleTestPoint;
-use generate_artifacts::analysis::cache_stats::plot_cache_statistics;
-use generate_artifacts::analysis::generate_test_set::regenerate_angle_distance_test_points;
-use generate_artifacts::analysis::z_error::plot_angle_error_by_z;
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
@@ -16,8 +12,9 @@ use generate_artifacts::texture::texture_2d::{
 
 use serde::{Deserialize, Serialize};
 use test_utils::plot_trajectories;
-use wire_structs::angle_distance_cache::{AngleDistanceCache, AngleDistanceCacheParams};
-use wire_structs::dimension_params::DimensionParams;
+use wire_structs::sampler::angle_distance_sampler::AngleDistanceSampler;
+use wire_structs::sampler::dimension_params::DimensionParams;
+use wire_structs::sampler::render_params::RenderParams;
 
 mod factory;
 mod final_direction_cache;
@@ -154,51 +151,6 @@ fn generate_angle_texture(distance_mapping: &IndexMapping, z_mapping: &IndexMapp
     }
 }
 
-fn generate_test_points() {
-    let mut dist_test_points = Vec::new();
-    let mut angle_test_points = Vec::new();
-    for d_index in 0..DIST_TEST_POINTS {
-        for z_index in 0..Z_TEST_POINTS {
-            println!("Generating dist, d: {}, z: {}", d_index, z_index);
-            let dist = (DISTANCE_BOUNDS.1 - DISTANCE_BOUNDS.0)
-                * (d_index as f64 / (DIST_TEST_POINTS - 1) as f64)
-                + DISTANCE_BOUNDS.0;
-            let z = z_index as f64 / (Z_TEST_POINTS - 1) as f64;
-            let res = cast_ray_steps_response(z, dist, BLACK_HOLE_RADIUS);
-            let final_angle = res.get_final_angle();
-            let test_point = DirectionTestPoint {
-                z,
-                dist,
-                final_angle,
-            };
-            dist_test_points.push(test_point);
-            let angle_dist = res.get_angle_dist();
-            for a_index in 0..ANGLE_TEST_POINTS {
-                println!(
-                    "Generating angle, d: {}, a: {}, z: {}",
-                    d_index, a_index, z_index
-                );
-                let target_angle = TAU * a_index as f64 / (ANGLE_TEST_POINTS - 1) as f64;
-                let dist_at_angle = angle_dist.get_dist(target_angle as f64);
-
-                let test_point = AngleTestPoint {
-                    view_port_coord: z,
-                    target_angle,
-                    dist,
-                    dist_at_angle,
-                };
-                angle_test_points.push(test_point);
-            }
-        }
-    }
-    let data = serde_json::to_string(&dist_test_points).unwrap();
-    println!("Writing distance test points out.");
-    fs::write(DIRECTION_TEST_PATH, data).expect("Unable to write file");
-    let data = serde_json::to_string(&angle_test_points).unwrap();
-    println!("Writing angle test points out.");
-    fs::write(DISTANCE_TEST_PATH, data).expect("Unable to write file");
-}
-
 fn regenerate_black_hole_cache() {
     println!("Attempting to load existing black hole cache.");
     let curr_cache_vec = get_file_as_byte_vec(BLACK_HOLE_CACHE_PATH);
@@ -274,77 +226,23 @@ fn regenerate_black_hole_cache() {
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
 } // lib.rs
 
-const ANGLE_DISTANCE_CACHE_PATH: &str = "generate_artifacts/output/angle_distance_cache.txt";
-
-fn regenerate_angle_distance_cache(dimensions: [usize; 3]) -> AngleDistanceCache {
-    let dist_bounds = [5.0, 30.0];
-    let view_bounds = [0., 0.5_f32.sqrt()];
-    let angle_bounds = [0.01 * TAU as f32 / 360.0, TAU as f32];
-    let black_hole_radius = 1.5;
-    let fov_degrees = 60.;
-
-    let params = AngleDistanceCacheParams {
-        dist: DimensionParams {
-            size: dimensions[0],
-            bounds: dist_bounds,
-        },
-        view_dist: DimensionParams {
-            size: dimensions[1],
-            bounds: view_bounds,
-        },
-        angle: DimensionParams {
-            size: dimensions[2],
-            bounds: angle_bounds,
-        },
-        black_hole_radius,
-        fov_degrees,
-    };
-    let path = format!(
-        "generate_artifacts/output/angle_distance_cache_{}.txt",
-        params.cache_name()
-    );
-    let cache = fs::read(&path);
-    if cache.is_ok() {
-        println!("Found existing cache!");
-        let cache = cache.unwrap();
-        //let de: AngleDistanceCache = ciborium::de::from_reader(&*cache).unwrap();
-        let de: AngleDistanceCache = serde_json::from_slice(&cache).unwrap();
-        return de;
-    }
-
-    let cache = AngleDistanceCache::generate_angle_distance_cache_gpu(&params);
-    //let cache = AngleDistanceCache::generate_angle_distance_cache(params);
-
-    //ciborium::ser::into_writer(&cache, &mut buffer).unwrap();
-    let buffer = serde_json::to_string(&cache).unwrap();
-    //fs::write(&path, buffer).expect("Unable to write file");
-    return cache;
-}
-
-fn test_angle_distance_cache(
-    cache: &AngleDistanceCache,
-    test_points: &Vec<AngleTestPoint>,
-) -> Vec<(AngleTestPoint, Option<f32>)> {
-    println!("Generating approximations for test points.");
-    test_points
-        .iter()
-        .map(|test_point| {
-            (
-                *test_point,
-                cache.get_dist(
-                    test_point.dist,
-                    test_point.view_port_coord,
-                    test_point.target_angle,
-                ),
-            )
-        })
-        .collect()
-}
 fn main() {
     let dimensions = [32, 1024, 128];
-    let cache = regenerate_angle_distance_cache(dimensions);
-    plot_cache_statistics(&cache);
-    let data = regenerate_angle_distance_test_points(&cache.params);
-    let results = test_angle_distance_cache(&cache, &data);
-    plot_angle_error_by_z(&cache, &results);
+    let dist = DimensionParams {
+        size: 32,
+        bounds: [5., 30.],
+    };
+    let view = DimensionParams {
+        size: 32,
+        bounds: [0., 0.5_f32.sqrt()],
+    };
+    let angle = DimensionParams {
+        size: 32,
+        bounds: [0., TAU as f32],
+    };
+    let render_params = RenderParams {
+        black_hole_radius: 1.5,
+        fov_degrees: 60.,
+    };
+    let sampler = AngleDistanceSampler::generate(dist, angle, view, render_params);
 }

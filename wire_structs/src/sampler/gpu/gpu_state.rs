@@ -31,7 +31,7 @@ pub struct SimulatorState {
     queue: Queue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SimulatedRay {
     pub angle_dist: Vec<f32>,
     pub final_pos: [f32; 2],
@@ -187,7 +187,7 @@ impl SimulatorState {
 
         let _start = SystemTime::now();
         let step_count = 1 << 18;
-        let pieces = i32::max(step_count >> 10, 1);
+        let pieces = i32::max(step_count >> 12, 1);
         for step in 0..step_count {
             let mut encoder = device.create_command_encoder(&Default::default());
             {
@@ -279,4 +279,28 @@ pub fn simulate_particles(
     max_distance: f32,
 ) -> Vec<SimulatedRay> {
     return pollster::block_on(run(particles, angles, max_distance));
+}
+
+pub fn simulate_particles_groups(
+    particles: Vec<Vec<Particle>>,
+    angles: &DimensionParams,
+    max_distance: f32,
+) -> Vec<Vec<SimulatedRay>> {
+    let vec_count = particles.len();
+    let particle_len = particles[0].len();
+    let particles = particles.iter().fold(Vec::new(), |mut acc, v| {
+        acc.extend_from_slice(&v);
+        acc
+    });
+    let rays = pollster::block_on(run(particles, angles, max_distance));
+    (0..vec_count)
+        .map(|i| {
+            let slice = &rays[i * particle_len..(i + 1) * particle_len];
+            let mut v = Vec::new();
+            for val in slice {
+                v.push(val.clone());
+            }
+            return v;
+        })
+        .collect()
 }

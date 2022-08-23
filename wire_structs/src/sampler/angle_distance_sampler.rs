@@ -65,6 +65,7 @@ impl AngleDistanceSampler {
         let mut close = Texture3D::new([distance.size, view.size, angle.size]);
         let mut far = Texture3D::new([distance.size, view.size, angle.size]);
         let dists = distance.generate_list();
+
         for (d_index, dist) in dists.iter().enumerate() {
             let far_views = view_sampler.generate_list(ViewType::Far, *dist, view.size);
             let far_particles = generate_particles(*dist, &far_views, &render_params);

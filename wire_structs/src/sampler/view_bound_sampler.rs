@@ -6,7 +6,7 @@ use super::{
     dimension_params::DimensionParams,
     gpu::{
         field::{Field, Particle},
-        gpu_state::{simulate_particles, SimulatedRay},
+        gpu_state::{simulate_particles, simulate_particles_groups, SimulatedRay},
     },
     render_params::RenderParams,
     texture::texture_1d::Texture1D,
@@ -121,9 +121,36 @@ impl ViewBoundSampler {
         render_params: &RenderParams,
     ) -> Self {
         let mut texture = Texture1D::new([dist.size]);
-        for (i, dist) in dist.generate_list().iter().enumerate() {
-            let view_bound = find_near_miss(*dist, &view, angle.bounds[0], 40., render_params);
-            texture.insert([i], view_bound)
+
+        let mut view_groups = Vec::new();
+        let angles = DimensionParams {
+            size: 128,
+            bounds: [angle.bounds[0], 2. * TAU],
+        };
+
+        for (_, _) in dist.generate_list().iter().enumerate() {
+            view_groups.push(view.clone());
+        }
+
+        for _ in 0..ITERATIONS {
+            let mut particle_groups = Vec::new();
+            for (i, dist) in dist.generate_list().iter().enumerate() {
+                let particles =
+                    generate_particle_with_fixed_dist(*dist, &view_groups[i], render_params);
+                particle_groups.push(particles);
+            }
+
+            let ray_groups = simulate_particles_groups(particle_groups, &angles, 40.);
+            for (i, rays) in ray_groups.iter().enumerate() {
+                let closest_index = get_closest_ray_index(&rays);
+                view_groups[i].bounds = [
+                    view.index_to_val(closest_index - 1),
+                    view.index_to_val(closest_index),
+                ]
+            }
+        }
+        for (i, _) in dist.generate_list().iter().enumerate() {
+            texture.insert([i], view_groups[i].bounds[1])
         }
         let view_bounds = view.bounds;
         Self {

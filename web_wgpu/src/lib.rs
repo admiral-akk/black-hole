@@ -1,4 +1,4 @@
-use generate_artifacts::{black_hole_cache::BlackHoleCache};
+use generate_artifacts::black_hole_cache::BlackHoleCache;
 use glam::Mat4;
 use shader::{
     black_hole::BlackHole,
@@ -9,14 +9,14 @@ use shader::{
     vertex::{Vertex, INDICES, VERTICES},
 };
 use wgpu::{
-    util::DeviceExt,
-    DepthStencilState, Features, Operations, RenderPassDepthStencilAttachment, StencilState,
+    util::DeviceExt, DepthStencilState, Features, Operations, RenderPassDepthStencilAttachment,
+    StencilState,
 };
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::Window,
-    window::{WindowBuilder},
+    window::WindowBuilder,
 };
 
 mod shader;
@@ -895,7 +895,6 @@ impl State {
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 use winit::dpi::PhysicalSize;
-use wire_structs::angle_distance_cache::AngleDistanceCache;
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub async fn run() {
     let event_loop = EventLoop::new();
