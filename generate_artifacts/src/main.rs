@@ -341,7 +341,7 @@ fn test_angle_distance_cache(
         .collect()
 }
 fn main() {
-    let dimensions = [32, 512, 512];
+    let dimensions = [32, 256, 64];
     let cache = regenerate_angle_distance_cache(dimensions);
     plot_cache_statistics(&cache);
     let data = regenerate_angle_distance_test_points(&cache.params);

@@ -16,6 +16,7 @@ use crate::{
         gpu_state::simulate_particles,
     },
     path_integration::path::cast_ray_steps_response,
+    path_utils::find_closest_view,
 };
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
@@ -199,6 +200,21 @@ pub fn generate_particles(
     particles
 }
 
+pub fn generate_particle_with_fixed_dist(
+    dist: f32,
+    view: &DimensionParams,
+    params: &AngleDistanceCacheParams,
+) -> Vec<Particle> {
+    let views = view.generate_list();
+    let mut particles = Vec::new();
+    let field = Field::new(1.5, dist as f64);
+    for v in 0..views.len() {
+        let view = views[v];
+        particles.push(field.spawn_particle(dist * Vec2::NEG_Y, params.to_vec2(view)));
+    }
+    particles
+}
+
 fn handle_zeros(angle_dist: &mut Vec<f32>, _angles: &Vec<f32>, _final_pos: [f32; 2]) {
     for i in 0..angle_dist.len() {
         if angle_dist[i] >= 1. {
@@ -220,6 +236,9 @@ impl AngleDistanceCache {
         let dists = params.dist.generate_list();
         let views = params.view_dist.generate_list();
         let angles = params.angle.generate_list();
+
+        let bounds = find_closest_view(&params);
+
         let particles = generate_particles(&params.dist, &params.view_dist, &params);
         let rays = simulate_particles(particles, &params.angle, &params.dist);
         let mut distances: Vec<Vec<Vec<f32>>> = Vec::new();

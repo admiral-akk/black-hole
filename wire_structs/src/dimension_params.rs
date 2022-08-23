@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, Copy, Clone)]
 pub struct DimensionParams {
     pub size: usize,
     pub bounds: [f32; 2],

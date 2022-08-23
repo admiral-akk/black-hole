@@ -1,4 +1,4 @@
-use std::{f32::consts::TAU, time::SystemTime};
+use std::time::SystemTime;
 
 use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Queue};
 
@@ -7,9 +7,6 @@ use bytemuck::{self, Pod};
 use crate::dimension_params::DimensionParams;
 
 use super::field::Particle;
-
-pub const MIN_ANGLE: f32 = 0.01 * TAU / 360.0;
-pub const MAX_ANGLE: f32 = TAU;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
