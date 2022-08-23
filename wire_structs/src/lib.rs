@@ -2,6 +2,7 @@ pub mod angle_distance_cache;
 pub mod path_integration;
 pub mod wire_black_hole_cache;
 
+pub mod dimension_params;
 pub mod gpu;
 
 #[cfg(feature = "deserialization")]

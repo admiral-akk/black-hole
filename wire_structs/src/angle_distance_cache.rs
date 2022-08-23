@@ -6,36 +6,17 @@ pub struct AngleDistanceCache {
     pub params: AngleDistanceCacheParams,
 }
 
-use glam::{Vec2};
+use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    gpu::{field::Field, gpu_state::simulate_particles, particle::Particle},
-    path_integration::{path::cast_ray_steps_response},
+    dimension_params::DimensionParams,
+    gpu::{
+        field::{Field, Particle},
+        gpu_state::simulate_particles,
+    },
+    path_integration::path::cast_ray_steps_response,
 };
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct DimensionParams {
-    pub size: usize,
-    pub bounds: [f32; 2],
-}
-
-impl DimensionParams {
-    pub fn min_delta(&self) -> (f32, f32) {
-        (self.bounds[0], self.bounds[1] - self.bounds[0])
-    }
-
-    pub fn generate_list(&self) -> Vec<f32> {
-        let (min, delta) = self.min_delta();
-        (0..self.size)
-            .map(|i| i as f32 / (self.size - 1) as f32)
-            .map(|i_01| min + delta * i_01)
-            .collect()
-    }
-
-    fn in_bounds(&self, val: f32) -> bool {
-        self.bounds[0] <= val && val <= self.bounds[1]
-    }
-}
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct AngleDistanceCacheParams {

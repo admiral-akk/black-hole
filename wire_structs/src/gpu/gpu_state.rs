@@ -4,7 +4,9 @@ use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Qu
 
 use bytemuck::{self, Pod};
 
-use crate::gpu::{angle_line::AngleLine, particle::Particle};
+use crate::gpu::angle_line::AngleLine;
+
+use super::field::Particle;
 
 pub const MIN_ANGLE: f32 = 0.01 * TAU / 360.0;
 pub const MAX_ANGLE: f32 = TAU;

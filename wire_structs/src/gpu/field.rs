@@ -1,13 +1,11 @@
-use glam::{Vec2};
+use glam::Vec2;
 use wgpu::{util::DeviceExt, Buffer, Device};
-
-use super::particle::Particle;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Field {
-    pub magnitude: f32,
-    pub radius: f32,
+    magnitude: f32,
+    radius: f32,
 }
 
 impl Field {
@@ -51,4 +49,14 @@ impl Field {
             filler: 0,
         }
     }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Particle {
+    pub pv: [f32; 4],
+    pub index: u32,
+    pub black_hole_magnitude: f32,
+    pub black_hole_radius: f32,
+    filler: u32,
 }

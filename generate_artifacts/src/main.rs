@@ -1,9 +1,6 @@
-
 use std::f64::consts::TAU;
 
 use std::fs::{self};
-
-
 
 use generate_artifacts::analysis::angle_test_point::AngleTestPoint;
 use generate_artifacts::analysis::cache_stats::plot_cache_statistics;
@@ -18,10 +15,9 @@ use generate_artifacts::texture::texture_2d::{
 };
 
 use serde::{Deserialize, Serialize};
-use test_utils::{plot_trajectories};
-use wire_structs::angle_distance_cache::{
-    AngleDistanceCache, AngleDistanceCacheParams, DimensionParams,
-};
+use test_utils::plot_trajectories;
+use wire_structs::angle_distance_cache::{AngleDistanceCache, AngleDistanceCacheParams};
+use wire_structs::dimension_params::DimensionParams;
 
 mod factory;
 mod final_direction_cache;

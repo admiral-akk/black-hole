@@ -1,7 +1,8 @@
 use std::fs;
 
 use wire_structs::{
-    angle_distance_cache::{generate_particles, AngleDistanceCacheParams, DimensionParams},
+    angle_distance_cache::{generate_particles, AngleDistanceCacheParams},
+    dimension_params::DimensionParams,
     gpu::gpu_state::simulate_particles,
 };
 
