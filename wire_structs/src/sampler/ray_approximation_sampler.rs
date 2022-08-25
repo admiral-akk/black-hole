@@ -44,7 +44,7 @@ impl RayApproximationSampler {
             for (j, path) in paths.iter().enumerate() {
                 tex.insert(
                     [i, j],
-                    RayApproximation::generate_optimal(path, dists[i], &angle),
+                    RayApproximation::generate_optimal(&path.ray, dists[i], &angle),
                 );
             }
         }

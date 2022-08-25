@@ -13,8 +13,15 @@ use super::{
 };
 
 #[derive(Serialize, Deserialize, Clone)]
+pub struct SimulatedPath {
+    pub ray: SimulatedRay,
+    pub dist: f32,
+    pub view: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PathSampler {
-    pub far: Vec<Vec<SimulatedRay>>,
+    pub far: Vec<Vec<SimulatedPath>>,
     distance: DimensionParams,
     angle: DimensionParams,
     view: DimensionParams,
@@ -52,9 +59,21 @@ impl PathSampler {
         }
         let ray_groups = simulate_particles_groups(particle_groups, &angle, 40.);
         let mut far = Vec::new();
-        for (d_index, _) in dists.iter().enumerate() {
-            let close_rays = ray_groups[d_index].to_vec();
-            far.push(close_rays);
+        for (d_index, dist) in dists.iter().enumerate() {
+            let far_views = view_sampler.generate_list(ViewType::Far, *dist, view.size);
+
+            let far_rays = ray_groups[d_index].to_vec();
+            far.push(
+                far_rays
+                    .iter()
+                    .enumerate()
+                    .map(|(i, ray)| SimulatedPath {
+                        ray: ray.clone(),
+                        dist: *dist,
+                        view: far_views[i],
+                    })
+                    .collect(),
+            );
         }
         Self {
             far,
