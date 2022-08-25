@@ -1,12 +1,13 @@
 use std::time::SystemTime;
 
+use serde::{Deserialize, Serialize};
 use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Queue};
 
 use bytemuck::{self, Pod};
 
 use crate::sampler::dimension_params::DimensionParams;
 
-use super::field::Particle;
+use super::{field::Particle, simulated_ray::SimulatedRay};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -29,13 +30,6 @@ pub struct SimulatorState {
     bind_group_layout: BindGroupLayout,
     pipeline: ComputePipeline,
     queue: Queue,
-}
-
-#[derive(Debug, Clone)]
-pub struct SimulatedRay {
-    pub angle_dist: Vec<f32>,
-    pub final_pos: [f32; 2],
-    pub final_dir: [f32; 2],
 }
 
 impl SimulatorState {
@@ -186,7 +180,7 @@ impl SimulatorState {
         });
 
         let _start = SystemTime::now();
-        let step_count = 1 << 18;
+        let step_count = 1 << 17;
         let pieces = i32::max(step_count >> 12, 1);
         for step in 0..step_count {
             let mut encoder = device.create_command_encoder(&Default::default());

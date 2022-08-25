@@ -1,5 +1,7 @@
 use super::texture_dimension::TextureDimension;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Texture1D {
     dimensions: [TextureDimension; 1],
     val: Vec<f32>,
@@ -23,5 +25,31 @@ impl Texture1D {
             val += x_w * self.val[x];
         }
         val
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::Texture1D;
+
+    #[test]
+    fn linear() {
+        let mut tex = Texture1D::new([128]);
+        for i in 0..128 {
+            let v = i as f32 / 127.;
+            tex.insert([i], v);
+        }
+
+        for x in 0..10000 {
+            let x_01 = x as f32 / 9999.;
+            let true_v = x as f32 / 9999.;
+            let approx_v = tex.get([x_01]);
+            assert!(
+                (true_v - approx_v).abs() < 0.00001,
+                "\nLinear function not equal.\nx_01: {}\ntrue: {}\napprox: {}",
+                x_01,
+                true_v,
+                approx_v
+            );
+        }
     }
 }

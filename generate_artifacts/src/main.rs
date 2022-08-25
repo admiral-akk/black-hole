@@ -2,24 +2,32 @@ use std::f64::consts::TAU;
 
 use std::fs::{self};
 
+use angle_distance_sampler_utils::plot_paths;
+use approximate_path_sampler_utils::plot_approx_paths_sampled;
+use artifact_utils::get_or_generate_file;
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 
-use generate_artifacts::texture::texture_2d::{
-    generate_final_angle_texture, sample_final_angle_texture, IndexMapping, Texture2D,
+use path_sampler_utils::{
+    plot_approx_errors, plot_approx_errors_by_angle, plot_approx_paths,
+    plot_error_by_interpolation, plot_error_by_interpolation_by_angle, plot_sampled_paths,
 };
-
 use serde::{Deserialize, Serialize};
-use test_utils::plot_trajectories;
-use wire_structs::sampler::angle_distance_sampler::AngleDistanceSampler;
+use test_utils::{plot_trajectories, plot_with_title};
+use view_sampler_utils::plot_view_sampler_bound;
+use wire_structs::sampler::angle_distance_sampler::{self, AngleDistanceSampler};
 use wire_structs::sampler::dimension_params::DimensionParams;
+use wire_structs::sampler::path_sampler::PathSampler;
+use wire_structs::sampler::ray_approximation_sampler::RayApproximationSampler;
 use wire_structs::sampler::render_params::RenderParams;
+use wire_structs::sampler::view_bound_sampler::ViewBoundSampler;
 
 mod factory;
 mod final_direction_cache;
 mod path_distance_cache;
 mod path_integration2;
+mod view_sampler_utils;
 const BLACK_HOLE_CACHE_PATH: &str = "generate_artifacts/output/black_hole_cache.txt";
 const DISTANCE_TEST_PATH: &str = "generate_artifacts/output/distance_test_points.txt";
 const DIRECTION_TEST_PATH: &str = "generate_artifacts/output/direction_test_points.txt";
@@ -51,7 +59,6 @@ const DISC_BOUNDS: (f64, f64) = (1.5, 12.0);
 const DIST_TEST_POINTS: usize = 50;
 const ANGLE_TEST_POINTS: usize = 45;
 const Z_TEST_POINTS: usize = 2000;
-use crate::path_integration2::path::cast_ray_steps_response;
 
 const ANGLE_CACHE_PATH: &str = "generate_artifacts/output/angle_cache.txt";
 const ANGLE_PLOT_Z_PATH: &str = "generate_artifacts/output/angle_cache_z_bound.png";
@@ -59,97 +66,6 @@ const ANGLE_ERROR_PLOT_PATH: &str = "generate_artifacts/output/angle_error.png";
 const Z_POW: f32 = 32.;
 const Z_LINEAR: f32 = 10.;
 const DIST_POW: f32 = 0.5;
-
-fn plot_z_bounds(tex: &Texture2D) {
-    let distance_mapping = IndexMapping {
-        i_01_to_dist_01: |i_01| i_01,
-        dist_01_to_i_01: |dist_01| dist_01,
-    };
-    let mut low = Vec::new();
-    let mut high = Vec::new();
-    for d_index in 0..100 {
-        let d_01 = distance_mapping.val_to_i_01(d_index as f32, (0., 100.));
-        let z_bounds = tex.get_z_bounds(d_01);
-        low.push((d_01, z_bounds.0));
-        high.push((d_01, z_bounds.1));
-    }
-
-    plot_trajectories(
-        ANGLE_PLOT_Z_PATH,
-        &[low, high].to_vec(),
-        ((0., 1.), (-1., 1.)),
-    )
-    .unwrap();
-}
-
-fn plot_error_by_z(tex: &Texture2D, distance_mapping: &IndexMapping, z_mapping: &IndexMapping) {
-    let test_points = get_file_as_byte_vec(DIRECTION_TEST_PATH);
-    let mut test_points: Vec<DirectionTestPoint> =
-        serde_json::from_slice::<Vec<DirectionTestPoint>>(&test_points.unwrap()).unwrap();
-
-    test_points.sort_by(|p_1, p_2| p_1.dist.partial_cmp(&p_2.dist).unwrap());
-    let mut lines = Vec::new();
-    let mut curr_dist = test_points[0].dist as f32;
-    let mut line = Vec::new();
-    for point in test_points {
-        let dist = point.dist as f32;
-        if dist != curr_dist {
-            curr_dist = dist;
-            lines.push(line);
-            line = Vec::new();
-        }
-        let d_01 = distance_mapping.val_to_i_01(dist, DISTANCE_BOUNDS_F32);
-        let z_bounds = tex.get_z_bounds(d_01);
-        let z = point.z as f32;
-        if z > z_bounds.1 || z < z_bounds.0 {
-            continue;
-        }
-        if point.final_angle.is_none() {
-            println!(
-                "In bounds, but no final angle.\nPoint: {:?}\napprox z_bounds: {:?}",
-                point,
-                tex.get_z_bounds(d_01),
-            );
-            continue;
-        }
-        let v = sample_final_angle_texture(
-            &tex,
-            &distance_mapping,
-            &z_mapping,
-            dist,
-            z,
-            DISTANCE_BOUNDS_F32,
-        );
-        let diff = (v - point.final_angle.unwrap() as f32).abs();
-        line.push((z.log2(), diff.log2()));
-    }
-    plot_trajectories(ANGLE_ERROR_PLOT_PATH, &lines, ((-10., 0.), (-10., 0.))).unwrap();
-}
-
-fn plot_angle_texture_stats(distance_mapping: &IndexMapping, z_mapping: &IndexMapping) {
-    let tex_u8 = get_file_as_byte_vec(ANGLE_CACHE_PATH);
-    let tex = serde_json::from_slice::<Texture2D>(&tex_u8.unwrap()).unwrap();
-    plot_z_bounds(&tex);
-    plot_error_by_z(&tex, distance_mapping, z_mapping);
-}
-
-fn generate_angle_texture(distance_mapping: &IndexMapping, z_mapping: &IndexMapping) {
-    let tex_u8 = get_file_as_byte_vec(ANGLE_CACHE_PATH);
-    let tex: Texture2D;
-    if tex_u8.is_ok() {
-        tex = serde_json::from_slice::<Texture2D>(&tex_u8.unwrap()).unwrap();
-    } else {
-        tex = generate_final_angle_texture(
-            (32, 64),
-            DISTANCE_BOUNDS_F32,
-            BLACK_HOLE_RADIUS as f32,
-            &distance_mapping,
-            &z_mapping,
-        );
-        fs::write(ANGLE_CACHE_PATH, serde_json::to_string(&tex).unwrap())
-            .expect("Unable to write file");
-    }
-}
 
 fn regenerate_black_hole_cache() {
     println!("Attempting to load existing black hole cache.");
@@ -226,23 +142,58 @@ fn regenerate_black_hole_cache() {
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
 } // lib.rs
 
+const DIST_SAMPLER_PATH: &str = "generate_artifacts/output/dist_sampler.txt";
+const VIEW_SAMPLER_PATH: &str = "generate_artifacts/output/view_sampler.txt";
+const PATH_SAMPLER_PATH: &str = "generate_artifacts/output/path_sampler.txt";
+const APPROX_SAMPLER_PATH: &str = "generate_artifacts/output/approx_sampler.txt";
+
+mod angle_distance_sampler_utils;
+mod approximate_path_sampler_utils;
+mod artifact_utils;
+mod path_sampler_utils;
 fn main() {
-    let dimensions = [32, 1024, 128];
     let dist = DimensionParams {
         size: 32,
         bounds: [5., 30.],
     };
     let view = DimensionParams {
-        size: 32,
+        size: 256,
         bounds: [0., 0.5_f32.sqrt()],
     };
     let angle = DimensionParams {
-        size: 32,
+        size: 256,
         bounds: [0., TAU as f32],
     };
     let render_params = RenderParams {
         black_hole_radius: 1.5,
         fov_degrees: 60.,
     };
-    let sampler = AngleDistanceSampler::generate(dist, angle, view, render_params);
+
+    let view_sampler = get_or_generate_file(VIEW_SAMPLER_PATH, &move || {
+        ViewBoundSampler::generate(dist, view, angle, &render_params, 0.5)
+    });
+    plot_view_sampler_bound(&view_sampler, &dist, &view);
+    let path_sampler;
+    {
+        let view_sampler = view_sampler.clone();
+        path_sampler = get_or_generate_file(PATH_SAMPLER_PATH, &move || {
+            PathSampler::generate(dist, angle, view, &view_sampler, &render_params)
+        });
+    }
+    let approx_sampler;
+    {
+        let path_sampler = path_sampler.clone();
+        let view_sampler = view_sampler.clone();
+        approx_sampler = get_or_generate_file(APPROX_SAMPLER_PATH, &move || {
+            RayApproximationSampler::generate(&path_sampler, dist, angle, view, &view_sampler)
+        });
+    }
+
+    plot_approx_paths_sampled(&approx_sampler, &dist, &view, &angle, &view_sampler);
+    plot_sampled_paths(&path_sampler, &dist, &angle);
+    plot_approx_paths(&path_sampler, &dist, &angle);
+    plot_approx_errors(&path_sampler, &dist, &view, &angle);
+    plot_approx_errors_by_angle(&path_sampler, &dist, &view, &angle);
+    plot_error_by_interpolation(&path_sampler, &dist, &view, &angle);
+    plot_error_by_interpolation_by_angle(&path_sampler, &dist, &view, &angle);
 }

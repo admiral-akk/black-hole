@@ -6,16 +6,20 @@ use super::{
     dimension_params::DimensionParams,
     gpu::{
         field::{Field, Particle},
-        gpu_state::{simulate_particles, simulate_particles_groups, SimulatedRay},
+        gpu_state::simulate_particles_groups,
+        simulated_ray::SimulatedRay,
     },
     render_params::RenderParams,
     texture::texture_1d::Texture1D,
 };
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ViewBoundSampler {
     texture: Texture1D,
     dist: DimensionParams,
     view_bounds: [f32; 2],
+    power: f32,
 }
 
 pub enum ViewType {
@@ -23,15 +27,15 @@ pub enum ViewType {
     Far,
 }
 
-fn remap_view_01(view_01: f32) -> f32 {
-    view_01 * view_01
-}
-
-fn invert_view_01(view_01: f32) -> f32 {
-    view_01.sqrt()
-}
-
 impl ViewBoundSampler {
+    fn remap_view_01(&self, view_01: f32) -> f32 {
+        view_01.powf(self.power)
+    }
+
+    fn invert_view_01(&self, view_01: f32) -> f32 {
+        view_01.powf(1. / self.power)
+    }
+
     pub fn get_view_01(&self, dist: f32, view: f32) -> (ViewType, f32) {
         let dist_01 = self.dist.val_to_01(dist);
         let bound = self.texture.get([dist_01]);
@@ -46,12 +50,12 @@ impl ViewBoundSampler {
         };
 
         let view_01 = (view - low) / delta;
-        let view_01 = remap_view_01(view_01);
+        let view_01 = self.remap_view_01(view_01);
         (view_type, view_01)
     }
 }
 
-const ITERATIONS: usize = 2;
+const ITERATIONS: usize = 3;
 fn generate_particle_with_fixed_dist(
     dist: f32,
     view: &DimensionParams,
@@ -88,37 +92,13 @@ fn get_closest_ray_index(rays: &Vec<SimulatedRay>) -> usize {
         .0
 }
 
-fn find_near_miss(
-    dist: f32,
-    view: &DimensionParams,
-    min_angle: f32,
-    max_dist: f32,
-    render_params: &RenderParams,
-) -> f32 {
-    let mut view = view.clone();
-    let angles = DimensionParams {
-        size: 128,
-        bounds: [min_angle, 2. * TAU],
-    };
-
-    for _ in 0..ITERATIONS {
-        let particles = generate_particle_with_fixed_dist(dist, &view, render_params);
-        let rays = simulate_particles(particles, &angles, max_dist);
-        let closest_index = get_closest_ray_index(&rays);
-        view.bounds = [
-            view.index_to_val(closest_index - 1),
-            view.index_to_val(closest_index),
-        ]
-    }
-    return view.bounds[1];
-}
-
 impl ViewBoundSampler {
     pub fn generate(
         dist: DimensionParams,
         view: DimensionParams,
         angle: DimensionParams,
         render_params: &RenderParams,
+        power: f32,
     ) -> Self {
         let mut texture = Texture1D::new([dist.size]);
 
@@ -132,9 +112,13 @@ impl ViewBoundSampler {
             view_groups.push(view.clone());
         }
 
+        let view_bounds = view.bounds;
+        let view = 0;
+
         for _ in 0..ITERATIONS {
             let mut particle_groups = Vec::new();
             for (i, dist) in dist.generate_list().iter().enumerate() {
+                println!("Before: i: {},  closest: {:?}", i, view_groups[i].bounds);
                 let particles =
                     generate_particle_with_fixed_dist(*dist, &view_groups[i], render_params);
                 particle_groups.push(particles);
@@ -142,22 +126,37 @@ impl ViewBoundSampler {
 
             let ray_groups = simulate_particles_groups(particle_groups, &angles, 40.);
             for (i, rays) in ray_groups.iter().enumerate() {
-                let closest_index = get_closest_ray_index(&rays);
+                let mut closest_index = get_closest_ray_index(&rays);
+                if closest_index == 0 {
+                    closest_index = 1;
+                }
                 view_groups[i].bounds = [
-                    view.index_to_val(closest_index - 1),
-                    view.index_to_val(closest_index),
-                ]
+                    view_groups[i].index_to_val(closest_index - 1),
+                    view_groups[i].index_to_val(closest_index),
+                ];
+                println!(
+                    "After: i: {}, index: {}, closest: {:?}",
+                    i, closest_index, view_groups[i].bounds
+                );
             }
         }
         for (i, _) in dist.generate_list().iter().enumerate() {
             texture.insert([i], view_groups[i].bounds[1])
         }
-        let view_bounds = view.bounds;
         Self {
             texture,
             dist,
             view_bounds,
+            power,
         }
+    }
+
+    pub fn show_bound(&self) -> Vec<f32> {
+        self.dist
+            .generate_list()
+            .iter()
+            .map(|v| self.texture.get([self.dist.val_to_01(*v)]))
+            .collect()
     }
 
     pub fn generate_list(&self, view_type: ViewType, distance: f32, count: usize) -> Vec<f32> {
@@ -169,7 +168,7 @@ impl ViewBoundSampler {
         };
         (0..count)
             .map(|i| i as f32 / (count - 1) as f32)
-            .map(|v_01| invert_view_01(v_01))
+            .map(|v_01| self.invert_view_01(v_01))
             .map(|v_01| v_01 * delta + low)
             .collect()
     }

@@ -2,6 +2,7 @@ use std::f32::consts::TAU;
 
 use glam::Vec2;
 
+#[derive(Clone, Copy)]
 pub struct RenderParams {
     pub black_hole_radius: f32,
     pub fov_degrees: f32,

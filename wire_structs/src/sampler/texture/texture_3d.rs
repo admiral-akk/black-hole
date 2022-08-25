@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use super::texture_dimension::TextureDimension;
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Texture3D {
     dimensions: [TextureDimension; 3],
     val: Vec<f32>,
@@ -25,12 +28,10 @@ impl Texture3D {
     pub fn get(&self, indices_01: [f32; 3]) -> f32 {
         let mut val = 0.;
         for (x, x_w) in self.dimensions[0].v_01_to_index_weight(indices_01[0]) {
-            for (y, y_w) in self.dimensions[1].v_01_to_index_weight(indices_01[0]) {
-                for (z, z_w) in self.dimensions[2].v_01_to_index_weight(indices_01[0]) {
-                    val += x_w
-                        * y_w
-                        * z_w
-                        * self.val[z + (y + x * self.dimensions[1].size) * self.dimensions[2].size];
+            for (y, y_w) in self.dimensions[1].v_01_to_index_weight(indices_01[1]) {
+                for (z, z_w) in self.dimensions[2].v_01_to_index_weight(indices_01[2]) {
+                    let index = z + (y + x * self.dimensions[1].size) * self.dimensions[2].size;
+                    val += x_w * y_w * z_w * self.val[index];
                 }
             }
         }

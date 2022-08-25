@@ -1,3 +1,5 @@
+use std::fs;
+
 use plotters::prelude::*;
 use plotters::{
     prelude::{BitMapBackend, ChartBuilder, IntoDrawingArea, LineSeries},
@@ -10,6 +12,9 @@ pub fn plot_with_title(
     lines: &Vec<Vec<(f32, f32)>>,
     bounds: ((f64, f64), (f64, f64)),
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let folder_path = file_path.rsplit_once("/").unwrap().0;
+
+    fs::create_dir_all(folder_path).unwrap();
     let root = BitMapBackend::new(&file_path, (2000, 2000)).into_drawing_area();
     root.fill(&WHITE)?;
 
