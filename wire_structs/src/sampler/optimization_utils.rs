@@ -1,4 +1,4 @@
-const ITERATIONS: usize = 10;
+const ITERATIONS: usize = 20;
 
 pub fn optimize<T>(
     bounds: &mut [[f32; 2]],

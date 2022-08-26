@@ -20,14 +20,9 @@ fn plot_close_approximate_ray_paths(path_sampler: &PathSampler, angle: &Dimensio
     let angles = angle.generate_list();
     for paths in &path_sampler.close {
         let dist = paths[0].dist;
-        if dist != 30. {
-            continue;
-        }
         let mut d_paths = Vec::new();
         for path in paths {
             let close_ray = CloseRayApproximation::generate_optimal(&path.ray, path.dist, angle);
-            println!("close approx: {:?}", close_ray);
-            println!("error: {:?}", measure_error(&close_ray, &path.ray, angle));
 
             let mut path = Vec::new();
 
@@ -36,6 +31,9 @@ fn plot_close_approximate_ray_paths(path_sampler: &PathSampler, angle: &Dimensio
                     break;
                 }
                 let d = close_ray.get_dist(*a);
+                if d < 1.5 {
+                    break;
+                }
                 path.push((a.sin() * d, -a.cos() * d));
             }
             d_paths.push(path);

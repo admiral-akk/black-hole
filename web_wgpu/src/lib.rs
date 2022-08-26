@@ -108,10 +108,6 @@ impl State {
         let black_hole_cache =
             serde_json::from_slice::<BlackHoleCache>(include_bytes!("black_hole_cache.txt"))
                 .unwrap();
-        let angle_cache = serde_json::from_slice::<AngleDistanceCache>(include_bytes!(
-            "angle_distance_cache.txt"
-        ))
-        .unwrap();
         let direction_cache = black_hole_cache.direction_cache;
         let mut z_bounds = Vec::new();
         let mut final_dir_vec = Vec::new();
@@ -180,28 +176,6 @@ impl State {
             }
         }
 
-        let flat_dist = angle_cache
-            .distances
-            .iter()
-            .fold(Vec::new(), |mut acc: Vec<f32>, v| {
-                let v = v.iter().fold(Vec::new(), |mut acc, v| {
-                    acc.extend_from_slice(&v);
-                    acc
-                });
-                acc.extend_from_slice(&v[..]);
-                acc
-            });
-
-        let angle_tex = SmallFloatTexture::from_f32(
-            &device,
-            &queue,
-            &flat_dist,
-            angle_cache.params.dimensions(),
-            "",
-        )
-        .unwrap();
-        let angle_tex_view = angle_tex.view;
-        let angle_tex_sampler = angle_tex.sampler;
         let dist_z_min_tex = SmallFloatTexture::from_f32(
             &device,
             &queue,
@@ -484,24 +458,6 @@ impl State {
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 18,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D3,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 19,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
                 ],
                 label: Some("texture_bind_group_layout"),
             });
@@ -579,14 +535,6 @@ impl State {
                 wgpu::BindGroupEntry {
                     binding: 17,
                     resource: wgpu::BindingResource::Sampler(&dist_z_max_sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 18,
-                    resource: wgpu::BindingResource::TextureView(&angle_tex_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 19,
-                    resource: wgpu::BindingResource::Sampler(&angle_tex_sampler),
                 },
             ],
             label: Some("diffuse_bind_group"),

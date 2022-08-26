@@ -35,7 +35,6 @@ pub fn measure_error(
     }
     err_sq.sqrt() / count as f32
 }
-const ITERATIONS: u32 = 10;
 
 impl CloseRayApproximation {
     pub fn generate_optimal(ray: &SimulatedRay, start_dist: f32, angle: &DimensionParams) -> Self {

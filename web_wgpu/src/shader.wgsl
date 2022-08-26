@@ -80,10 +80,6 @@ var dist_min_z_s: sampler;
 var dist_max_z_t: texture_2d<f32>;
 @group(0) @binding(17)
 var dist_max_z_s: sampler;
-@group(0) @binding(18)
-var angle_t: texture_3d<f32>;
-@group(0) @binding(19)
-var angle_s: sampler;
 
 fn to_float(v: vec2<f32>) -> f32 {
     return v.x + v.y/2048.0;
@@ -182,12 +178,11 @@ let normalized_pos =
     let z_index=(z-z_bounds.x)/z_bounds.y;
 
    let in_bounds = step(0.,z_index)- step(1.,z_index);
-   //let dist=to_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01),0.).xy);
+   let dist=to_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01),0.).xy);
    let coord_01 = length(coord) / sqrt(0.5);
    let P = 0.05;
    let M = 0.25;
    let coord_01 = max(P * coord_01 / M, (coord_01 - M) * (1. - P) / (1. - M) + P);
-let dist = (to_high_p_float(textureSample(angle_t,angle_s, vec3(other_angle_01.x, coord_01, d_01))) - 2.)/10.;
     let color = in_bounds*disc_color(dist,other_angle_01.y);
     total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
    total_disc_color+= in_bounds*(1.-total_disc_color.w)*disc_color(dist,other_angle_01.y);
@@ -197,16 +192,12 @@ let dist = (to_high_p_float(textureSample(angle_t,angle_s, vec3(other_angle_01.x
    z_bounds.y = to_high_p_float(textureSample(dist_min_z_t, dist_min_z_s,vec2(angle_01.x,d_01) ));
    let z_index=(z-z_bounds.x)/z_bounds.y;
    let in_bounds = step(0.,z_index) - step(1.,z_index);
-   //let dist=to_high_p_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,angle_01.x,d_01),0.));
+  let dist=to_high_p_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,angle_01.x,d_01),0.));
 
-let dist = (to_high_p_float(textureSample(angle_t,angle_s, vec3(angle_01.x,coord_01, d_01)))- 2.)/10.;
    let color = in_bounds*disc_color(dist,angle_01.y);
     total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
 
-let d =to_high_p_float(textureSample(angle_t,angle_s, vec3(vec2(coord+0.5), d_01)));
-let d = (d - 2.) / 10.;
-return vec4(vec3(d*(1.-step(1.,d))), 1.);
-  // return total_disc_color;
+   return total_disc_color;
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
    // let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);

@@ -212,5 +212,11 @@ fn main() {
     //     &test_angle,
     //     &view_sampler,
     // );
-    plot_close_approximate_ray_analysis(&path_sampler, &dist, &view, &angle, &view_sampler);
+    plot_close_approximate_ray_analysis(
+        &path_sampler_test,
+        &dist,
+        &view,
+        &test_angle,
+        &view_sampler,
+    );
 }
