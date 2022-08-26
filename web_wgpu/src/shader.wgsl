@@ -56,30 +56,6 @@ var<uniform> render_params: RenderParams;
 var noise_t: texture_2d<f32>;
 @group(0) @binding(5)
 var noise_s: sampler;
-@group(0) @binding(6)
-var dir_z_bounds_t: texture_1d<f32>;
-@group(0) @binding(7)
-var dir_z_bounds_s: sampler;
-@group(0) @binding(8)
-var final_dir_t: texture_2d<f32>;
-@group(0) @binding(9)
-var final_dir_s: sampler;
-@group(0) @binding(10)
-var dist_z_t: texture_2d<f32>;
-@group(0) @binding(11)
-var dist_z_s: sampler;
-@group(0) @binding(12)
-var dist_t: texture_3d<f32>;
-@group(0) @binding(13)
-var dist_s: sampler;
-@group(0) @binding(14)
-var dist_min_z_t: texture_2d<f32>;
-@group(0) @binding(15)
-var dist_min_z_s: sampler;
-@group(0) @binding(16)
-var dist_max_z_t: texture_2d<f32>;
-@group(0) @binding(17)
-var dist_max_z_s: sampler;
 
 fn to_float(v: vec2<f32>) -> f32 {
     return v.x + v.y/2048.0;
@@ -145,8 +121,6 @@ let dist_01 =1.0-dist_01;
 let normalized_pos = 
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
     let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
-    let z_bounds=to_vec2(textureSampleLevel(dist_z_t,dist_z_s,vec2(.25,d_01),0.));
-    let min_z = z_bounds.x;
     let z = start_dir.z;
     let color = vec4(0.);
     let is_top = step(0.,normalized_pos.y);
@@ -168,77 +142,15 @@ let normalized_pos =
     let neq = step(0.5,abs((top_half - is_top)));
     let angle_01 = neq*vec2(min(temp_angle_01,alt_angle_01),theta_01) + (1.-neq) * vec2(max(temp_angle_01,alt_angle_01),theta_01);
     
-    let alpha_mod=smoothstep(.03*(1.-d_01),.06*(1.-d_01),angle_01.x);
-    
     var total_disc_color=vec4(0.,0.,0.,0.);
     let other_angle_01=angle_01+.5;
-    var z_bounds=to_vec2(textureSampleLevel(dist_z_t,dist_z_s,vec2(other_angle_01.x,d_01),0.));
-     z_bounds.x = to_high_p_float(textureSample(dist_max_z_t, dist_max_z_s,vec2(angle_01.x,d_01) ));
-   z_bounds.y = to_high_p_float(textureSample(dist_min_z_t, dist_min_z_s,vec2(other_angle_01.x,d_01) ));
-    let z_index=(z-z_bounds.x)/z_bounds.y;
 
-   let in_bounds = step(0.,z_index)- step(1.,z_index);
-   let dist=to_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,other_angle_01.x,d_01),0.).xy);
-   let coord_01 = length(coord) / sqrt(0.5);
-   let P = 0.05;
-   let M = 0.25;
-   let coord_01 = max(P * coord_01 / M, (coord_01 - M) * (1. - P) / (1. - M) + P);
-    let color = in_bounds*disc_color(dist,other_angle_01.y);
-    total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
-   total_disc_color+= in_bounds*(1.-total_disc_color.w)*disc_color(dist,other_angle_01.y);
-
-    z_bounds=to_vec2(textureSampleLevel(dist_z_t,dist_z_s,vec2(angle_01.x,d_01),0.));
-      z_bounds.x = to_high_p_float(textureSample(dist_max_z_t, dist_max_z_s,vec2(angle_01.x,d_01) ));
-   z_bounds.y = to_high_p_float(textureSample(dist_min_z_t, dist_min_z_s,vec2(angle_01.x,d_01) ));
-   let z_index=(z-z_bounds.x)/z_bounds.y;
-   let in_bounds = step(0.,z_index) - step(1.,z_index);
-  let dist=to_high_p_float(textureSampleLevel(dist_t,dist_s,vec3(z_index,angle_01.x,d_01),0.));
-
-   let color = in_bounds*disc_color(dist,angle_01.y);
-    total_disc_color =(1.-color.w)* total_disc_color + color.w*vec4(color.rgb, 1.);
 
    return total_disc_color;
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
-   // let u8_z_bounds = textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01);
-   // let z_bounds = to_vec2(u8_z_bounds);
-   let z_bounds = to_vec2(textureSample(dir_z_bounds_t,dir_z_bounds_s,d_01));
-    let z_01=clamp((start_dir.z-z_bounds.x)/z_bounds.y,0.,1.1);
-    var z_pow = z_01;
-    for (var i = 0; i < 5; i += 1) {
-        z_pow = z_pow*z_pow;
-    }
-    z_pow =clamp(max(z_pow, z_01/5.),0.,1.);
-    let angle=-atan2(-start_dir.y,start_dir.x);
-    
-    let sin_val=sin(angle);
-    let cos_val=cos(angle);
-    let rot=mat3x3(vec3(cos_val,sin_val,0.),vec3(-sin_val,cos_val,0.),vec3(0.,0.,1.));
-    let start_weight = 1.-step(z_bounds.x,start_dir.z);
-    // let u8_average_dir = textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01));
-    // let average_dir = vec3(to_vec2(u8_average_dir),0.).xzy;
-    let average_dir = vec3(to_vec2(textureSample(final_dir_t,final_dir_s,vec2(z_pow,d_01))),0.).xzy;
-    let cached_dir = (1.-start_weight)*rot* normalize(average_dir);
-  
-    let temp_dir = normalize(cached_dir+start_weight*start_dir);
-    let final_dir=(render_params.observer_matrix*vec4(temp_dir,0.)).xyz;
-    
-    let horizontal_len=sqrt(final_dir.x*final_dir.x+final_dir.z*final_dir.z);
-    let phi=5.*PI+atan2(final_dir.z,final_dir.x);
-    
-    let theta=atan2(final_dir.y,horizontal_len)+5.*PI/2.;
-    
-    let phi_theta=vec2(fract(phi/TAU),fract(theta/PI));
-    let hit_black_hole = step(z_bounds.y+z_bounds.x,start_dir.z);
-    var p = coords+0.5;
-    p = p*p;
-    p = p*p;
-    p = p*p;
-    p = max(p,( coords+0.5)/10.);
-    p = coords+0.5;
-    //return vec3(1.-start_weight);
-    //return vec3(to_vec2(textureSample(final_dir_t,final_dir_s,p)).xy,0.).xzy;
-    return (1.-hit_black_hole)*textureSample(galaxy_t,galaxy_s,phi_theta).xyz;
+    let hit_black_hole = 0.;
+    return (1.-hit_black_hole)*textureSample(galaxy_t,galaxy_s,coords).xyz;
 }
 
 @fragment
