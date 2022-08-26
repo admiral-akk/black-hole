@@ -47,7 +47,7 @@ mod tests {
         for i in 0..128 {
             for j in 0..256 {
                 let (i_01, j_01) = (i as f32 / 127., j as f32 / 255.);
-                let v = RayApproximation::new(i_01, j_01, i_01 + j_01);
+                let v = RayApproximation::new(i_01, j_01, i_01 + j_01, i_01 - j_01);
                 tex.insert([i, j], v);
             }
         }
@@ -56,12 +56,13 @@ mod tests {
             for y in 0..10000 {
                 let x_01 = x as f32 / 9999.;
                 let y_01 = y as f32 / 9999.;
-                let true_v = RayApproximation::new(x_01, y_01, x_01 + y_01);
+                let true_v = RayApproximation::new(x_01, y_01, x_01 + y_01, x_01 - y_01);
                 let approx_v = tex.get([x_01, y_01]);
                 assert!(
                     (approx_v.curve_dist - true_v.curve_dist).abs()
                         + (approx_v.final_angle - true_v.final_angle).abs()
                         + (approx_v.start_dist - true_v.start_dist).abs()
+                        + (approx_v.center_curve_dist - true_v.center_curve_dist).abs()
                         < 0.0001,
                     "\nLinear approximation function not equal.\nx_01: {}\ny_01: {}\ntrue: {:?}\napprox: {:?}",
                     x_01,

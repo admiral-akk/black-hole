@@ -4,7 +4,9 @@ use std::fs::{self};
 
 use angle_distance_sampler_utils::plot_paths;
 use approximate_path_sampler_utils::{
-    plot_approx_paths_error_by_angle, plot_approx_paths_sampled, plot_approx_paths_total_error,
+    plot_approx_paths_error_by_angle, plot_approx_paths_error_by_angle_after_curve,
+    plot_approx_paths_error_by_angle_in_curve, plot_approx_paths_error_by_angle_pre_curve,
+    plot_approx_paths_final_dir_error, plot_approx_paths_sampled, plot_approx_paths_total_error,
 };
 use artifact_utils::get_or_generate_file;
 use generate_artifacts::black_hole_cache::BlackHoleCache;
@@ -211,29 +213,52 @@ fn main() {
             RayApproximationSampler::generate(&path_sampler, dist, angle, view, &view_sampler)
         });
     }
-
+    plot_approx_paths_sampled(
+        &approx_sampler,
+        &path_sampler_test,
+        &test_angle,
+        &view_sampler,
+    );
+    plot_approx_paths_error_by_angle_pre_curve(
+        &approx_sampler,
+        &path_sampler_test,
+        &test_angle,
+        &view_sampler,
+    );
+    plot_approx_paths_error_by_angle_in_curve(
+        &approx_sampler,
+        &path_sampler_test,
+        &test_angle,
+        &view_sampler,
+    );
+    plot_approx_paths_error_by_angle_after_curve(
+        &approx_sampler,
+        &path_sampler_test,
+        &test_angle,
+        &view_sampler,
+    );
+    plot_approx_paths_final_dir_error(
+        &approx_sampler,
+        &path_sampler_test,
+        &test_angle,
+        &view_sampler,
+    );
     plot_approx_paths_error_by_angle(
         &approx_sampler,
         &path_sampler_test,
         &test_angle,
         &view_sampler,
     );
-    // plot_approx_paths_sampled(
-    //     &approx_sampler,
-    //     &path_sampler_test,
-    //     &test_angle,
-    //     &view_sampler,
-    // );
-    // plot_approx_paths_total_error(
-    //     &approx_sampler,
-    //     &path_sampler_test,
-    //     &test_angle,
-    //     &view_sampler,
-    // );
-    // plot_sampled_paths(&path_sampler, &dist, &angle);
-    // plot_approx_paths(&path_sampler, &dist, &angle);
-    // plot_approx_errors(&path_sampler, &dist, &view, &angle);
-    // plot_approx_errors_by_angle(&path_sampler, &dist, &view, &angle);
-    // plot_error_by_interpolation(&path_sampler, &dist, &view, &angle);
-    // plot_error_by_interpolation_by_angle(&path_sampler, &dist, &view, &angle);
+    plot_approx_paths_total_error(
+        &approx_sampler,
+        &path_sampler_test,
+        &test_angle,
+        &view_sampler,
+    );
+    plot_sampled_paths(&path_sampler, &dist, &angle);
+    plot_approx_paths(&path_sampler, &dist, &angle);
+    plot_approx_errors(&path_sampler, &dist, &view, &angle);
+    plot_approx_errors_by_angle(&path_sampler, &dist, &view, &angle);
+    plot_error_by_interpolation(&path_sampler, &dist, &view, &angle);
+    plot_error_by_interpolation_by_angle(&path_sampler, &dist, &view, &angle);
 }
