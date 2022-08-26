@@ -147,15 +147,30 @@ let dist_01 =1.0-dist_01;
 
 
 
-fn calculate_view_01_dim(coord:vec2<f32>) -> f32 {
+fn calculate_view_01_dim(d_01: f32, coord:vec2<f32>) -> vec2<f32> {
     let v = length(coord);
-   let bound = to_high_p_float( textureSample(view_bounds_t,view_bounds_s,v));
+   let bound = to_high_p_float( textureSample(view_bounds_t,view_bounds_s,d_01));
  let low_bound = step(0.,bound-v,);
-let low_v = sqrt(low_bound*(bound - v) / bound);
-  
+let low_v =(low_bound*(bound - v) / bound);
+  let low_v = sqrt(low_v);
   let high_bound = 1.-low_bound;
-  let high_v = sqrt(high_bound*(v-bound ) / (1.-bound));
-   return low_v + high_v;
+  let high_v =(high_bound*(v-bound) / (sqrt(0.5)-bound));
+  let high_v =sqrt(high_v);
+   return vec2(low_v + high_v, low_bound);
+}
+
+fn get_final_angle(d_01:f32,coord:vec2<f32>) -> f32 {
+    let view = calculate_view_01_dim(d_01,coord);
+    let v_01 = view.x;
+   let close_theta_f = to_high_p_float(textureSample(close_theta_f_t,close_theta_f_s,vec2(v_01,d_01)));
+   let close_theta_1 = to_high_p_float(textureSample(close_theta_1_t,close_theta_1_s,vec2(d_01,v_01)));
+   let close_dist_1 = to_high_p_float(textureSample(close_dist_1_t,close_dist_1_s,vec2(d_01,v_01)));
+   let far_theta_f = to_high_p_float(textureSample(far_theta_f_t,far_theta_f_s,vec2(v_01,d_01)));
+   let far_theta_1 = to_high_p_float(textureSample(far_theta_1_t,far_theta_1_s,vec2(d_01,v_01)));
+   let far_dist_1 = to_high_p_float(textureSample(far_dist_1_t,far_dist_1_s,vec2(d_01,v_01)));
+
+   return view.y * close_theta_f + (1.-view.y) * far_theta_f;
+
 
 }
 
@@ -192,8 +207,18 @@ let normalized_pos =
    return total_disc_color;
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
-    let hit_black_hole = 0.;
-    return (1.-hit_black_hole)*textureSample(galaxy_t,galaxy_s,coords).xyz;
+    let view = calculate_view_01_dim(d_01,coords);
+
+    let hit_black_hole = view.y;
+   let theta_f = get_final_angle(d_01, coords);
+   let final_dir = vec3(sin(theta_f),  0.,cos(theta_f));
+   let rot_angle = atan2(coords.y,coords.x) + PI;
+   let rot = mat3x3(cos(rot_angle),-sin(rot_angle),0.,sin(rot_angle),cos(rot_angle),0.,0.,0.,1.);
+   let final_dir = (rot*final_dir).xzy;
+    let final_dir = (render_params.observer_matrix * vec4(final_dir,0.)).xyz;
+    let theta = (atan2(final_dir.y, length(final_dir.xz)) +0.5* PI) / PI;
+    let phi = (atan2(final_dir.z,final_dir.x)+PI) / TAU;
+    return (1.-hit_black_hole)*textureSample(galaxy_t,galaxy_s,vec2(phi, theta)).xyz;
 }
 
 @fragment
@@ -225,6 +250,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             return vec4(vec3(0.),1.);
         } 
     }
-    return vec4(vec3(calculate_view_01_dim(coords)), 1.0);
+    return vec4(background_color, 1.0);
 }
  

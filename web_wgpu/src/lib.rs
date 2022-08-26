@@ -235,7 +235,7 @@ impl State {
         let mut close_theta_final = Vec::new();
         let mut close_theta_1 = Vec::new();
         let mut close_d_1 = Vec::new();
-        let close_dim = [close_ray.0 .0 as u32, close_ray.0 .1 as u32];
+        let close_dim = [close_ray.0 .1 as u32, close_ray.0 .0 as u32];
         for ray in close_ray.1 {
             close_theta_1.push(ray.spiral_start_angle);
             close_theta_final.push(ray.final_angle);
@@ -274,10 +274,10 @@ impl State {
         let mut far_theta_final = Vec::new();
         let mut far_theta_1 = Vec::new();
         let mut far_d_1 = Vec::new();
-        let far_dim = [far_ray.0 .0 as u32, far_ray.0 .1 as u32];
+        let far_dim = [far_ray.0 .1 as u32, far_ray.0 .0 as u32];
         for ray in far_ray.1 {
-            far_theta_1.push(ray.theta_1());
             far_theta_final.push(ray.final_angle);
+            far_theta_1.push(ray.theta_1());
             far_d_1.push(ray.curve_dist);
         }
 
