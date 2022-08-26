@@ -11,7 +11,16 @@ use wire_structs::sampler::{
 };
 
 use crate::artifact_utils::get_or_generate_file;
-pub fn plot_view_sampler_bound(
+
+pub fn plot_view_sampler_analysis(
+    sampler: &ViewBoundSampler,
+    dist: &DimensionParams,
+    view: &DimensionParams,
+) {
+    plot_view_sampler_bound(sampler, dist, view);
+}
+
+fn plot_view_sampler_bound(
     view_sampler: &ViewBoundSampler,
     dist_dim: &DimensionParams,
     view_dim: &DimensionParams,
@@ -38,14 +47,14 @@ pub fn plot_view_sampler_bound(
 
     plot_with_title(
         &format!("Close bounds remapping"),
-        "generate_artifacts/output/close_bounds_sampler.png",
+        "generate_artifacts/output/view_sampler/close_bounds_sampler.png",
         &close_lines,
         ((0., 1.), (0., 1.)),
     )
     .unwrap();
     plot_with_title(
         &format!("Far bounds remapping"),
-        "generate_artifacts/output/far_bounds_sampler.png",
+        "generate_artifacts/output/view_sampler/far_bounds_sampler.png",
         &far_lines,
         ((0., 1.), (0., 1.)),
     )
@@ -60,7 +69,7 @@ pub fn plot_view_sampler_bound(
     });
     plot_with_title(
         &format!("Actual bounds"),
-        "generate_artifacts/output/actual_bounds_sampler.png",
+        "generate_artifacts/output/view_sampler/actual_bounds_sampler.png",
         &[line].to_vec(),
         ((0., 1.), (0., 1.)),
     )

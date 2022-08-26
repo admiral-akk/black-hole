@@ -55,7 +55,7 @@ impl ViewBoundSampler {
     }
 }
 
-const ITERATIONS: usize = 3;
+const ITERATIONS: usize = 4;
 fn generate_particle_with_fixed_dist(
     dist: f32,
     view: &DimensionParams,
@@ -141,7 +141,7 @@ impl ViewBoundSampler {
             }
         }
         for (i, _) in dist.generate_list().iter().enumerate() {
-            texture.insert([i], view_groups[i].bounds[1])
+            texture.insert([i], view_groups[i].bounds[0])
         }
         Self {
             texture,

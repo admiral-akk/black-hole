@@ -7,7 +7,21 @@ use wire_structs::sampler::{
     ray_approximation::{measure_error, RayApproximation},
 };
 
-pub fn plot_sampled_paths(sampler: &PathSampler, dist: &DimensionParams, angle: &DimensionParams) {
+pub fn plot_path_sampler_analysis(
+    sampler: &PathSampler,
+    dist: &DimensionParams,
+    view: &DimensionParams,
+    angle: &DimensionParams,
+) {
+    plot_sampled_paths(&sampler, &dist, &angle);
+    plot_approx_paths(&sampler, &dist, &angle);
+    plot_approx_errors(&sampler, &dist, &view, &angle);
+    plot_approx_errors_by_angle(&sampler, &dist, &view, &angle);
+    plot_error_by_interpolation(&sampler, &dist, &view, &angle);
+    plot_error_by_interpolation_by_angle(&sampler, &dist, &view, &angle);
+}
+
+fn plot_sampled_paths(sampler: &PathSampler, dist: &DimensionParams, angle: &DimensionParams) {
     let angles = angle.generate_list();
     let dists = dist.generate_list();
     for (i, dist_rays) in sampler.far.iter().enumerate() {
@@ -27,9 +41,36 @@ pub fn plot_sampled_paths(sampler: &PathSampler, dist: &DimensionParams, angle: 
 
         let dist = dists[i];
         plot_with_title(
-            &format!("Sampler Paths at dist = {}", dist),
+            &format!("Far sampler Paths at dist = {}", dist),
             &format!(
-                "generate_artifacts/output/path_sample/path_sample_plot_{}.png",
+                "generate_artifacts/output/path_sample/far/path_sample_plot_{}.png",
+                dist
+            ),
+            &paths,
+            ((-30., 30.), (-30., 30.)),
+        )
+        .unwrap();
+    }
+    for (i, dist_rays) in sampler.close.iter().enumerate() {
+        let mut paths = Vec::new();
+        for ray in dist_rays {
+            let mut path = Vec::new();
+            for (i, dist) in ray.ray.angle_dist.iter().enumerate() {
+                let dist = *dist;
+                if dist == 0. || dist > 30. {
+                    break;
+                }
+                let angle = angles[i];
+                path.push((angle.sin() * dist, -angle.cos() * dist));
+            }
+            paths.push(path);
+        }
+
+        let dist = dists[i];
+        plot_with_title(
+            &format!("Close sampler Paths at dist = {}", dist),
+            &format!(
+                "generate_artifacts/output/path_sample/close/path_sample_plot_{}.png",
                 dist
             ),
             &paths,
@@ -39,7 +80,7 @@ pub fn plot_sampled_paths(sampler: &PathSampler, dist: &DimensionParams, angle: 
     }
 }
 
-pub fn plot_approx_paths(sampler: &PathSampler, dist: &DimensionParams, angle: &DimensionParams) {
+fn plot_approx_paths(sampler: &PathSampler, dist: &DimensionParams, angle: &DimensionParams) {
     let angles = angle.generate_list();
     let dists = dist.generate_list();
     for (i, dist_rays) in sampler.far.iter().enumerate() {
@@ -76,7 +117,7 @@ pub fn plot_approx_paths(sampler: &PathSampler, dist: &DimensionParams, angle: &
     }
 }
 
-pub fn plot_approx_errors_by_angle(
+fn plot_approx_errors_by_angle(
     sampler: &PathSampler,
     dist: &DimensionParams,
     view: &DimensionParams,
@@ -115,7 +156,7 @@ pub fn plot_approx_errors_by_angle(
     }
 }
 
-pub fn plot_approx_errors(
+fn plot_approx_errors(
     sampler: &PathSampler,
     dist: &DimensionParams,
     view: &DimensionParams,
@@ -148,7 +189,7 @@ pub fn plot_approx_errors(
     }
 }
 
-pub fn plot_error_by_interpolation(
+fn plot_error_by_interpolation(
     sampler: &PathSampler,
     dist: &DimensionParams,
     view: &DimensionParams,
@@ -189,7 +230,7 @@ pub fn plot_error_by_interpolation(
     }
 }
 
-pub fn plot_error_by_interpolation_by_angle(
+fn plot_error_by_interpolation_by_angle(
     sampler: &PathSampler,
     dist: &DimensionParams,
     view: &DimensionParams,

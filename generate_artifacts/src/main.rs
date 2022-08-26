@@ -2,25 +2,16 @@ use std::f64::consts::TAU;
 
 use std::fs::{self};
 
-use angle_distance_sampler_utils::plot_paths;
-use approximate_path_sampler_utils::{
-    plot_approx_paths_error_by_angle, plot_approx_paths_error_by_angle_after_curve,
-    plot_approx_paths_error_by_angle_in_curve, plot_approx_paths_error_by_angle_pre_curve,
-    plot_approx_paths_final_dir_error, plot_approx_paths_sampled, plot_approx_paths_total_error,
-};
+use approximate_path_sampler_utils::plot_approximate_far_path_analysis;
 use artifact_utils::get_or_generate_file;
+use close_approximate_ray_utils::plot_close_approximate_ray_analysis;
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 
-use path_sampler_utils::{
-    plot_approx_errors, plot_approx_errors_by_angle, plot_approx_paths,
-    plot_error_by_interpolation, plot_error_by_interpolation_by_angle, plot_sampled_paths,
-};
+use path_sampler_utils::plot_path_sampler_analysis;
 use serde::{Deserialize, Serialize};
-use test_utils::{plot_trajectories, plot_with_title};
-use view_sampler_utils::plot_view_sampler_bound;
-use wire_structs::sampler::angle_distance_sampler::{self, AngleDistanceSampler};
+use view_sampler_utils::plot_view_sampler_analysis;
 use wire_structs::sampler::dimension_params::DimensionParams;
 use wire_structs::sampler::path_sampler::PathSampler;
 use wire_structs::sampler::ray_approximation_sampler::RayApproximationSampler;
@@ -146,27 +137,27 @@ fn regenerate_black_hole_cache() {
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
 } // lib.rs
 
-const DIST_SAMPLER_PATH: &str = "generate_artifacts/output/dist_sampler.txt";
-const VIEW_SAMPLER_PATH: &str = "generate_artifacts/output/view_sampler.txt";
-const PATH_SAMPLER_PATH: &str = "generate_artifacts/output/path_sampler.txt";
-const PATH_TEST_SAMPLER_PATH: &str = "generate_artifacts/output/path_test_sampler.txt";
-const APPROX_SAMPLER_PATH: &str = "generate_artifacts/output/approx_sampler.txt";
+const VIEW_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/view_sampler.txt";
+const PATH_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/path_sampler.txt";
+const PATH_TEST_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/path_test_sampler.txt";
+const APPROX_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/approx_sampler.txt";
 
 mod angle_distance_sampler_utils;
 mod approximate_path_sampler_utils;
 mod artifact_utils;
+mod close_approximate_ray_utils;
 mod path_sampler_utils;
 fn main() {
     let dist = DimensionParams {
-        size: 32,
+        size: 16,
         bounds: [5., 30.],
     };
     let view = DimensionParams {
-        size: 256,
+        size: 128,
         bounds: [0., 0.5_f32.sqrt()],
     };
     let angle = DimensionParams {
-        size: 256,
+        size: 128,
         bounds: [0., TAU as f32],
     };
     let render_params = RenderParams {
@@ -177,7 +168,6 @@ fn main() {
     let view_sampler = get_or_generate_file(VIEW_SAMPLER_PATH, &move || {
         ViewBoundSampler::generate(dist, view, angle, &render_params, 0.5)
     });
-    plot_view_sampler_bound(&view_sampler, &dist, &view);
     let path_sampler;
     {
         let view_sampler = view_sampler.clone();
@@ -192,15 +182,15 @@ fn main() {
     };
     let path_sampler_test;
     {
-        let view_sampler = view_sampler.clone();
         let dist = DimensionParams {
-            size: 128,
-            bounds: [5., 30.],
+            size: 4 * dist.size,
+            bounds: dist.bounds,
         };
         let view = DimensionParams {
-            size: 1024,
-            bounds: [0., 0.5_f32.sqrt()],
+            size: 4 * view.size,
+            bounds: view.bounds,
         };
+        let view_sampler = view_sampler.clone();
         path_sampler_test = get_or_generate_file(PATH_TEST_SAMPLER_PATH, &move || {
             PathSampler::generate(dist, test_angle, view, &view_sampler, &render_params)
         });
@@ -213,52 +203,14 @@ fn main() {
             RayApproximationSampler::generate(&path_sampler, dist, angle, view, &view_sampler)
         });
     }
-    plot_approx_paths_sampled(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_approx_paths_error_by_angle_pre_curve(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_approx_paths_error_by_angle_in_curve(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_approx_paths_error_by_angle_after_curve(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_approx_paths_final_dir_error(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_approx_paths_error_by_angle(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_approx_paths_total_error(
-        &approx_sampler,
-        &path_sampler_test,
-        &test_angle,
-        &view_sampler,
-    );
-    plot_sampled_paths(&path_sampler, &dist, &angle);
-    plot_approx_paths(&path_sampler, &dist, &angle);
-    plot_approx_errors(&path_sampler, &dist, &view, &angle);
-    plot_approx_errors_by_angle(&path_sampler, &dist, &view, &angle);
-    plot_error_by_interpolation(&path_sampler, &dist, &view, &angle);
-    plot_error_by_interpolation_by_angle(&path_sampler, &dist, &view, &angle);
+    // plot_view_sampler_analysis(&view_sampler, &dist, &view);
+    // plot_path_sampler_analysis(&path_sampler, &dist, &view, &angle);
+
+    // plot_approximate_far_path_analysis(
+    //     &approx_sampler,
+    //     &path_sampler_test,
+    //     &test_angle,
+    //     &view_sampler,
+    // );
+    plot_close_approximate_ray_analysis(&path_sampler, &dist, &view, &angle, &view_sampler);
 }

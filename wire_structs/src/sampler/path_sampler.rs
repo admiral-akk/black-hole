@@ -21,6 +21,7 @@ pub struct SimulatedPath {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PathSampler {
+    pub close: Vec<Vec<SimulatedPath>>,
     pub far: Vec<Vec<SimulatedPath>>,
     distance: DimensionParams,
     angle: DimensionParams,
@@ -51,11 +52,15 @@ impl PathSampler {
         let dists = distance.generate_list();
         let mut particle_groups = Vec::new();
 
-        println!("angle len: {}", angle.generate_list().len());
         for (_, dist) in dists.iter().enumerate() {
             let far_views = view_sampler.generate_list(ViewType::Far, *dist, view.size);
             let far_particles = generate_particles(*dist, &far_views, &render_params);
             particle_groups.push(far_particles);
+        }
+        for (_, dist) in dists.iter().enumerate() {
+            let close_views = view_sampler.generate_list(ViewType::Close, *dist, view.size);
+            let close_particles = generate_particles(*dist, &close_views, &render_params);
+            particle_groups.push(close_particles);
         }
         let ray_groups = simulate_particles_groups(particle_groups, &angle, 40.);
         let mut far = Vec::new();
@@ -67,16 +72,50 @@ impl PathSampler {
                 far_rays
                     .iter()
                     .enumerate()
-                    .map(|(i, ray)| SimulatedPath {
-                        ray: ray.clone(),
-                        dist: *dist,
-                        view: far_views[i],
+                    .map(|(i, ray)| {
+                        let mut ray = ray.clone();
+                        for i in 0..ray.angle_dist.len() {
+                            if f32::is_nan(ray.angle_dist[i]) {
+                                ray.angle_dist[i] = 0.;
+                            }
+                        }
+                        SimulatedPath {
+                            ray,
+                            dist: *dist,
+                            view: far_views[i],
+                        }
+                    })
+                    .collect(),
+            );
+        }
+        let mut close = Vec::new();
+        for (d_index, dist) in dists.iter().enumerate() {
+            let close_views = view_sampler.generate_list(ViewType::Close, *dist, view.size);
+
+            let close_rays = ray_groups[dists.len() + d_index].to_vec();
+            close.push(
+                close_rays
+                    .iter()
+                    .enumerate()
+                    .map(|(i, ray)| {
+                        let mut ray = ray.clone();
+                        for i in 0..ray.angle_dist.len() {
+                            if f32::is_nan(ray.angle_dist[i]) {
+                                ray.angle_dist[i] = 0.;
+                            }
+                        }
+                        SimulatedPath {
+                            ray,
+                            dist: *dist,
+                            view: close_views[i],
+                        }
                     })
                     .collect(),
             );
         }
         Self {
             far,
+            close,
             distance,
             angle,
             view,

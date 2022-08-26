@@ -9,7 +9,37 @@ use wire_structs::sampler::{
     view_bound_sampler::{ViewBoundSampler, ViewType},
 };
 
-pub fn plot_approx_paths_sampled(
+pub fn plot_approximate_far_path_analysis(
+    sampler: &RayApproximationSampler,
+    test_distribution: &PathSampler,
+    test_angle: &DimensionParams,
+    view_bound: &ViewBoundSampler,
+) {
+    plot_approx_paths_sampled(&sampler, &test_distribution, &test_angle, &view_bound);
+    plot_approx_paths_error_by_angle_pre_curve(
+        &sampler,
+        &test_distribution,
+        &test_angle,
+        &view_bound,
+    );
+    plot_approx_paths_error_by_angle_in_curve(
+        &sampler,
+        &test_distribution,
+        &test_angle,
+        &view_bound,
+    );
+    plot_approx_paths_error_by_angle_after_curve(
+        &sampler,
+        &test_distribution,
+        &test_angle,
+        &view_bound,
+    );
+    plot_approx_paths_final_dir_error(&sampler, &test_distribution, &test_angle, &view_bound);
+    plot_approx_paths_error_by_angle(&sampler, &test_distribution, &test_angle, &view_bound);
+    plot_approx_paths_total_error(&sampler, &test_distribution, &test_angle, &view_bound);
+}
+
+fn plot_approx_paths_sampled(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
@@ -64,7 +94,7 @@ pub fn plot_approx_paths_sampled(
     }
 }
 
-pub fn plot_approx_paths_total_error(
+fn plot_approx_paths_total_error(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
@@ -98,7 +128,7 @@ pub fn plot_approx_paths_total_error(
     }
 }
 
-pub fn plot_approx_paths_error_by_angle(
+fn plot_approx_paths_error_by_angle(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
@@ -145,7 +175,7 @@ pub fn plot_approx_paths_error_by_angle(
     }
 }
 
-pub fn plot_approx_paths_final_dir_error(
+fn plot_approx_paths_final_dir_error(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
@@ -180,7 +210,7 @@ pub fn plot_approx_paths_final_dir_error(
     }
 }
 
-pub fn plot_approx_paths_error_by_angle_pre_curve(
+fn plot_approx_paths_error_by_angle_pre_curve(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
@@ -226,7 +256,7 @@ pub fn plot_approx_paths_error_by_angle_pre_curve(
     }
 }
 
-pub fn plot_approx_paths_error_by_angle_in_curve(
+fn plot_approx_paths_error_by_angle_in_curve(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
@@ -275,7 +305,7 @@ pub fn plot_approx_paths_error_by_angle_in_curve(
     }
 }
 
-pub fn plot_approx_paths_error_by_angle_after_curve(
+fn plot_approx_paths_error_by_angle_after_curve(
     approx_sampler: &RayApproximationSampler,
     path_sampler: &PathSampler,
     angle: &DimensionParams,
