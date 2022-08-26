@@ -12,8 +12,10 @@ use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
 use path_sampler_utils::plot_path_sampler_analysis;
 use serde::{Deserialize, Serialize};
 use view_sampler_utils::plot_view_sampler_analysis;
+use wire_structs::sampler::close_ray_approximation::CloseRayApproximation;
 use wire_structs::sampler::dimension_params::DimensionParams;
 use wire_structs::sampler::path_sampler::PathSampler;
+use wire_structs::sampler::ray_approximation::RayApproximation;
 use wire_structs::sampler::ray_approximation_sampler::RayApproximationSampler;
 use wire_structs::sampler::render_params::RenderParams;
 use wire_structs::sampler::view_bound_sampler::ViewBoundSampler;
@@ -137,6 +139,54 @@ fn regenerate_black_hole_cache() {
     fs::write(BLACK_HOLE_CACHE_PATH, data).expect("Unable to write file");
 } // lib.rs
 
+const PROD_VIEW_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/prod/view_sampler.txt";
+const PROD_PATH_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/prod/path_sampler.txt";
+const PROD_CLOSE_PATH: &str = "generate_artifacts/output/artifact/prod/close_ray.txt";
+const PROD_FAR_PATH: &str = "generate_artifacts/output/artifact/prod/far_ray.txt";
+
+fn generate_production_artifacts(
+    dist: &DimensionParams,
+    view: &DimensionParams,
+    angle: &DimensionParams,
+    render_params: &RenderParams,
+) {
+    let view_sampler = get_or_generate_file(PROD_VIEW_SAMPLER_PATH, &move || {
+        ViewBoundSampler::generate(*dist, *view, *angle, &render_params, 0.5)
+    });
+    let path_sampler;
+    {
+        let view_sampler = view_sampler.clone();
+        path_sampler = get_or_generate_file(PROD_PATH_SAMPLER_PATH, &move || {
+            PathSampler::generate(*dist, *angle, *view, &view_sampler, &render_params)
+        });
+    }
+    let close_paths = get_or_generate_file(PROD_CLOSE_PATH, &move || {
+        let mut close_vec = Vec::new();
+        for paths in &path_sampler.close {
+            for path in paths {
+                close_vec.push(CloseRayApproximation::generate_optimal(
+                    &path.ray, path.dist, &angle,
+                ));
+            }
+        }
+        (
+            (path_sampler.close.len(), path_sampler.close[0].len()),
+            close_vec,
+        )
+    });
+    let far_paths = get_or_generate_file(PROD_FAR_PATH, &move || {
+        let mut far_vec = Vec::new();
+        for paths in &path_sampler.far {
+            for path in paths {
+                far_vec.push(RayApproximation::generate_optimal(
+                    &path.ray, path.dist, &angle,
+                ));
+            }
+        }
+        ((path_sampler.far.len(), path_sampler.far[0].len()), far_vec)
+    });
+}
+
 const VIEW_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/view_sampler.txt";
 const PATH_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/path_sampler.txt";
 const PATH_TEST_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/path_test_sampler.txt";
@@ -147,23 +197,26 @@ mod approximate_path_sampler_utils;
 mod artifact_utils;
 mod close_approximate_ray_utils;
 mod path_sampler_utils;
+
 fn main() {
     let dist = DimensionParams {
-        size: 16,
+        size: 32,
         bounds: [5., 30.],
     };
     let view = DimensionParams {
-        size: 128,
+        size: 256,
         bounds: [0., 0.5_f32.sqrt()],
     };
     let angle = DimensionParams {
-        size: 128,
+        size: 256,
         bounds: [0., TAU as f32],
     };
     let render_params = RenderParams {
         black_hole_radius: 1.5,
         fov_degrees: 60.,
     };
+
+    generate_production_artifacts(&dist, &view, &angle, &render_params);
 
     let view_sampler = get_or_generate_file(VIEW_SAMPLER_PATH, &move || {
         ViewBoundSampler::generate(dist, view, angle, &render_params, 0.5)

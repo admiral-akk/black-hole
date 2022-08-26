@@ -100,6 +100,40 @@ impl SmallFloatFormat<f32> for f32 {
 }
 
 impl<U: Dimensions + std::fmt::Debug> SmallFloatTexture<U> {
+    pub fn add_entry<'a>(
+        &'a self,
+        bind_group: Vec<BindGroupEntry<'a>>,
+        bind_group_layout: Vec<BindGroupLayoutEntry>,
+    ) -> (Vec<BindGroupEntry<'a>>, Vec<BindGroupLayoutEntry>) {
+        let mut bind_group = bind_group;
+        let mut bind_group_layout = bind_group_layout;
+        bind_group.push(wgpu::BindGroupEntry {
+            binding: bind_group.len() as u32,
+            resource: BindingResource::TextureView(&self.view),
+        });
+        bind_group_layout.push(wgpu::BindGroupLayoutEntry {
+            binding: bind_group_layout.len() as u32,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                multisampled: false,
+                view_dimension: U::texture_view_dimension(),
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            },
+            count: None,
+        });
+        bind_group.push(wgpu::BindGroupEntry {
+            binding: bind_group.len() as u32,
+            resource: BindingResource::Sampler(&self.sampler),
+        });
+        bind_group_layout.push(wgpu::BindGroupLayoutEntry {
+            binding: bind_group_layout.len() as u32,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+            count: None,
+        });
+        (bind_group.to_vec(), bind_group_layout.to_vec())
+    }
+
     pub fn from_f32<T>(
         device: &wgpu::Device,
         queue: &wgpu::Queue,

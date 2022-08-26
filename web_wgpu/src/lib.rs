@@ -142,101 +142,194 @@ impl State {
                 label: Some("Stencil Bind Group Layout"),
             });
 
+        let mut bind_group_layout_entries = [
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                // This should match the filterable field of the
+                // corresponding Texture entry above.
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 3,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 4,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 5,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                // This should match the filterable field of the
+                // corresponding Texture entry above.
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ]
+        .to_vec();
+
+        let mut bind_group_entries = [
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&galaxy_tex_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&galaxy_sampler),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: black_hole_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: render_params_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: wgpu::BindingResource::TextureView(&noise_tex_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 5,
+                resource: wgpu::BindingResource::Sampler(&noise_tex_sampler),
+            },
+        ]
+        .to_vec();
+        let close_ray: ((usize, usize), Vec<CloseRayApproximation>) =
+            serde_json::from_slice(include_bytes!("close_ray.txt")).unwrap();
+
+        let mut close_theta_final = Vec::new();
+        let mut close_theta_1 = Vec::new();
+        let mut close_d_1 = Vec::new();
+        let close_dim = [close_ray.0 .0 as u32, close_ray.0 .1 as u32];
+        for ray in close_ray.1 {
+            close_theta_1.push(ray.spiral_start_angle);
+            close_theta_final.push(ray.final_angle);
+            close_d_1.push(ray.spiral_start_dist);
+        }
+
+        let close_theta_final_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &close_theta_final,
+            close_dim,
+            "close theta_f",
+        )
+        .unwrap();
+        let close_theta_1_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &close_theta_1,
+            close_dim,
+            "close theta_1",
+        )
+        .unwrap();
+        let close_d_1_tex =
+            SmallFloatTexture::from_f32(&device, &queue, &close_d_1, close_dim, "close d_1")
+                .unwrap();
+
+        (bind_group_entries, bind_group_layout_entries) =
+            close_theta_final_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+        (bind_group_entries, bind_group_layout_entries) =
+            close_theta_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+        (bind_group_entries, bind_group_layout_entries) =
+            close_d_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+
+        let far_ray: ((usize, usize), Vec<RayApproximation>) =
+            serde_json::from_slice(include_bytes!("far_ray.txt")).unwrap();
+        let mut far_theta_final = Vec::new();
+        let mut far_theta_1 = Vec::new();
+        let mut far_d_1 = Vec::new();
+        let far_dim = [far_ray.0 .0 as u32, far_ray.0 .1 as u32];
+        for ray in far_ray.1 {
+            far_theta_1.push(ray.theta_1());
+            far_theta_final.push(ray.final_angle);
+            far_d_1.push(ray.curve_dist);
+        }
+
+        let far_theta_final_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &far_theta_final,
+            far_dim,
+            "close theta_f",
+        )
+        .unwrap();
+        let far_theta_1_tex =
+            SmallFloatTexture::from_f32(&device, &queue, &far_theta_1, far_dim, "far theta_1")
+                .unwrap();
+        let far_d_1_tex =
+            SmallFloatTexture::from_f32(&device, &queue, &far_d_1, far_dim, "far dist_1").unwrap();
+
+        (bind_group_entries, bind_group_layout_entries) =
+            far_theta_final_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+        (bind_group_entries, bind_group_layout_entries) =
+            far_theta_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+        (bind_group_entries, bind_group_layout_entries) =
+            far_d_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+
+        let view_bound_sampler: ViewBoundSampler =
+            serde_json::from_slice(include_bytes!("view_sampler.txt")).unwrap();
+        let view_bound = view_bound_sampler.show_bound();
+        let view_bound_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &view_bound,
+            view_bound.len() as u32,
+            "view bound",
+        )
+        .unwrap();
+        (bind_group_entries, bind_group_layout_entries) =
+            view_bound_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+
         let stencil_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &stencil_bind_group_layout,
             entries: &Vec::new(),
             label: Some("Stencil Bind Group"),
         });
+
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 4,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 5,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
+                entries: &bind_group_layout_entries,
                 label: Some("texture_bind_group_layout"),
             });
         let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&galaxy_tex_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&galaxy_sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: black_hole_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: render_params_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 4,
-                    resource: wgpu::BindingResource::TextureView(&noise_tex_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 5,
-                    resource: wgpu::BindingResource::Sampler(&noise_tex_sampler),
-                },
-            ],
+            entries: &bind_group_entries,
             label: Some("diffuse_bind_group"),
         });
 
@@ -543,6 +636,11 @@ impl State {
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 use winit::dpi::PhysicalSize;
+use wire_structs::sampler::{
+    close_ray_approximation::CloseRayApproximation,
+    ray_approximation::RayApproximation,
+    view_bound_sampler::{self, ViewBoundSampler},
+};
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub async fn run() {
     let event_loop = EventLoop::new();

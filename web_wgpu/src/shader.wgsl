@@ -56,6 +56,34 @@ var<uniform> render_params: RenderParams;
 var noise_t: texture_2d<f32>;
 @group(0) @binding(5)
 var noise_s: sampler;
+@group(0) @binding(6)
+var close_theta_f_t: texture_2d<f32>;
+@group(0) @binding(7)
+var close_theta_f_s: sampler;
+@group(0) @binding(8)
+var close_theta_1_t: texture_2d<f32>;
+@group(0) @binding(9)
+var close_theta_1_s: sampler;
+@group(0) @binding(10)
+var close_dist_1_t: texture_2d<f32>;
+@group(0) @binding(11)
+var close_dist_1_s: sampler;
+@group(0) @binding(12)
+var far_theta_f_t: texture_2d<f32>;
+@group(0) @binding(13)
+var far_theta_f_s: sampler;
+@group(0) @binding(14)
+var far_theta_1_t: texture_2d<f32>;
+@group(0) @binding(15)
+var far_theta_1_s: sampler;
+@group(0) @binding(16)
+var far_dist_1_t: texture_2d<f32>;
+@group(0) @binding(17)
+var far_dist_1_s: sampler;
+@group(0) @binding(18)
+var view_bounds_t: texture_1d<f32>;
+@group(0) @binding(19)
+var view_bounds_s: sampler;
 
 fn to_float(v: vec2<f32>) -> f32 {
     return v.x + v.y/2048.0;
@@ -114,6 +142,21 @@ let dist_01 =1.0-dist_01;
     let color = clamp(vec4(scale_color(vec3(show,0.),3.*(1.-density)),alpha),vec4(0.),vec4(1.));
 
     return color*color;
+}
+
+
+
+
+fn calculate_view_01_dim(coord:vec2<f32>) -> f32 {
+    let v = length(coord);
+   let bound = to_high_p_float( textureSample(view_bounds_t,view_bounds_s,v));
+ let low_bound = step(0.,bound-v,);
+let low_v = sqrt(low_bound*(bound - v) / bound);
+  
+  let high_bound = 1.-low_bound;
+  let high_v = sqrt(high_bound*(v-bound ) / (1.-bound));
+   return low_v + high_v;
+
 }
 
  fn get_disc_color( start_dir: vec3<f32>, coord:vec2<f32>, d_01:f32) -> vec4<f32>{
@@ -182,6 +225,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             return vec4(vec3(0.),1.);
         } 
     }
-    return vec4(final_color, 1.0);
+    return vec4(vec3(calculate_view_01_dim(coords)), 1.0);
 }
  
