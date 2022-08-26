@@ -105,160 +105,16 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(include_str!("stencil.wgsl").into()),
         });
 
-        let black_hole_cache =
-            serde_json::from_slice::<BlackHoleCache>(include_bytes!("black_hole_cache.txt"))
-                .unwrap();
-        let direction_cache = black_hole_cache.direction_cache;
-        let mut z_bounds = Vec::new();
-        let mut final_dir_vec = Vec::new();
-        let dir_dim = [
-            direction_cache.cache_size.1 as u32,
-            direction_cache.cache_size.0 as u32,
-        ];
-        for fixed_distance in direction_cache.distance_angle_to_z_to_distance {
-            z_bounds.push([
-                fixed_distance.min_z as f32,
-                (fixed_distance.max_z - fixed_distance.min_z) as f32,
-            ]);
-            for (_, final_dir) in fixed_distance.z_to_final_dir {
-                final_dir_vec.push([final_dir.0 as f32, final_dir.1 as f32]);
-            }
-        }
-
-        let distance_cache = black_hole_cache.distance_cache;
-        let mut z_bounds_distance = Vec::new();
-        let mut z_min_distance = Vec::new();
-        let mut z_max_distance = Vec::new();
-        let mut angle_distance_vec = Vec::new();
-        let dist_dim = [
-            distance_cache.cache_size.2 as u32,
-            distance_cache.cache_size.1 as u32,
-            distance_cache.cache_size.0 as u32,
-        ];
-        let bounds = distance_cache.disc_bounds;
-        for fixed_distance in distance_cache.distance_angle_to_z_to_distance {
-            let mut is_decrease = false;
-            let mut is_first = true;
-            let mut max_is_increase = false;
-
-            println!("dist: {}", fixed_distance.camera_distance);
-            for fixed_angle in fixed_distance.angle_to_z_to_distance {
-                let min = (fixed_angle.z_bounds.1 - fixed_angle.z_bounds.0) as f32;
-                let max = fixed_angle.z_bounds.0 as f32;
-                println!("min: {}", min);
-                println!("max: {}", max);
-                let len = z_min_distance.len();
-                if is_first {
-                    is_first = false;
-                } else {
-                    if is_decrease {
-                        assert!(z_min_distance[len - 1] > min);
-                    } else if z_min_distance[len - 1] > min {
-                        is_decrease = true;
-                    }
-                    if max_is_increase {
-                        assert!(z_max_distance[len - 1] < max);
-                    }
-                    if z_max_distance[len - 1] < max {
-                        max_is_increase = true;
-                    }
-                }
-                z_min_distance.push(min);
-
-                z_max_distance.push(max);
-                z_bounds_distance.push([
-                    fixed_angle.z_bounds.0 as f32,
-                    (fixed_angle.z_bounds.1 - fixed_angle.z_bounds.0) as f32,
-                ]);
-                for d in fixed_angle.z_to_distance {
-                    angle_distance_vec.push(((d - bounds.0) / (bounds.1 - bounds.0)) as f32);
-                }
-            }
-        }
-
-        let dist_z_min_tex = SmallFloatTexture::from_f32(
-            &device,
-            &queue,
-            &z_min_distance,
-            [dist_dim[1], dist_dim[2]],
-            "Distance z bounds",
-        )
-        .unwrap();
-        let dist_z_min_tex_view = dist_z_min_tex.view;
-        let dist_z_min_sampler = dist_z_min_tex.sampler;
-
-        let dist_z_max_tex = SmallFloatTexture::from_f32(
-            &device,
-            &queue,
-            &z_max_distance,
-            [dist_dim[1], dist_dim[2]],
-            "Distance z bounds",
-        )
-        .unwrap();
-        let dist_z_max_tex_view = dist_z_max_tex.view;
-        let dist_z_max_sampler = dist_z_max_tex.sampler;
-
-        let dist_z_bounds_tex = FullFloatTexture::from_f32(
-            &device,
-            &queue,
-            &z_bounds_distance,
-            [dist_dim[1], dist_dim[2]],
-            "Distance z bounds",
-        )
-        .unwrap();
-        let dist_z_bounds_tex_view = dist_z_bounds_tex.view;
-        let dist_z_bounds_sampler = dist_z_bounds_tex.sampler;
-
-        let dist_tex = FullFloatTexture::from_f32(
-            &device,
-            &queue,
-            &angle_distance_vec,
-            dist_dim,
-            "Distance tex",
-        )
-        .unwrap();
-
-        let dist_tex_view = dist_tex.view;
-        let dist_sampler = dist_tex.sampler;
-
-        let dir_z_bounds_tex = FullFloatTexture::from_f32(
-            &device,
-            &queue,
-            &z_bounds,
-            z_bounds.len() as u32,
-            "Direction z bounds",
-        )
-        .unwrap();
-
-        let dir_z_bounds_tex_view = dir_z_bounds_tex.view;
-        let dir_z_bounds_sampler = dir_z_bounds_tex.sampler;
-        let final_dir_tex = FullFloatTexture::from_f32(
-            &device,
-            &queue,
-            &final_dir_vec,
-            dir_dim,
-            "Final direction texture",
-        )
-        .unwrap();
-
-        let final_dir_tex_view = final_dir_tex.view;
-        let final_dir_sampler = final_dir_tex.sampler;
         let black_hole = BlackHole {
-            disc_bounds: [
-                distance_cache.disc_bounds.0 as f32,
-                distance_cache.disc_bounds.1 as f32,
-            ],
-            distance_bounds: [
-                direction_cache.distance_bounds.0 as f32,
-                direction_cache.distance_bounds.1 as f32,
-            ],
+            disc_bounds: [2., 12.],
+            distance_bounds: [5., 30.],
             radius: [1.5],
         };
         let (black_hole_buffer, _) = black_hole.to_buffer(&device);
         let render_params = RenderParams {
             observer_matrix: Mat4::IDENTITY.to_cols_array(),
             cursor_pos: [0., 0.],
-            cache_dim: [dir_dim[0] as f32, dir_dim[1] as f32],
+            cache_dim: [0., 0.],
             resolution: [1., 1.],
             distance: [10.],
             time_s: [1.],
