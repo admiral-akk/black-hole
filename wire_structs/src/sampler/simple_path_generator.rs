@@ -7,8 +7,8 @@ use super::{
         field::{Field, Particle},
         gpu_state::simulate_particles,
     },
-    path_sampler::SimulatedPath,
     render_params::RenderParams,
+    simulated_path::SimulatedPath,
 };
 
 fn generate_particle(dist: f32, view: f32, render_params: &RenderParams) -> Particle {

@@ -2,25 +2,19 @@ use std::f32::consts::TAU;
 
 use test_utils::plot_with_title;
 use wire_structs::sampler::{
-    combined_ray_approximation::{measure_error, CombinedRayApproximation},
-    dimension_params::DimensionParams,
-    path_sampler::{PathSampler, SimulatedPath},
-    render_params::RenderParams,
-    view_bound_sampler::ViewBoundSampler,
+    combined_ray_approximation::CombinedRayApproximation, dimension_params::DimensionParams,
+    simulated_path::SimulatedPath,
 };
-
-use crate::path_distance_cache::distance_cache;
 
 pub fn plot_combined_approximate_ray_analysis(
     paths: &Vec<SimulatedPath>,
     dist: &DimensionParams,
     view: &DimensionParams,
     angle: &DimensionParams,
-    view_sampler: &RenderParams,
 ) -> Vec<(f32, Vec<(f32, CombinedRayApproximation)>)> {
     let close_rays = generate_combined_rays(paths, angle);
 
-    plot_actual_paths(&paths, dist, angle, view_sampler);
+    plot_actual_paths(&paths, dist, angle);
     plot_property_by_dist(
         &close_rays,
         angle,
@@ -71,12 +65,7 @@ pub fn plot_combined_approximate_ray_analysis(
     );
     close_rays
 }
-fn plot_actual_paths(
-    paths: &Vec<SimulatedPath>,
-    dist: &DimensionParams,
-    angle: &DimensionParams,
-    view_sampler: &RenderParams,
-) {
+fn plot_actual_paths(paths: &Vec<SimulatedPath>, dist: &DimensionParams, angle: &DimensionParams) {
     let d = dist.generate_list();
     let angles = angle.generate_list();
     let view_len = paths.len() / d.len();
