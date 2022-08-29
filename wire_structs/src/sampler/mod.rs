@@ -1,5 +1,6 @@
 pub mod angle_distance_sampler;
 pub mod close_ray_approximation;
+pub mod combined_ray_approximation;
 pub mod dimension_params;
 mod gpu;
 mod optimization_utils;
@@ -7,5 +8,6 @@ pub mod path_sampler;
 pub mod ray_approximation;
 pub mod ray_approximation_sampler;
 pub mod render_params;
+pub mod simple_path_generator;
 mod texture;
 pub mod view_bound_sampler;

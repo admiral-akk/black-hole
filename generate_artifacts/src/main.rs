@@ -5,6 +5,7 @@ use std::fs::{self};
 use approximate_path_sampler_utils::plot_approximate_far_path_analysis;
 use artifact_utils::get_or_generate_file;
 use close_approximate_ray_utils::plot_close_approximate_ray_analysis;
+use combined_approximation_utils::plot_combined_approximate_ray_analysis;
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use generate_artifacts::final_direction_cache::direction_cache::DirectionCache;
 use generate_artifacts::path_distance_cache::distance_cache::DistanceCache;
@@ -18,6 +19,7 @@ use wire_structs::sampler::path_sampler::PathSampler;
 use wire_structs::sampler::ray_approximation::RayApproximation;
 use wire_structs::sampler::ray_approximation_sampler::RayApproximationSampler;
 use wire_structs::sampler::render_params::RenderParams;
+use wire_structs::sampler::simple_path_generator;
 use wire_structs::sampler::view_bound_sampler::ViewBoundSampler;
 
 mod factory;
@@ -191,11 +193,15 @@ const VIEW_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/view_sampler
 const PATH_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/path_sampler.txt";
 const PATH_TEST_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/path_test_sampler.txt";
 const APPROX_SAMPLER_PATH: &str = "generate_artifacts/output/artifact/approx_sampler.txt";
+const ALL_VIEW_SAMPLE_PATH: &str = "generate_artifacts/output/artifact/all_view.txt";
 
+const GENERATED_COMBINED_PATH: &str = "generate_artifacts/output/artifact/combined.txt";
 mod angle_distance_sampler_utils;
 mod approximate_path_sampler_utils;
 mod artifact_utils;
 mod close_approximate_ray_utils;
+mod combined_approximation_utils;
+mod path_generation_utils;
 mod path_sampler_utils;
 
 fn main() {
@@ -208,7 +214,7 @@ fn main() {
         bounds: [0., 0.5_f32.sqrt()],
     };
     let angle = DimensionParams {
-        size: 256,
+        size: 512,
         bounds: [0., TAU as f32],
     };
     let render_params = RenderParams {
@@ -256,6 +262,25 @@ fn main() {
             RayApproximationSampler::generate(&path_sampler, dist, angle, view, &view_sampler)
         });
     }
+
+    let all_paths_sample;
+    {
+        all_paths_sample = get_or_generate_file(ALL_VIEW_SAMPLE_PATH, &move || {
+            simple_path_generator::generate_paths(&dist, &view, &angle, &render_params)
+        });
+    }
+
+    plot_combined_approximate_ray_analysis(&all_paths_sample, &dist, &view, &angle, &render_params);
+    let x = get_or_generate_file(GENERATED_COMBINED_PATH, &move || {
+        plot_combined_approximate_ray_analysis(
+            &all_paths_sample,
+            &dist,
+            &view,
+            &angle,
+            &render_params,
+        )
+    });
+
     // plot_view_sampler_analysis(&view_sampler, &dist, &view);
     // plot_path_sampler_analysis(&path_sampler, &dist, &view, &angle);
 
@@ -265,11 +290,11 @@ fn main() {
     //     &test_angle,
     //     &view_sampler,
     // );
-    plot_close_approximate_ray_analysis(
-        &path_sampler_test,
-        &dist,
-        &view,
-        &test_angle,
-        &view_sampler,
-    );
+    // plot_close_approximate_ray_analysis(
+    //     &path_sampler_test,
+    //     &dist,
+    //     &view,
+    //     &test_angle,
+    //     &view_sampler,
+    // );
 }

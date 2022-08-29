@@ -98,7 +98,7 @@ fn to_high_p_float(v: vec4<f32>) -> f32 {
 }
 
 // https://stackoverflow.com/questions/141855/programmatically-lighten-a-color
-fn scale_color( color:vec3<f32>, scale: f32) -> vec3<f32>{
+fn scale_color(color:vec3<f32>, scale: f32) -> vec3<f32>{
     let color_n=scale*color;
     let m=max(max(color_n.x,color_n.y),color_n.z);
     
@@ -159,22 +159,65 @@ let low_v =(low_bound*(bound - v) / bound);
    return vec2(low_v + high_v, low_bound);
 }
 
+fn get_close(d_01:f32,v_01:f32) -> vec3<f32> {
+   let close_theta_f = to_high_p_float(textureSample(close_theta_f_t,close_theta_f_s,vec2(v_01,d_01)));
+   let close_theta_1 = to_high_p_float(textureSample(close_theta_1_t,close_theta_1_s,vec2(v_01,d_01)));
+   let close_dist_1 = to_high_p_float(textureSample(close_dist_1_t,close_dist_1_s,vec2(v_01,d_01)));
+   return vec3(close_theta_f, close_theta_1, close_dist_1);
+}
+fn get_far(d_01:f32,v_01:f32) -> vec3<f32> {
+    
+   let far_theta_f = to_high_p_float(textureSample(far_theta_f_t,far_theta_f_s,vec2(v_01,d_01)));
+   let far_theta_1 = to_high_p_float(textureSample(far_theta_1_t,far_theta_1_s,vec2(v_01,d_01)));
+   let far_dist_1 = to_high_p_float(textureSample(far_dist_1_t,far_dist_1_s,vec2(v_01,d_01)));
+
+   return vec3(far_theta_f, far_theta_1, far_dist_1);
+}
+
 fn get_final_angle(d_01:f32,coord:vec2<f32>) -> f32 {
     let view = calculate_view_01_dim(d_01,coord);
     let v_01 = view.x;
-   let close_theta_f = to_high_p_float(textureSample(close_theta_f_t,close_theta_f_s,vec2(v_01,d_01)));
-   let close_theta_1 = to_high_p_float(textureSample(close_theta_1_t,close_theta_1_s,vec2(d_01,v_01)));
-   let close_dist_1 = to_high_p_float(textureSample(close_dist_1_t,close_dist_1_s,vec2(d_01,v_01)));
-   let far_theta_f = to_high_p_float(textureSample(far_theta_f_t,far_theta_f_s,vec2(v_01,d_01)));
-   let far_theta_1 = to_high_p_float(textureSample(far_theta_1_t,far_theta_1_s,vec2(d_01,v_01)));
-   let far_dist_1 = to_high_p_float(textureSample(far_dist_1_t,far_dist_1_s,vec2(d_01,v_01)));
 
-   return view.y * close_theta_f + (1.-view.y) * far_theta_f;
+   let close = get_close(d_01,v_01);
+   let far = get_far(d_01,v_01);
+
+   return view.y * close.x + (1.-view.y) * far.x;
 
 
 }
 
+fn close_distance(params: vec3<f32>, theta: f32) -> f32 {
+ let too_far = step(0., theta-params.x);
+ let post = step(0., theta-params.y);
+ let pre = step(0., theta);
+ let pre = pre - post;
+ let post = post - too_far;
+
+ let pre = pre*params.z / cos(params.y-theta);
+ let t = clamp((params.x-theta)/(params.x-params.y),0.,1.);
+ let post = post*params.z*t ;
+return pre +post;
+}
+
+fn far_distance(params: vec3<f32>, theta: f32) -> f32 {
+    
+ let too_far = step(0., theta-params.x);
+ let post = step(0., theta-params.x+PI*0.5);
+ let in = step(0., theta-params.y);
+ let pre = step(0., theta);
+ let pre = pre - in;
+ let in = in - post;
+ let post = post - too_far;
+
+ let pre = pre*params.z / cos(params.y-theta);
+ let in = in*params.z;
+ let post = post*params.z/cos(theta-(params.x-PI*0.5));
+return pre+in+post;
+}
+
  fn get_disc_color( start_dir: vec3<f32>, coord:vec2<f32>, d_01:f32) -> vec4<f32>{
+    let view = calculate_view_01_dim(d_01,coord);
+    let v_01 = view.x;
    
 let normalized_pos = 
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
@@ -203,8 +246,35 @@ let normalized_pos =
     var total_disc_color=vec4(0.,0.,0.,0.);
     let other_angle_01=angle_01+.5;
 
+   let close = get_close(d_01,v_01);
+   let far = get_far(d_01,v_01);
 
-   return total_disc_color;
+let far_dist_main =far_distance(far, TAU*angle_01.x)*(1.-view.y);
+let near_dist_main = close_distance(far, TAU*angle_01.x)*view.y;
+
+let d_main = near_dist_main +far_dist_main;
+
+
+let is_far_dist_main = step(2.,far_dist_main) - step(12.,far_dist_main);
+let is_near_dist_main = (step(2.,near_dist_main) - step(12.,near_dist_main));
+
+
+let far_dist =far_distance(far, TAU*other_angle_01.x)*(1.-view.y);
+let near_dist = close_distance(far, TAU*other_angle_01.x)*view.y;
+let d_secondary = near_dist+far_dist;
+
+
+let is_far_dist_secondary = step(2.,far_dist) - step(12.,far_dist);
+let is_near_dist_secondary = step(2.,near_dist) - step(12.,near_dist);
+let is_main = step(2.,d_main) - step(12.,d_main);
+let is_secondary = step(2.,d_secondary) - step(12.,d_secondary);
+
+  let main_c = is_main*disc_color((d_main - 2.) / 10., angle_01.y);
+  let secondary_c = is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
+
+    let total_disc_color = mix(main_c, secondary_c, main_c.w);
+return main_c;//(is_far_dist_main+is_far_dist_secondary)*vec4(1.,0.,0.,1.) +(is_near_dist_main+is_near_dist_secondary)* vec4(0.,view.x,0.,1.);
+ //  return vec4((d_main - 2.)/10. *(step(2.,d_main)-step(12.,d_main)));
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
     let view = calculate_view_01_dim(d_01,coords);
@@ -250,6 +320,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             return vec4(vec3(0.),1.);
         } 
     }
-    return vec4(background_color, 1.0);
+  
+    return vec4(disc_color.xyz, 1.0);
 }
  
