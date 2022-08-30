@@ -10,6 +10,16 @@ pub fn analyze_paths(paths: &Vec<SimulatedPath>, angle: &DimensionParams) {
     let angles = angle.generate_list();
     plot_property_by_path(
         paths,
+        &|path| (path.view, path.final_angle(&angles)),
+        "combined_dir",
+        "combined_dir",
+        "Final Direction or Angle if escaped",
+        ((0., 1.), (0., TAU + FRAC_PI_2 as f64)),
+    );
+    return;
+    plot_path(paths, angle);
+    plot_property_by_path(
+        paths,
         &|path| {
             let min_angle = match path
                 .ray
@@ -29,17 +39,6 @@ pub fn analyze_paths(paths: &Vec<SimulatedPath>, angle: &DimensionParams) {
         "Mid Angle",
         ((0., 1.), (-PI as f64, PI as f64)),
     );
-    plot_property_by_path(
-        paths,
-        &|path| (path.view, path.final_angle(&angles)),
-        "combined_dir",
-        "combined_dir",
-        "Final Direction or Angle if escaped",
-        ((0., 1.), (0., TAU + FRAC_PI_2 as f64)),
-    );
-    return;
-    plot_path(paths, angle);
-    println!("Angle 0: {}", angles[0]);
     plot_property_by_path(
         paths,
         &|path| {

@@ -57,32 +57,24 @@ var noise_t: texture_2d<f32>;
 @group(0) @binding(5)
 var noise_s: sampler;
 @group(0) @binding(6)
-var close_theta_f_t: texture_2d<f32>;
+var theta_f_t: texture_2d<f32>;
 @group(0) @binding(7)
-var close_theta_f_s: sampler;
+var theta_f_s: sampler;
 @group(0) @binding(8)
-var close_theta_1_t: texture_2d<f32>;
+var theta_max_start_t: texture_2d<f32>;
 @group(0) @binding(9)
-var close_theta_1_s: sampler;
+var theta_max_start_s: sampler;
 @group(0) @binding(10)
-var close_dist_1_t: texture_2d<f32>;
+var min_distance_t: texture_2d<f32>;
 @group(0) @binding(11)
-var close_dist_1_s: sampler;
+var min_distance_s: sampler;
 @group(0) @binding(12)
-var far_theta_f_t: texture_2d<f32>;
+var theta_min_start_t: texture_2d<f32>;
 @group(0) @binding(13)
-var far_theta_f_s: sampler;
+var theta_min_start_s: sampler;
 @group(0) @binding(14)
-var far_theta_1_t: texture_2d<f32>;
-@group(0) @binding(15)
-var far_theta_1_s: sampler;
-@group(0) @binding(16)
-var far_dist_1_t: texture_2d<f32>;
-@group(0) @binding(17)
-var far_dist_1_s: sampler;
-@group(0) @binding(18)
 var view_bounds_t: texture_1d<f32>;
-@group(0) @binding(19)
+@group(0) @binding(15)
 var view_bounds_s: sampler;
 
 fn to_float(v: vec2<f32>) -> f32 {
@@ -144,80 +136,26 @@ let dist_01 =1.0-dist_01;
     return color*color;
 }
 
+fn get_params(d_01:f32, coords: vec2<f32>) -> vec4<f32> {
 
-
-
-fn calculate_view_01_dim(d_01: f32, coord:vec2<f32>) -> vec2<f32> {
-    let v = length(coord);
-   let bound = to_high_p_float( textureSample(view_bounds_t,view_bounds_s,d_01));
- let low_bound = step(0.,bound-v,);
-let low_v =(low_bound*(bound - v) / bound);
-  let low_v = sqrt(low_v);
-  let high_bound = 1.-low_bound;
-  let high_v =(high_bound*(v-bound) / (sqrt(0.5)-bound));
-  let high_v =sqrt(high_v);
-   return vec2(low_v + high_v, low_bound);
+   let v_01 = length(coords) / sqrt(0.5);
+   let theta_f = to_high_p_float(textureSample(theta_f_t,theta_f_s,vec2(v_01,d_01)));
+   let theta_max = to_high_p_float(textureSample(theta_max_start_t,theta_max_start_s,vec2(v_01,d_01)));
+   let min_dist = to_high_p_float(textureSample(min_distance_t,min_distance_s,vec2(v_01,d_01)));
+   let theta_min = to_high_p_float(textureSample(theta_min_start_t,theta_min_start_s,vec2(v_01,d_01)));
+   return vec4(theta_f,theta_max, min_dist, theta_min);
 }
 
-fn get_close(d_01:f32,v_01:f32) -> vec3<f32> {
-   let close_theta_f = to_high_p_float(textureSample(close_theta_f_t,close_theta_f_s,vec2(v_01,d_01)));
-   let close_theta_1 = to_high_p_float(textureSample(close_theta_1_t,close_theta_1_s,vec2(v_01,d_01)));
-   let close_dist_1 = to_high_p_float(textureSample(close_dist_1_t,close_dist_1_s,vec2(v_01,d_01)));
-   return vec3(close_theta_f, close_theta_1, close_dist_1);
-}
-fn get_far(d_01:f32,v_01:f32) -> vec3<f32> {
-    
-   let far_theta_f = to_high_p_float(textureSample(far_theta_f_t,far_theta_f_s,vec2(v_01,d_01)));
-   let far_theta_1 = to_high_p_float(textureSample(far_theta_1_t,far_theta_1_s,vec2(v_01,d_01)));
-   let far_dist_1 = to_high_p_float(textureSample(far_dist_1_t,far_dist_1_s,vec2(v_01,d_01)));
+fn get_dist(theta: f32, params: vec4<f32>) -> f32 {
+    let in_end = step(params.y, theta) - step(params.x, theta);
+    let in_mid = step(params.w, theta) - step(params.y, theta);
+    let in_start = step(0., theta) - step(params.w, theta);
 
-   return vec3(far_theta_f, far_theta_1, far_dist_1);
+    return  params.z*(in_end * params.z / cos(theta - params.y) + in_mid + in_start /cos(params.w-theta));
 }
 
-fn get_final_angle(d_01:f32,coord:vec2<f32>) -> f32 {
-    let view = calculate_view_01_dim(d_01,coord);
-    let v_01 = view.x;
-
-   let close = get_close(d_01,v_01);
-   let far = get_far(d_01,v_01);
-
-   return view.y * close.x + (1.-view.y) * far.x;
-
-
-}
-
-fn close_distance(params: vec3<f32>, theta: f32) -> f32 {
- let too_far = step(0., theta-params.x);
- let post = step(0., theta-params.y);
- let pre = step(0., theta);
- let pre = pre - post;
- let post = post - too_far;
-
- let pre = pre*params.z / cos(params.y-theta);
- let t = clamp((params.x-theta)/(params.x-params.y),0.,1.);
- let post = post*params.z*t ;
-return pre +post;
-}
-
-fn far_distance(params: vec3<f32>, theta: f32) -> f32 {
-    
- let too_far = step(0., theta-params.x);
- let post = step(0., theta-params.x+PI*0.5);
- let in = step(0., theta-params.y);
- let pre = step(0., theta);
- let pre = pre - in;
- let in = in - post;
- let post = post - too_far;
-
- let pre = pre*params.z / cos(params.y-theta);
- let in = in*params.z;
- let post = post*params.z/cos(theta-(params.x-PI*0.5));
-return pre+in+post;
-}
-
- fn get_disc_color( start_dir: vec3<f32>, coord:vec2<f32>, d_01:f32) -> vec4<f32>{
-    let view = calculate_view_01_dim(d_01,coord);
-    let v_01 = view.x;
+ fn get_disc_color( start_dir: vec3<f32>, coords:vec2<f32>, d_01:f32) -> vec4<f32>{
+let params = get_params(d_01, coords);
    
 let normalized_pos = 
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
@@ -226,8 +164,6 @@ let normalized_pos =
     let color = vec4(0.);
     let is_top = step(0.,normalized_pos.y);
 
-    let close_color=vec3(is_top,1.-is_top,0.);
-    let far_color=vec3(1.-is_top,is_top,0.);
     
     let travel_normal=normalize(cross(-normalized_pos,true_start_dir));
     let intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
@@ -239,48 +175,36 @@ let normalized_pos =
     let alt_angle_01=.5-temp_angle_01;
 
     let theta_01=atan2(intersection.z,intersection.x)/TAU+.5;
-    let top_half = step(0.,coord.y);
+    let top_half = step(0.,coords.y);
     let neq = step(0.5,abs((top_half - is_top)));
     let angle_01 = neq*vec2(min(temp_angle_01,alt_angle_01),theta_01) + (1.-neq) * vec2(max(temp_angle_01,alt_angle_01),theta_01);
     
     var total_disc_color=vec4(0.,0.,0.,0.);
     let other_angle_01=angle_01+.5;
 
-   let close = get_close(d_01,v_01);
-   let far = get_far(d_01,v_01);
 
-let far_dist_main =far_distance(far, TAU*angle_01.x)*(1.-view.y);
-let near_dist_main = close_distance(far, TAU*angle_01.x)*view.y;
-
-let d_main = near_dist_main +far_dist_main;
+let d_main = get_dist(TAU*angle_01.x, params);
+let d_secondary = get_dist(TAU*other_angle_01.x, params);
 
 
-let is_far_dist_main = step(2.,far_dist_main) - step(12.,far_dist_main);
-let is_near_dist_main = (step(2.,near_dist_main) - step(12.,near_dist_main));
-
-
-let far_dist =far_distance(far, TAU*other_angle_01.x)*(1.-view.y);
-let near_dist = close_distance(far, TAU*other_angle_01.x)*view.y;
-let d_secondary = near_dist+far_dist;
-
-
-let is_far_dist_secondary = step(2.,far_dist) - step(12.,far_dist);
-let is_near_dist_secondary = step(2.,near_dist) - step(12.,near_dist);
 let is_main = step(2.,d_main) - step(12.,d_main);
+let has_secondary = step(1.5, params.z);
 let is_secondary = step(2.,d_secondary) - step(12.,d_secondary);
 
-  let main_c = is_main*disc_color((d_main - 2.) / 10., angle_01.y);
-  let secondary_c = is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
+  var main_c = is_main*disc_color((d_main - 2.) / 10., angle_01.y);
+main_c.w = 1.;
+  let secondary_c = has_secondary*is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
 
-    let total_disc_color = mix(main_c, secondary_c, main_c.w);
-return main_c;//(is_far_dist_main+is_far_dist_secondary)*vec4(1.,0.,0.,1.) +(is_near_dist_main+is_near_dist_secondary)* vec4(0.,view.x,0.,1.);
+     var total_disc_color =mix( secondary_c,main_c,main_c.w);
+     total_disc_color.w = main_c.w + (1.-main_c.w)*secondary_c.w;
+return vec4(is_main);//vec4(fract((params.z - 1.5)/12.), 0.,0.,1.);//(is_far_dist_main+is_far_dist_secondary)*vec4(1.,0.,0.,1.) +(is_near_dist_main+is_near_dist_secondary)* vec4(0.,view.x,0.,1.);
  //  return vec4((d_main - 2.)/10. *(step(2.,d_main)-step(12.,d_main)));
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
-    let view = calculate_view_01_dim(d_01,coords);
 
-    let hit_black_hole = view.y;
-   let theta_f = get_final_angle(d_01, coords);
+let params = get_params(d_01, coords);
+    let hit_black_hole = step(-1.5,-params.z);
+   let theta_f = params.x;
    let final_dir = vec3(sin(theta_f),  0.,cos(theta_f));
    let rot_angle = atan2(coords.y,coords.x) + PI;
    let rot = mat3x3(cos(rot_angle),-sin(rot_angle),0.,sin(rot_angle),cos(rot_angle),0.,0.,0.,1.);

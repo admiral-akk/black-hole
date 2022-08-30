@@ -6,3 +6,5 @@ mod optimization_utils;
 pub mod render_params;
 pub mod simple_path_generator;
 pub mod simulated_path;
+pub mod view_angle_parameter_cache;
+pub mod view_bound;

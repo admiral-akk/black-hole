@@ -1,4 +1,4 @@
-use std::f64::consts::TAU;
+use std::f64::consts::{FRAC_PI_2, TAU};
 
 use test_utils::plot_with_title;
 use wire_structs::sampler::{
@@ -18,7 +18,7 @@ pub fn analyze_approximations(
         if i % 100 == 0 {
             println!("Finding approximation {}/{}", i + 1, paths.len());
         }
-        approximations.push(ApproximationFunction::new(path, &angles));
+        approximations.push(ApproximationFunction::generate(path, &angles, path.view));
     }
     plot_path(&approximations, dist, angle);
     plot_property_by_step(
@@ -27,9 +27,33 @@ pub fn analyze_approximations(
         &|path, approx, angles| {
             let mut plot = Vec::new();
             for (i, angle) in angles.iter().enumerate() {
-                let dist = path.ray.angle_dist[i];
-                if dist == 0. {
+                let dist = approx.get_dist(*angle);
+                if dist.is_none() {
                     break;
+                }
+                let dist = dist.unwrap();
+                if dist < 1.5 {
+                    break;
+                }
+                plot.push((*angle, dist));
+            }
+            plot
+        },
+        "distance",
+        "distance",
+        "Distance by Angle",
+        ((0., TAU), (0., 30.)),
+        angle,
+    );
+    plot_property_by_step(
+        &paths,
+        &approximations,
+        &|path, approx, angles| {
+            let mut plot = Vec::new();
+            for (i, angle) in angles.iter().enumerate() {
+                let dist = path.ray.angle_dist[i];
+                if dist < 1.5 || dist > 12. {
+                    continue;
                 }
                 let approx = match approx.get_dist(*angle) {
                     Some(dist) => dist,
@@ -41,10 +65,64 @@ pub fn analyze_approximations(
             plot
         },
         "error",
-        "weight",
-        "Close weight",
+        "error",
+        "Error by Angle",
         ((0., TAU), (-10., 10.)),
         angle,
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.initial_dist),
+        "initial_dist",
+        "initial_dist",
+        "Initial Distance by View",
+        ((0., 1.), (0., 30.)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.min_distance),
+        "min_distance",
+        "min_distance",
+        "Min Distance by View",
+        ((0., 1.), (0., 30.)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_final),
+        "theta_final",
+        "theta_final",
+        "Theta Final by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_max_start),
+        "theta_max",
+        "theta_max",
+        "Theta Max by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_min_start),
+        "theta_min",
+        "theta_min",
+        "Theta Min by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_start),
+        "theta_start",
+        "theta_start",
+        "Theta Start by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
     );
 }
 
@@ -63,7 +141,7 @@ fn plot_path(paths: &Vec<ApproximationFunction>, dist: &DimensionParams, angle: 
                 break;
             }
             let dist = dist.unwrap();
-            if dist <= 1.5 {
+            if dist < 1.5 {
                 break;
             }
             line.push((dist * angle.sin(), -dist * angle.cos()));
@@ -133,7 +211,8 @@ fn plot_property_by_step(
 
 fn plot_property_by_path(
     paths: &Vec<SimulatedPath>,
-    property: &dyn Fn(&SimulatedPath) -> (f32, f32),
+    approximation: &Vec<ApproximationFunction>,
+    property: &dyn Fn(&SimulatedPath, &ApproximationFunction) -> (f32, f32),
     file_name: &str,
     folder: &str,
     plot_title: &str,
@@ -145,13 +224,13 @@ fn plot_property_by_path(
     let mut line = Vec::new();
 
     let mut curr_dist = paths[0].dist;
-    for path in paths {
+    for (i, path) in paths.iter().enumerate() {
         if path.dist != curr_dist {
             line_group.push(line);
             line = Vec::new();
             curr_dist = path.dist;
         }
-        let val = property(path);
+        let val = property(path, &approximation[i]);
         line.push(val);
     }
     plot_with_title(

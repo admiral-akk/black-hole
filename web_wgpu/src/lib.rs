@@ -229,87 +229,66 @@ impl State {
             },
         ]
         .to_vec();
-        let close_ray: ((usize, usize), Vec<CloseRayApproximation>) =
-            serde_json::from_slice(include_bytes!("close_ray.txt")).unwrap();
 
-        let mut close_theta_final = Vec::new();
-        let mut close_theta_1 = Vec::new();
-        let mut close_d_1 = Vec::new();
-        let close_dim = [close_ray.0 .1 as u32, close_ray.0 .0 as u32];
-        for ray in close_ray.1 {
-            close_theta_1.push(ray.spiral_start_angle);
-            close_theta_final.push(ray.final_angle);
-            close_d_1.push(ray.spiral_start_dist);
+        let angle_cache: ViewAngleParameterCache =
+            serde_json::from_slice(include_bytes!("angle_cache.txt")).unwrap();
+
+        let mut theta_final = Vec::new();
+        let mut theta_max_start = Vec::new();
+        let mut min_distance = Vec::new();
+        let mut theta_min_start = Vec::new();
+
+        let close_dim = [
+            angle_cache.params.len() as u32 / angle_cache.dist_dim as u32,
+            angle_cache.dist_dim as u32,
+        ];
+
+        for param in angle_cache.params {
+            theta_final.push(param.theta_final);
+            theta_max_start.push(param.theta_max_start);
+            min_distance.push(param.min_distance);
+            theta_min_start.push(param.theta_min_start);
         }
 
-        let close_theta_final_tex = SmallFloatTexture::from_f32(
-            &device,
-            &queue,
-            &close_theta_final,
-            close_dim,
-            "close theta_f",
-        )
-        .unwrap();
-        let close_theta_1_tex = SmallFloatTexture::from_f32(
-            &device,
-            &queue,
-            &close_theta_1,
-            close_dim,
-            "close theta_1",
-        )
-        .unwrap();
-        let close_d_1_tex =
-            SmallFloatTexture::from_f32(&device, &queue, &close_d_1, close_dim, "close d_1")
+        let theta_final_tex =
+            SmallFloatTexture::from_f32(&device, &queue, &theta_final, close_dim, "theta_f")
                 .unwrap();
-
-        (bind_group_entries, bind_group_layout_entries) =
-            close_theta_final_tex.add_entry(bind_group_entries, bind_group_layout_entries);
-        (bind_group_entries, bind_group_layout_entries) =
-            close_theta_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
-        (bind_group_entries, bind_group_layout_entries) =
-            close_d_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
-
-        let far_ray: ((usize, usize), Vec<RayApproximation>) =
-            serde_json::from_slice(include_bytes!("far_ray.txt")).unwrap();
-        let mut far_theta_final = Vec::new();
-        let mut far_theta_1 = Vec::new();
-        let mut far_d_1 = Vec::new();
-        let far_dim = [far_ray.0 .1 as u32, far_ray.0 .0 as u32];
-        for ray in far_ray.1 {
-            far_theta_final.push(ray.final_angle);
-            far_theta_1.push(ray.theta_1());
-            far_d_1.push(ray.curve_dist);
-        }
-
-        let far_theta_final_tex = SmallFloatTexture::from_f32(
+        let theta_max_start_tex = SmallFloatTexture::from_f32(
             &device,
             &queue,
-            &far_theta_final,
-            far_dim,
-            "close theta_f",
+            &theta_max_start,
+            close_dim,
+            "theta_max_start",
         )
         .unwrap();
-        let far_theta_1_tex =
-            SmallFloatTexture::from_f32(&device, &queue, &far_theta_1, far_dim, "far theta_1")
+        let min_distance_tex =
+            SmallFloatTexture::from_f32(&device, &queue, &min_distance, close_dim, "min_distance")
                 .unwrap();
-        let far_d_1_tex =
-            SmallFloatTexture::from_f32(&device, &queue, &far_d_1, far_dim, "far dist_1").unwrap();
+        let theta_min_start_tex = SmallFloatTexture::from_f32(
+            &device,
+            &queue,
+            &theta_min_start,
+            close_dim,
+            "theta_min_start",
+        )
+        .unwrap();
 
         (bind_group_entries, bind_group_layout_entries) =
-            far_theta_final_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+            theta_final_tex.add_entry(bind_group_entries, bind_group_layout_entries);
         (bind_group_entries, bind_group_layout_entries) =
-            far_theta_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+            theta_max_start_tex.add_entry(bind_group_entries, bind_group_layout_entries);
         (bind_group_entries, bind_group_layout_entries) =
-            far_d_1_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+            min_distance_tex.add_entry(bind_group_entries, bind_group_layout_entries);
+        (bind_group_entries, bind_group_layout_entries) =
+            theta_min_start_tex.add_entry(bind_group_entries, bind_group_layout_entries);
 
-        let view_bound_sampler: ViewBoundSampler =
-            serde_json::from_slice(include_bytes!("view_sampler.txt")).unwrap();
-        let view_bound = view_bound_sampler.show_bound();
+        let view_bound_sampler: ViewBound =
+            serde_json::from_slice(include_bytes!("view_bounds.txt")).unwrap();
         let view_bound_tex = SmallFloatTexture::from_f32(
             &device,
             &queue,
-            &view_bound,
-            view_bound.len() as u32,
+            &view_bound_sampler.dist_to_view_bound,
+            view_bound_sampler.dist_to_view_bound.len() as u32,
             "view bound",
         )
         .unwrap();
@@ -637,9 +616,8 @@ impl State {
 use wasm_bindgen::prelude::*;
 use winit::dpi::PhysicalSize;
 use wire_structs::sampler::{
-    close_ray_approximation::CloseRayApproximation,
-    ray_approximation::RayApproximation,
-    view_bound_sampler::{self, ViewBoundSampler},
+    approximation_function::ApproximationFunction,
+    view_angle_parameter_cache::ViewAngleParameterCache, view_bound::ViewBound,
 };
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub async fn run() {
