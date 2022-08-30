@@ -146,12 +146,15 @@ fn get_params(d_01:f32, coords: vec2<f32>) -> vec4<f32> {
    return vec4(theta_f,theta_max, min_dist, theta_min);
 }
 
+fn in_bounds(bounds:vec2<f32>, v:f32) -> f32 {
+    return step(bounds.x, v) - step(bounds.y, v);
+}
 fn get_dist(theta: f32, params: vec4<f32>) -> f32 {
-    let in_end = step(params.y, theta) - step(params.x, theta);
-    let in_mid = step(params.w, theta) - step(params.y, theta);
-    let in_start = step(0., theta) - step(params.w, theta);
+    let in_end = in_bounds(params.yx, theta);
+    let in_mid = in_bounds(params.wy, theta);
+    let in_start = in_bounds(vec2(0.,params.w), theta);
 
-    return  params.z*(in_end * params.z / cos(theta - params.y) + in_mid + in_start /cos(params.w-theta));
+    return  params.z*(in_end  / cos(theta - params.y) + in_mid + in_start /cos(params.w-theta));
 }
 
  fn get_disc_color( start_dir: vec3<f32>, coords:vec2<f32>, d_01:f32) -> vec4<f32>{
@@ -192,13 +195,9 @@ let has_secondary = step(1.5, params.z);
 let is_secondary = step(2.,d_secondary) - step(12.,d_secondary);
 
   var main_c = is_main*disc_color((d_main - 2.) / 10., angle_01.y);
-main_c.w = 1.;
   let secondary_c = has_secondary*is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
 
-     var total_disc_color =mix( secondary_c,main_c,main_c.w);
-     total_disc_color.w = main_c.w + (1.-main_c.w)*secondary_c.w;
-return vec4(is_main);//vec4(fract((params.z - 1.5)/12.), 0.,0.,1.);//(is_far_dist_main+is_far_dist_secondary)*vec4(1.,0.,0.,1.) +(is_near_dist_main+is_near_dist_secondary)* vec4(0.,view.x,0.,1.);
- //  return vec4((d_main - 2.)/10. *(step(2.,d_main)-step(12.,d_main)));
+return vec4( main_c.w * main_c.xyz + (1. - main_c.w)*secondary_c.xyz, main_c.w + (1. - main_c.w)*secondary_c.w);
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
 

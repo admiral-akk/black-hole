@@ -60,6 +60,21 @@ impl SimulatedPath {
         (self.final_angle(&angles) + self.start_angle(&angles)) / 2.
     }
 
+    pub fn final_angle_point(&self, angles: &Vec<f32>) -> f32 {
+        let final_index = self
+            .ray
+            .angle_dist
+            .iter()
+            .enumerate()
+            .filter(|(i, dist)| **dist > 0.)
+            .last();
+        let final_index = match final_index {
+            Some((i, _)) => i,
+            None => 0,
+        };
+        angles[final_index]
+    }
+
     pub fn final_angle(&self, angles: &Vec<f32>) -> f32 {
         let final_index = self
             .ray

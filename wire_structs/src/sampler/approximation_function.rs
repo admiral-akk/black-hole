@@ -65,7 +65,7 @@ impl MeasureError for ApproximationFunction {
 }
 
 fn optimal_min_dist(path: &SimulatedPath, angles: &Vec<f32>) -> f32 {
-    let mut bounds = [0., 1.5];
+    let mut bounds = [0., 2.0];
     let theta_max_start = path.final_angle(angles) - FRAC_PI_2;
     if theta_max_start < FRAC_PI_2 {
         bounds[0] = path.dist * theta_max_start.cos();
@@ -93,10 +93,13 @@ impl ApproximationFunction {
     pub fn generate(path: &SimulatedPath, angles: &Vec<f32>, view: f32) -> Self {
         let grazing_distance = path.grazing_distance();
         let min_distance;
-        if grazing_distance.is_some() {
-            min_distance = grazing_distance.unwrap();
+        if path.ray.angle_dist[1] == 0. {
+            min_distance = 0.001;
+        } else if grazing_distance.is_some() {
+            min_distance = grazing_distance.unwrap() + 0.3;
         } else {
-            min_distance = optimal_min_dist(path, angles);
+            let final_angle = FRAC_PI_2 - path.final_angle_point(angles).min(FRAC_PI_2);
+            min_distance = 1.5 * final_angle.cos();
         }
         ApproximationFunction::new(path, angles, min_distance, view)
     }

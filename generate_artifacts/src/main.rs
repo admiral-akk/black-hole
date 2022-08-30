@@ -87,7 +87,7 @@ fn main() {
         });
     }
 
-    // analyze_view_bounds(&view_bounds);
+    analyze_approximations(&all_paths_sample, &dist, &angle);
+    analyze_view_bounds(&view_bounds);
     analyze_paths(&all_paths_sample, &angle);
-    //analyze_approximations(&all_paths_sample, &dist, &angle);
 }

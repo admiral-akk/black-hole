@@ -20,6 +20,60 @@ pub fn analyze_approximations(
         }
         approximations.push(ApproximationFunction::generate(path, &angles, path.view));
     }
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_final),
+        "theta_final",
+        "theta_final",
+        "Theta Final by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.initial_dist),
+        "initial_dist",
+        "initial_dist",
+        "Initial Distance by View",
+        ((0., 1.), (0., 30.)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.min_distance),
+        "min_distance",
+        "min_distance",
+        "Min Distance by View",
+        ((0., 1.), (0., 30.)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_max_start),
+        "theta_max",
+        "theta_max",
+        "Theta Max by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_min_start),
+        "theta_min",
+        "theta_min",
+        "Theta Min by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
+    plot_property_by_path(
+        &paths,
+        &approximations,
+        &|path, approx| (path.view, approx.theta_start),
+        "theta_start",
+        "theta_start",
+        "Theta Start by View",
+        ((0., 1.), (0., TAU + FRAC_PI_2)),
+    );
     plot_path(&approximations, dist, angle);
     plot_property_by_step(
         &paths,
@@ -69,60 +123,6 @@ pub fn analyze_approximations(
         "Error by Angle",
         ((0., TAU), (-10., 10.)),
         angle,
-    );
-    plot_property_by_path(
-        &paths,
-        &approximations,
-        &|path, approx| (path.view, approx.initial_dist),
-        "initial_dist",
-        "initial_dist",
-        "Initial Distance by View",
-        ((0., 1.), (0., 30.)),
-    );
-    plot_property_by_path(
-        &paths,
-        &approximations,
-        &|path, approx| (path.view, approx.min_distance),
-        "min_distance",
-        "min_distance",
-        "Min Distance by View",
-        ((0., 1.), (0., 30.)),
-    );
-    plot_property_by_path(
-        &paths,
-        &approximations,
-        &|path, approx| (path.view, approx.theta_final),
-        "theta_final",
-        "theta_final",
-        "Theta Final by View",
-        ((0., 1.), (0., TAU + FRAC_PI_2)),
-    );
-    plot_property_by_path(
-        &paths,
-        &approximations,
-        &|path, approx| (path.view, approx.theta_max_start),
-        "theta_max",
-        "theta_max",
-        "Theta Max by View",
-        ((0., 1.), (0., TAU + FRAC_PI_2)),
-    );
-    plot_property_by_path(
-        &paths,
-        &approximations,
-        &|path, approx| (path.view, approx.theta_min_start),
-        "theta_min",
-        "theta_min",
-        "Theta Min by View",
-        ((0., 1.), (0., TAU + FRAC_PI_2)),
-    );
-    plot_property_by_path(
-        &paths,
-        &approximations,
-        &|path, approx| (path.view, approx.theta_start),
-        "theta_start",
-        "theta_start",
-        "Theta Start by View",
-        ((0., 1.), (0., TAU + FRAC_PI_2)),
     );
 }
 

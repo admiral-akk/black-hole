@@ -16,7 +16,6 @@ pub fn analyze_paths(paths: &Vec<SimulatedPath>, angle: &DimensionParams) {
         "Final Direction or Angle if escaped",
         ((0., 1.), (0., TAU + FRAC_PI_2 as f64)),
     );
-    return;
     plot_path(paths, angle);
     plot_property_by_path(
         paths,
