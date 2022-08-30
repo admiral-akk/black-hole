@@ -1,4 +1,5 @@
 pub mod approximation_function;
+pub mod clean_approximation_functions;
 pub mod combined_ray_approximation;
 pub mod dimension_params;
 mod gpu;

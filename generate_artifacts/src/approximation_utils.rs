@@ -9,17 +9,11 @@ use wire_structs::sampler::{
 
 pub fn analyze_approximations(
     paths: &Vec<SimulatedPath>,
+    approximations: &Vec<ApproximationFunction>,
     dist: &DimensionParams,
     angle: &DimensionParams,
 ) {
     let angles = angle.generate_list();
-    let mut approximations = Vec::new();
-    for (i, path) in paths.iter().enumerate() {
-        if i % 100 == 0 {
-            println!("Finding approximation {}/{}", i + 1, paths.len());
-        }
-        approximations.push(ApproximationFunction::generate(path, &angles, path.view));
-    }
     plot_property_by_path(
         &paths,
         &approximations,

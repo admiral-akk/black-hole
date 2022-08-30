@@ -96,7 +96,7 @@ impl ApproximationFunction {
         if path.ray.angle_dist[1] == 0. {
             min_distance = 0.001;
         } else if grazing_distance.is_some() {
-            min_distance = grazing_distance.unwrap() + 0.3;
+            min_distance = grazing_distance.unwrap();
         } else {
             let final_angle = FRAC_PI_2 - path.final_angle_point(angles).min(FRAC_PI_2);
             min_distance = 1.5 * final_angle.cos();

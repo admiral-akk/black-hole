@@ -10,6 +10,7 @@ use path_utils::analyze_paths;
 use serde::{Deserialize, Serialize};
 use view_bounds_utils::analyze_view_bounds;
 use wire_structs::sampler::approximation_function::ApproximationFunction;
+use wire_structs::sampler::clean_approximation_functions::linearize_min_dist;
 use wire_structs::sampler::dimension_params::DimensionParams;
 
 use wire_structs::sampler::render_params::RenderParams;
@@ -69,10 +70,19 @@ fn main() {
     let all_approx;
     {
         all_approx = get_or_generate_file(APPROX_FUNCTION_PATH, &|| {
-            all_paths_sample
+            let mut func = all_paths_sample
                 .iter()
                 .map(|p| ApproximationFunction::generate(p, &angles, p.view))
-                .collect::<Vec<ApproximationFunction>>()
+                .collect::<Vec<ApproximationFunction>>();
+            let width = all_paths_sample.len() / dist.size;
+            for d in 0..dist.size {
+                linearize_min_dist(
+                    &all_paths_sample[d * width..(d + 1) * width],
+                    &mut func[d * width..(d + 1) * width],
+                );
+            }
+
+            func
         });
     };
 
@@ -87,7 +97,7 @@ fn main() {
         });
     }
 
-    analyze_approximations(&all_paths_sample, &dist, &angle);
+    analyze_approximations(&all_paths_sample, &all_approx, &dist, &angle);
     analyze_view_bounds(&view_bounds);
     analyze_paths(&all_paths_sample, &angle);
 }
