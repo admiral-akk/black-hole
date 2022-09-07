@@ -29,7 +29,7 @@ impl RenderParams {
 
     fn update_observer_matrix(&mut self) {
         let theta = self.cursor_pos[0] / self.resolution[0] * std::f32::consts::TAU;
-        let phi = (self.cursor_pos[1] / self.resolution[1] - 0.5) * std::f32::consts::PI;
+        let phi = (self.cursor_pos[1] / self.resolution[1]) * std::f32::consts::PI;
 
         let start = Vec3::NEG_Z;
         let intermediate = Vec3::new(f32::cos(theta), 0., f32::sin(theta)).normalize();

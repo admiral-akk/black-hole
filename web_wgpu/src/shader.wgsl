@@ -163,7 +163,6 @@ let params = get_params(d_01, coords);
 let normalized_pos = 
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
     let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
-    let z = start_dir.z;
     let color = vec4(0.);
     let is_top = step(0.,normalized_pos.y);
 
@@ -244,6 +243,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         } 
     }
   
-    return vec4(disc_color.xyz, 1.0);
+    return vec4(final_color, 1.0);
 }
  
