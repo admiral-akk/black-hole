@@ -108,7 +108,7 @@ fn scale_color(color:vec3<f32>, scale: f32) -> vec3<f32>{
 
 fn disc_color( dist_01:f32, theta_01:f32)-> vec4<f32>{
 
-let REVOLUTION_COUNT =1.;
+let REVOLUTION_COUNT =10.;
 let ARMS_COUNT = 2.0;
 let ARM_DIST_SCALE = 3.0;
 let INNER_SPEED_SCALE = 0.03;
@@ -127,9 +127,9 @@ let dist_01 =1.0-dist_01;
     let x =arm ;
     let y = arm_dist+render_params.time_s*CLOUD_DENSITY;
     let noi_tex=textureSample(noise_t,noise_s,fract(vec2(x,y))).r*1.1;
-    let noi=smoothstep(0.,.25,dist_01)*clamp((1./density)*(noi_tex -(1.-density)),0.,1.);
+    let noi=smoothstep(0.25,.5,dist_01)*clamp((1./density)*(noi_tex -(1.-density)),0.,1.);
     let brightness=2.*clamp(1.-density,0.,1.);
-    let alpha=smoothstep(.3,.55,dist_01)-smoothstep(.9,.94,dist_01)-noi;
+    let alpha=smoothstep(.55,.75,dist_01)-smoothstep(.9,.94,dist_01)-noi;
     
     let color = clamp(vec4(scale_color(vec3(show,0.),3.*(1.-density)),alpha),vec4(0.),vec4(1.));
 

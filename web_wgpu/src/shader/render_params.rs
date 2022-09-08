@@ -27,6 +27,10 @@ impl RenderParams {
         self.distance[0] = (self.distance[0] + delta).clamp(bounds[0], bounds[1]);
     }
 
+    pub fn update_time(&mut self, time: f32) {
+        self.time_s = [time];
+    }
+
     fn update_observer_matrix(&mut self) {
         let theta = self.cursor_pos[0] / self.resolution[0] * std::f32::consts::TAU;
         let phi = (self.cursor_pos[1] / self.resolution[1]) * std::f32::consts::PI;

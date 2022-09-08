@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use generate_artifacts::black_hole_cache::BlackHoleCache;
 use glam::Mat4;
 use shader::{
@@ -37,6 +39,7 @@ struct State {
     stencil_bind_group: wgpu::BindGroup,
     diffuse_bind_group: wgpu::BindGroup,
     depth_texture: Texture,
+    start_time: SystemTime,
 }
 
 impl State {
@@ -425,6 +428,7 @@ impl State {
 
         let num_indices = INDICES.len() as u32;
         surface.configure(&device, &config);
+        let start_time = SystemTime::now();
 
         Self {
             surface,
@@ -443,6 +447,7 @@ impl State {
             stencil_bind_group,
             diffuse_bind_group,
             depth_texture,
+            start_time,
         }
     }
 
@@ -531,6 +536,10 @@ impl State {
         true
     }
     fn update(&mut self) {
+        self.params
+            .1
+            .update_time(SystemTime::elapsed(&self.start_time).unwrap().as_secs_f32());
+        self.update_params();
         // remove `todo!()`
     }
 
@@ -663,6 +672,7 @@ pub async fn run() {
 
     let mut state = State::new(&window).await;
     event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Poll;
         match event {
             Event::WindowEvent {
                 ref event,
@@ -690,7 +700,12 @@ pub async fn run() {
                     }
                 }
             }
-            Event::RedrawRequested(window_id) if window_id == window.id() => {
+            Event::MainEventsCleared => {
+                state.params.1.update_time(
+                    SystemTime::elapsed(&state.start_time)
+                        .unwrap()
+                        .as_secs_f32(),
+                );
                 state.update();
                 match state.render() {
                     Ok(_) => {}
@@ -701,10 +716,6 @@ pub async fn run() {
                     // All other errors (Outdated, Timeout) should be resolved by the next frame
                     Err(e) => eprintln!("{:?}", e),
                 }
-            }
-            Event::MainEventsCleared => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
                 window.request_redraw();
             }
             _ => {}
