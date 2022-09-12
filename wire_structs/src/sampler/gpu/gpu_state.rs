@@ -1,13 +1,17 @@
 use std::time::SystemTime;
 
+use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Queue};
 
 use bytemuck::{self, Pod};
 
-use crate::sampler::dimension_params::DimensionParams;
+use crate::sampler::{dimension_params::DimensionParams, render_params::RenderParams};
 
-use super::{field::Particle, simulated_ray::SimulatedRay};
+use super::{
+    field::{Field, Particle},
+    simulated_ray::SimulatedRay,
+};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -265,6 +269,24 @@ async fn run(
         rays.append(&mut ray_part);
     }
     return rays;
+}
+
+pub fn generate_particle(
+    dist: &DimensionParams,
+    view: &DimensionParams,
+    render_params: &RenderParams,
+) -> Vec<Vec<Particle>> {
+    let mut ret = Vec::new();
+    for d in dist.generate_list() {
+        let mut dist_ret = Vec::new();
+        for v in view.generate_list() {
+            let field = Field::new(1.5, d as f64);
+            dist_ret
+                .push(field.spawn_particle(d * Vec2::NEG_Y, render_params.view_coord_to_vec(v)));
+        }
+        ret.push(dist_ret);
+    }
+    ret
 }
 
 pub fn simulate_particles(

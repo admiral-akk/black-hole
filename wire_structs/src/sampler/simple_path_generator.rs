@@ -1,20 +1,9 @@
-use glam::Vec2;
-use itertools::iproduct;
-
 use super::{
     dimension_params::DimensionParams,
-    gpu::{
-        field::{Field, Particle},
-        gpu_state::simulate_particles,
-    },
+    gpu::gpu_state::{generate_particle, simulate_particles_groups},
     render_params::RenderParams,
     simulated_path::SimulatedPath,
 };
-
-fn generate_particle(dist: f32, view: f32, render_params: &RenderParams) -> Particle {
-    let field = Field::new(1.5, dist as f64);
-    field.spawn_particle(dist * Vec2::NEG_Y, render_params.view_coord_to_vec(view))
-}
 
 pub fn generate_paths(
     dist: &DimensionParams,
@@ -22,19 +11,13 @@ pub fn generate_paths(
     angle: &DimensionParams,
     render_params: &RenderParams,
 ) -> Vec<SimulatedPath> {
-    let dist = dist.generate_list();
-    let view = view.generate_list();
+    let particles = generate_particle(dist, view, render_params);
+    let rays = simulate_particles_groups(particles, angle, 40.);
+    let mut ret = Vec::new();
 
-    let particles: Vec<Particle> = iproduct!(dist.iter(), view.iter())
-        .map(|(d, v)| generate_particle(*d, *v, render_params))
-        .collect();
-
-    let rays = simulate_particles(particles, &angle, 40.);
-
-    rays.into_iter()
-        .enumerate()
-        .map(move |(i, ray)| {
-            let mut ray = ray;
+    for (d_i, d) in dist.generate_list().iter().enumerate() {
+        for (v_i, v) in view.generate_list().iter().enumerate() {
+            let mut ray = rays[d_i][v_i].clone();
             ray.angle_dist = ray
                 .angle_dist
                 .into_iter()
@@ -45,11 +28,13 @@ pub fn generate_paths(
                     v
                 })
                 .collect();
-            SimulatedPath {
+            ret.push(SimulatedPath {
                 ray: ray,
-                dist: dist[i / view.len()],
-                view: view[i % view.len()],
-            }
-        })
-        .collect()
+                dist: *d,
+                view: *v,
+            });
+        }
+    }
+
+    ret
 }
