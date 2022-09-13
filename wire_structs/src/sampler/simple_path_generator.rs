@@ -1,5 +1,6 @@
 use super::{
     dimension_params::DimensionParams,
+    distance_velocity_paths::{self, DistanceVelocityPaths},
     gpu::gpu_state::{generate_particle, simulate_particles_groups},
     render_params::RenderParams,
     simulated_path::SimulatedPath,
@@ -10,8 +11,9 @@ pub fn generate_paths(
     view: &DimensionParams,
     angle: &DimensionParams,
     render_params: &RenderParams,
+    distance_velocity_paths: &DistanceVelocityPaths,
 ) -> Vec<SimulatedPath> {
-    let particles = generate_particle(dist, view, render_params);
+    let particles = generate_particle(dist, view, render_params, distance_velocity_paths);
     let rays = simulate_particles_groups(particles, angle, 40.);
     let mut ret = Vec::new();
 

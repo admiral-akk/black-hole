@@ -1,4 +1,4 @@
-use std::f64::consts::{FRAC_PI_2, TAU};
+use std::f64::consts::{FRAC_PI_2, PI, TAU};
 
 use test_utils::plot_with_title;
 use wire_structs::sampler::{
@@ -21,7 +21,7 @@ pub fn analyze_approximations(
         "theta_final",
         "theta_final",
         "Theta Final by View",
-        ((0., 1.), (0., TAU + FRAC_PI_2)),
+        ((0., 1.), (0., TAU + PI)),
     );
     plot_property_by_path(
         &paths,

@@ -6,7 +6,10 @@ use wgpu::{util::DeviceExt, BindGroupLayout, Buffer, ComputePipeline, Device, Qu
 
 use bytemuck::{self, Pod};
 
-use crate::sampler::{dimension_params::DimensionParams, render_params::RenderParams};
+use crate::sampler::{
+    dimension_params::DimensionParams, distance_velocity_paths::DistanceVelocityPaths,
+    render_params::RenderParams,
+};
 
 use super::{
     field::{Field, Particle},
@@ -184,7 +187,7 @@ impl SimulatorState {
         });
 
         let _start = SystemTime::now();
-        let step_count = 1 << 17;
+        let step_count = 1 << 19;
         let pieces = i32::max(step_count >> 12, 1);
         for step in 0..step_count {
             let mut encoder = device.create_command_encoder(&Default::default());
@@ -275,14 +278,18 @@ pub fn generate_particle(
     dist: &DimensionParams,
     view: &DimensionParams,
     render_params: &RenderParams,
+    distance_velocity_paths: &DistanceVelocityPaths,
 ) -> Vec<Vec<Particle>> {
     let mut ret = Vec::new();
-    for d in dist.generate_list() {
+    for (d_i, d) in dist.generate_list().iter().enumerate() {
         let mut dist_ret = Vec::new();
         for v in view.generate_list() {
-            let field = Field::new(1.5, d as f64);
-            dist_ret
-                .push(field.spawn_particle(d * Vec2::NEG_Y, render_params.view_coord_to_vec(v)));
+            let particle = Particle::new(
+                *d,
+                render_params.view_coord_to_vec(v),
+                distance_velocity_paths.velocity_at(*d),
+            );
+            dist_ret.push(particle);
         }
         ret.push(dist_ret);
     }

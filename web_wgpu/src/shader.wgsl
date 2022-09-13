@@ -143,7 +143,7 @@ fn get_params(d_01:f32, coords: vec2<f32>) -> vec4<f32> {
    let theta_max = to_high_p_float(textureSample(theta_max_start_t,theta_max_start_s,vec2(v_01,d_01)));
    let min_dist = to_high_p_float(textureSample(min_distance_t,min_distance_s,vec2(v_01,d_01)));
    let theta_min = to_high_p_float(textureSample(theta_min_start_t,theta_min_start_s,vec2(v_01,d_01)));
-   return vec4(theta_f,theta_max, min_dist, theta_min);
+   return vec4(theta_f + PI / 2.,theta_max + PI / 2., min_dist, theta_min);
 }
 
 fn in_bounds(bounds:vec2<f32>, v:f32) -> f32 {

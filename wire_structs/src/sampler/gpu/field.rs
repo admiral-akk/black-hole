@@ -60,3 +60,17 @@ pub struct Particle {
     pub black_hole_radius: f32,
     pub max_distance: f32,
 }
+
+impl Particle {
+    pub fn new(dist: f32, initial_dir: Vec2, initial_velocity: f32) -> Self {
+        let v = (initial_dir.normalize() * initial_velocity).to_array();
+        let p = [0., -dist];
+        Particle {
+            pv: [p[0], p[1], v[0], v[1]],
+            index: 0,
+            black_hole_magnitude: 1.,
+            black_hole_radius: 1.,
+            max_distance: 60.0,
+        }
+    }
+}

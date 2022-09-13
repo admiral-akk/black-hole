@@ -25,12 +25,12 @@ pub trait Approximation {
 
 impl Approximation for ApproximationFunction {
     fn get_dist(&self, angle: f32) -> Option<f32> {
-        if angle >= self.theta_final || angle < 0. {
+        if angle >= self.theta_final + FRAC_PI_2 || angle < 0. {
             return None;
         }
 
-        if angle >= self.theta_max_start {
-            return Some(self.min_distance / (angle - self.theta_max_start).cos());
+        if angle >= self.theta_final {
+            return Some(self.min_distance / (angle - self.theta_final).cos());
         }
 
         if angle >= self.theta_min_start {
@@ -99,7 +99,7 @@ impl ApproximationFunction {
             min_distance = grazing_distance.unwrap();
         } else {
             let final_angle = FRAC_PI_2 - path.final_angle_point(angles).min(FRAC_PI_2);
-            min_distance = 1.5 * final_angle.cos();
+            min_distance = 1.0 * final_angle.cos();
         }
         ApproximationFunction::new(path, angles, min_distance, view)
     }

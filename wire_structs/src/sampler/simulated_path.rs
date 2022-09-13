@@ -1,5 +1,6 @@
 use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
+use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
 use super::gpu::simulated_ray::SimulatedRay;
@@ -88,12 +89,42 @@ impl SimulatedPath {
             None => 0,
         };
         let final_dir = self.ray.final_dir;
-        if final_index > 0 && self.ray.angle_dist[final_index] > 5. {
-            return ((f32::atan2(final_dir[1], final_dir[0])) + FRAC_PI_2 + TAU) % TAU;
+        let mut final_angle = (f32::atan2(final_dir[1], final_dir[0]) + TAU + FRAC_PI_2) % TAU;
+        let quarter_index = self.ray.angle_dist.len() / 4;
+        let quarter_dist = self.ray.angle_dist[quarter_index];
+        let final_dist = Vec2::from_array(self.ray.final_pos).length();
+
+        if final_dist > 1.01 {
+            if final_angle < FRAC_PI_2 {
+                final_angle = final_angle + TAU;
+            }
+            return final_angle - FRAC_PI_2;
         } else {
-            let final_angle = f32::atan2(final_dir[1], final_dir[0]);
-            let final_angle = (TAU - (final_angle - FRAC_PI_2));
-            return final_angle;
+            if final_angle < PI {
+                final_angle = final_angle + TAU;
+            }
+            return 2. * TAU - final_angle;
+        }
+
+        // if it doesn't make it quarter way around,
+        if quarter_dist == 0. {
+            // hits black hole
+            if final_angle >= PI {
+                let final_angle = 2. * TAU - final_angle;
+                return final_angle;
+            } else {
+                return final_angle;
+            }
+        } else {
+            if final_dist > 1. {
+                if final_angle < FRAC_PI_2 {
+                    return final_angle + TAU;
+                }
+                return final_angle;
+            } else {
+                let final_angle = 2. * TAU - final_angle;
+                return final_angle;
+            }
         }
     }
 }

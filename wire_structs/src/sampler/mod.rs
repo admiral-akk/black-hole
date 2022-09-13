@@ -2,6 +2,7 @@ pub mod approximation_function;
 pub mod clean_approximation_functions;
 pub mod combined_ray_approximation;
 pub mod dimension_params;
+pub mod distance_velocity_paths;
 mod gpu;
 mod optimization_utils;
 pub mod render_params;

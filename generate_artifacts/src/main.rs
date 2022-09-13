@@ -6,6 +6,7 @@ use approximation_utils::analyze_approximations;
 use artifact_utils::get_or_generate_file;
 use combined_approximation_utils::plot_combined_approximate_ray_analysis;
 
+use distance_velocity_utils::analyze_distance_velocity;
 use path_utils::analyze_paths;
 use serde::{Deserialize, Serialize};
 use view_bounds_utils::analyze_view_bounds;
@@ -13,6 +14,7 @@ use wire_structs::sampler::approximation_function::ApproximationFunction;
 use wire_structs::sampler::clean_approximation_functions::linearize_min_dist;
 use wire_structs::sampler::dimension_params::DimensionParams;
 
+use wire_structs::sampler::distance_velocity_paths::DistanceVelocityPaths;
 use wire_structs::sampler::render_params::RenderParams;
 use wire_structs::sampler::simple_path_generator;
 use wire_structs::sampler::view_angle_parameter_cache::ViewAngleParameterCache;
@@ -34,15 +36,18 @@ const APPROX_FUNCTION_PATH: &str = "generate_artifacts/output/artifact/approx_fu
 const VIEW_BOUNDS_PATH: &str = "generate_artifacts/output/artifact/view_bounds.txt";
 
 const ANGLE_CACHE_PATH: &str = "generate_artifacts/output/artifact/angle_cache.txt";
+const DISTANCE_VELOCITY_CACHE_PATH: &str =
+    "generate_artifacts/output/artifact/distance_velocity.txt";
 
 mod approximation_utils;
 mod artifact_utils;
 mod combined_approximation_utils;
+mod distance_velocity_utils;
 mod path_utils;
 mod view_bounds_utils;
 fn main() {
     let dist = DimensionParams {
-        size: 128,
+        size: 16,
         bounds: [5., 30.],
     };
     let view = DimensionParams {
@@ -59,11 +64,24 @@ fn main() {
         black_hole_radius: 1.5,
         fov_degrees: 60.0,
     };
+    let dist_vel_paths;
+    {
+        dist_vel_paths = get_or_generate_file(DISTANCE_VELOCITY_CACHE_PATH, &|| {
+            DistanceVelocityPaths::new()
+        });
+    }
+    // analyze_distance_velocity(&dist_vel_paths, &dist, &angle);
 
     let all_paths_sample;
     {
         all_paths_sample = get_or_generate_file(ALL_VIEW_SAMPLE_PATH, &|| {
-            simple_path_generator::generate_paths(&dist, &view, &angle, &render_params)
+            simple_path_generator::generate_paths(
+                &dist,
+                &view,
+                &angle,
+                &render_params,
+                &dist_vel_paths,
+            )
         });
     }
 
@@ -98,6 +116,6 @@ fn main() {
     }
 
     analyze_approximations(&all_paths_sample, &all_approx, &dist, &angle);
-    analyze_view_bounds(&view_bounds);
-    analyze_paths(&all_paths_sample, &angle);
+    // analyze_view_bounds(&view_bounds);
+    // analyze_paths(&all_paths_sample, &angle);
 }
