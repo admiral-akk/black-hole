@@ -158,14 +158,14 @@ fn get_dist(theta: f32, params: vec4<f32>) -> f32 {
 
 
 fn get_disc_color( start_dir: vec3<f32>, coords:vec2<f32>, d_01:f32) -> vec4<f32>{
-let params = get_params(d_01, coords);
+    let params = get_params(d_01, coords);  
    
-let normalized_pos = 
--vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
+    let normalized_pos = 
+    -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
     let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
     let color = vec4(0.);
-    let disc_normal = vec3(0.,1.,0.);
-    let is_top = step(0.,dot(disc_normal,normalized_pos));
+    let disc_normal = normalize(vec3(0.,1.,1.));
+    let is_top = step(0.,dot(disc_normal,-normalized_pos));
 
     
     let travel_normal=normalize(cross(-normalized_pos,true_start_dir));
@@ -178,7 +178,9 @@ let normalized_pos =
     let alt_angle_01=.5-temp_angle_01;
 
     let theta_01=atan2(intersection.z,intersection.x)/TAU+.5;
-    let top_half = step(0.,coords.y);
+    let far_normal = cross(normalized_pos, disc_normal);
+    let far_normal = cross(normalized_pos, far_normal);
+    let top_half = step(0.,dot(far_normal, true_start_dir));
     let neq = step(0.5,abs((top_half - is_top)));
     let angle_01 = neq*vec2(min(temp_angle_01,alt_angle_01),theta_01) + (1.-neq) * vec2(max(temp_angle_01,alt_angle_01),theta_01);
     
