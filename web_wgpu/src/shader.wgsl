@@ -196,12 +196,10 @@ let is_secondary = step(2.,d_secondary) - step(12.,d_secondary);
   let secondary_c = has_secondary*is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
 
 return vec4( main_c.w * main_c.xyz + (1. - main_c.w)*secondary_c.xyz, main_c.w + (1. - main_c.w)*secondary_c.w);
-//return vec4(0.);
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
-
-let params = get_params(d_01, coords);
-    let hit_black_hole = step(-1.5,-params.z);
+   let params = get_params(d_01, coords);
+   let hit_black_hole = step(-1.5,-params.z);
    let theta_f = params.x;
    let final_dir = vec3(sin(theta_f),  0.,cos(theta_f));
    let rot_angle = atan2(coords.y,coords.x) + PI;
