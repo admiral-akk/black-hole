@@ -156,18 +156,20 @@ fn get_dist(theta: f32, params: vec4<f32>) -> f32 {
     return  params.z*(in_end  / cos(theta - params.y) + in_mid + in_start /cos(params.w-theta));
 }
 
- fn get_disc_color( start_dir: vec3<f32>, coords:vec2<f32>, d_01:f32) -> vec4<f32>{
+
+fn get_disc_color( start_dir: vec3<f32>, coords:vec2<f32>, d_01:f32) -> vec4<f32>{
 let params = get_params(d_01, coords);
    
 let normalized_pos = 
 -vec3(render_params.observer_matrix[2][0],render_params.observer_matrix[2][1], render_params.observer_matrix[2][2]);
     let true_start_dir = (render_params.observer_matrix * vec4(start_dir,0.)).xyz;
     let color = vec4(0.);
-    let is_top = step(0.,normalized_pos.y);
+    let disc_normal = vec3(0.,1.,0.);
+    let is_top = step(0.,dot(disc_normal,normalized_pos));
 
     
     let travel_normal=normalize(cross(-normalized_pos,true_start_dir));
-    let intersection=normalize(cross(travel_normal,vec3(0.,1.,0.)));
+    let intersection=normalize(cross(travel_normal,disc_normal));
     let cos_val=clamp(dot(intersection,-normalized_pos),-1.,1.);
     
     // there are two angles that matter;
@@ -201,13 +203,11 @@ fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f3
    let params = get_params(d_01, coords);
    let hit_black_hole = step(-1.5,-params.z);
    let theta_f = params.x;
-   let final_dir = vec3(sin(theta_f),  0.,cos(theta_f));
-   let rot_angle = atan2(coords.y,coords.x) + PI;
-   let rot = mat3x3(cos(rot_angle),-sin(rot_angle),0.,sin(rot_angle),cos(rot_angle),0.,0.,0.,1.);
-   let final_dir = (rot*final_dir).xzy;
+   let rot_angle = atan2(start_dir.y,start_dir.x) + PI;
+   let final_dir = vec3(sin(theta_f)*cos(rot_angle), sin(theta_f)*sin(rot_angle),cos(theta_f));
     let final_dir = (render_params.observer_matrix * vec4(final_dir,0.)).xyz;
-    let theta = (atan2(final_dir.y, length(final_dir.xz)) +0.5* PI) / PI;
-    let phi = ((atan2(final_dir.z,final_dir.x)+TAU) / TAU) % 1.;
+    let theta = (atan2(final_dir.y, length(final_dir.xz)) / PI + 0.5) % 1.;
+    let phi = (atan2(final_dir.z,final_dir.x)/ TAU + 1.)  % 1.;
     return (1.-hit_black_hole)*textureSample(galaxy_t,galaxy_s,vec2(phi, theta)).xyz;
 }
 
@@ -228,11 +228,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let disc_color = get_disc_color(start_dir, coords, d_01);
     let final_color =disc_color.w* disc_color.xyz + (1.-disc_color.w)*background_color;
    
-   
+
     if (coords.x <-0.5 || coords.y < -0.5 || coords.x >0.5 || coords.y >0.5) {
         return vec4(vec3(0.),1.);
     }
+
   
-    return vec4(final_color, 1.0);
+  return vec4(final_color, 1.0);
 }
  

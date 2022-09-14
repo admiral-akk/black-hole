@@ -50,25 +50,23 @@ impl RenderParams {
     }
 
     fn update_observer_matrix(&mut self) {
-        let theta = self.cursor_pos[0] / self.resolution[0] * std::f32::consts::TAU;
-        let phi = (self.cursor_pos[1] / self.resolution[1]) * std::f32::consts::PI;
+        let theta = (self.cursor_pos[0] / self.resolution[0] + 0.5) * std::f32::consts::TAU;
+        let phi = ((self.cursor_pos[1] / self.resolution[1]) - 0.5) * std::f32::consts::PI;
 
         let start = Vec3::NEG_Z;
-        let intermediate = Vec3::new(f32::cos(theta), 0., f32::sin(theta)).normalize();
+        let intermediate = Vec3::new(f32::cos(theta), 0., f32::sin(theta));
         let final_pos = Vec3::new(
-            f32::cos(theta) * f32::cos(phi),
+            intermediate.x * f32::cos(phi),
             f32::sin(phi),
-            f32::sin(theta) * f32::cos(phi),
+            intermediate.z * f32::cos(phi),
         )
         .normalize();
 
+        // We do this in two steps to preserve the "up" direction.
         let observer_quat = Quat::from_rotation_arc(start, intermediate);
-        let euler = Quat::to_euler(observer_quat, glam::EulerRot::XYZ);
-        let observer_mat = Mat3::from_euler(glam::EulerRot::XYZ, euler.0, euler.1, euler.2);
+        let observer_mat = Mat3::from_quat(observer_quat);
         let observer_quat = Quat::from_rotation_arc(intermediate, final_pos);
-        let euler = Quat::to_euler(observer_quat, glam::EulerRot::XYZ);
-        let observer_mat =
-            Mat3::from_euler(glam::EulerRot::XYZ, euler.0, euler.1, euler.2) * observer_mat;
+        let observer_mat = Mat3::from_quat(observer_quat) * observer_mat;
 
         self.observer_matrix = Mat4::from_mat3(observer_mat).to_cols_array();
     }
