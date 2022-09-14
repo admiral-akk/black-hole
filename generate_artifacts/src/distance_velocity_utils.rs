@@ -8,7 +8,7 @@ use wire_structs::sampler::{
 
 pub fn analyze_distance_velocity(
     dist_vel: &DistanceVelocityPaths,
-    dist: &DimensionParams,
+    _dist: &DimensionParams,
     angle: &DimensionParams,
 ) {
     plot_path(&dist_vel.paths, &angle);
@@ -33,7 +33,7 @@ fn plot_velocity_to_dist(dist: &DimensionParams, velocities: &Vec<f32>) {
     .unwrap();
 }
 
-fn plot_path(paths: &Vec<SimulatedPath>, angle: &DimensionParams) {
+fn plot_path(paths: &Vec<SimulatedPath>, _angle: &DimensionParams) {
     println!("Generating {}", "paths");
     let angle = DimensionParams {
         size: 360,

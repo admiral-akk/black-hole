@@ -46,7 +46,7 @@ pub fn analyze_paths(paths: &Vec<SimulatedPath>, angle: &DimensionParams) {
                 .angle_dist
                 .iter()
                 .enumerate()
-                .filter(|(i, dist)| **dist > 0.)
+                .filter(|(_i, dist)| **dist > 0.)
                 .last();
             let final_index = match final_index {
                 Some((i, _)) => i,
@@ -201,7 +201,7 @@ fn plot_property_by_step(
 
     let angles = angle.generate_list();
     for path in paths {
-        let mut line = property(path, &angles);
+        let line = property(path, &angles);
         if line_group.0 != path.dist {
             plot_line_groups.push(line_group);
             line_group = (path.dist, Vec::new());

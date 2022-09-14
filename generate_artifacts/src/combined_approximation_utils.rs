@@ -9,7 +9,7 @@ use wire_structs::sampler::{
 pub fn plot_combined_approximate_ray_analysis(
     paths: &Vec<SimulatedPath>,
     dist: &DimensionParams,
-    view: &DimensionParams,
+    _view: &DimensionParams,
     angle: &DimensionParams,
 ) -> Vec<(f32, Vec<(f32, CombinedRayApproximation)>)> {
     let close_rays = generate_combined_rays(paths, angle);
@@ -18,7 +18,7 @@ pub fn plot_combined_approximate_ray_analysis(
     plot_property_by_dist(
         &close_rays,
         angle,
-        &|ray, dist, view, a| {
+        &|ray, _dist, _view, a| {
             let d = ray.get_dist(a);
             (a.sin() * d, -a.cos() * d)
         },
@@ -30,7 +30,7 @@ pub fn plot_combined_approximate_ray_analysis(
     plot_ray_property_by_dist(
         &close_rays,
         angle,
-        &|ray, dist, view| (view, ray.final_angle),
+        &|ray, _dist, view| (view, ray.final_angle),
         "final_angle",
         "final_angle",
         "Final Angles",
@@ -39,7 +39,7 @@ pub fn plot_combined_approximate_ray_analysis(
     plot_ray_property_by_dist(
         &close_rays,
         angle,
-        &|ray, dist, view| (view, ray.curve_start_angle),
+        &|ray, _dist, view| (view, ray.curve_start_angle),
         "start_dist",
         "start_dist",
         "Start of the Spiral Dist",
@@ -48,7 +48,7 @@ pub fn plot_combined_approximate_ray_analysis(
     plot_ray_property_by_dist(
         &close_rays,
         angle,
-        &|ray, dist, view| (view, ray.curve_start_angle),
+        &|ray, _dist, view| (view, ray.curve_start_angle),
         "start_angle",
         "start_angle",
         "Start of the Spiral Angle",
@@ -57,7 +57,7 @@ pub fn plot_combined_approximate_ray_analysis(
     plot_ray_property_by_dist(
         &close_rays,
         angle,
-        &|ray, dist, view| (view, ray.close_weight),
+        &|ray, _dist, view| (view, ray.close_weight),
         "weight",
         "weight",
         "Close weight",
@@ -99,7 +99,7 @@ fn generate_combined_rays(
     paths: &Vec<SimulatedPath>,
     angle: &DimensionParams,
 ) -> Vec<(f32, Vec<(f32, CombinedRayApproximation)>)> {
-    let angles = angle.generate_list();
+    let _angles = angle.generate_list();
     println!("Generating combined rays");
     let mut dist_to_rays = Vec::new();
     let mut rays = Vec::new();
@@ -148,7 +148,7 @@ fn plot_ray_property_by_dist(
     bounds: ((f64, f64), (f64, f64)),
 ) {
     println!("Generating {}", plot_title);
-    let angles = angle.generate_list();
+    let _angles = angle.generate_list();
     for (dist, rays) in rays {
         let mut d_paths = Vec::new();
         let mut path = Vec::new();

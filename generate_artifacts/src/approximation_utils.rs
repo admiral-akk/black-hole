@@ -13,7 +13,7 @@ pub fn analyze_approximations(
     dist: &DimensionParams,
     angle: &DimensionParams,
 ) {
-    let angles = angle.generate_list();
+    let _angles = angle.generate_list();
     plot_property_by_path(
         &paths,
         &approximations,
@@ -72,9 +72,9 @@ pub fn analyze_approximations(
     plot_property_by_step(
         &paths,
         &approximations,
-        &|path, approx, angles| {
+        &|_path, approx, angles| {
             let mut plot = Vec::new();
-            for (i, angle) in angles.iter().enumerate() {
+            for (_i, angle) in angles.iter().enumerate() {
                 let dist = approx.get_dist(*angle);
                 if dist.is_none() {
                     break;
@@ -129,7 +129,7 @@ fn plot_path(paths: &Vec<ApproximationFunction>, dist: &DimensionParams, angle: 
     let angles = angle.generate_list();
     for (i, path) in paths.iter().enumerate() {
         let mut line = Vec::new();
-        for (i, angle) in angles.iter().enumerate() {
+        for (_i, angle) in angles.iter().enumerate() {
             let dist = path.get_dist(*angle);
             if dist.is_none() {
                 break;
@@ -180,7 +180,7 @@ fn plot_property_by_step(
 
     let angles = angle.generate_list();
     for (i, path) in paths.iter().enumerate() {
-        let mut line = property(path, &approximation[i], &angles);
+        let line = property(path, &approximation[i], &angles);
         if line_group.0 != path.dist {
             plot_line_groups.push(line_group);
             line_group = (path.dist, Vec::new());

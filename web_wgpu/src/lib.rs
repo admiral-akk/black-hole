@@ -1,10 +1,9 @@
 use std::time::SystemTime;
 
-use generate_artifacts::black_hole_cache::BlackHoleCache;
+
 use glam::Mat4;
 use shader::{
     black_hole::BlackHole,
-    full_float_texture::FullFloatTexture,
     render_params::RenderParams,
     small_float_texture::SmallFloatTexture,
     texture::Texture,
@@ -626,7 +625,6 @@ impl State {
 use wasm_bindgen::prelude::*;
 use winit::dpi::PhysicalSize;
 use wire_structs::sampler::{
-    approximation_function::ApproximationFunction,
     view_angle_parameter_cache::ViewAngleParameterCache, view_bound::ViewBound,
 };
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
