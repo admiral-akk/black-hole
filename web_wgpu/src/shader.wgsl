@@ -188,18 +188,18 @@ fn get_disc_color( start_dir: vec3<f32>, coords:vec2<f32>, d_01:f32) -> vec4<f32
     let other_angle_01=angle_01+.5;
 
 
-let d_main = get_dist(TAU*angle_01.x, params);
-let d_secondary = get_dist(TAU*other_angle_01.x, params);
+    let d_main = get_dist(TAU*angle_01.x, params);
+    let d_secondary = get_dist(TAU*other_angle_01.x, params);
 
 
-let is_main = step(2.,d_main) - step(12.,d_main);
-let has_secondary = step(1.5, params.z);
-let is_secondary = step(2.,d_secondary) - step(12.,d_secondary);
+    let is_main = step(3.,d_main) - step(13.,d_main);
+    let has_secondary = step(1.5, params.z);
+    let is_secondary = step(3.,d_secondary) - step(13.,d_secondary);
 
-  var main_c = is_main*disc_color((d_main - 2.) / 10., angle_01.y);
-  let secondary_c = has_secondary*is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
+    var main_c = is_main*disc_color((d_main - 3.) / 10., angle_01.y);
+    let secondary_c = has_secondary*is_secondary*disc_color((d_secondary - 3.) / 10., other_angle_01.y);
 
-return vec4( main_c.w * main_c.xyz + (1. - main_c.w)*secondary_c.xyz, main_c.w + (1. - main_c.w)*secondary_c.w);
+    return vec4( main_c.w * main_c.xyz + (1. - main_c.w)*secondary_c.xyz, main_c.w + (1. - main_c.w)*secondary_c.w);
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
    let params = get_params(d_01, coords);
