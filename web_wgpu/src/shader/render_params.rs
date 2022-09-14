@@ -6,8 +6,9 @@ use wgpu::{util::DeviceExt, Buffer, Device};
 pub struct RenderParams {
     pub observer_matrix: [f32; 16],
     pub cursor_pos: [f32; 2],
+    pub coords_scale: [f32; 2],
+    pub coords_offset: [f32; 2],
     pub resolution: [f32; 2],
-    pub cache_dim: [f32; 2],
     pub distance: [f32; 1],
     pub time_s: [f32; 1],
     pub view_width: [f32; 1],
@@ -21,7 +22,24 @@ impl RenderParams {
 
     pub fn update_resolution(&mut self, resolution: [f32; 2]) {
         self.resolution = resolution;
+
+        self.update_coords();
         self.update_observer_matrix();
+    }
+
+    fn update_coords(&mut self) {
+        self.coords_scale = [1., 1.];
+        self.coords_offset = [0., 0.];
+        let (min, max) = (
+            self.resolution[0].min(self.resolution[1]),
+            self.resolution[0].max(self.resolution[1]),
+        );
+        let index = match self.resolution[0] > self.resolution[1] {
+            true => 0,
+            false => 1,
+        };
+        self.coords_scale[index] = max / min;
+        self.coords_offset[index] = -(max - min) / (2. * max);
     }
     pub fn update_distance(&mut self, delta: f32, bounds: [f32; 2]) {
         self.distance[0] = (self.distance[0] + delta).clamp(bounds[0], bounds[1]);

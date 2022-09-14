@@ -22,7 +22,7 @@ impl SimulatedPath {
             .min_by(|a, b| a.partial_cmp(b).unwrap())
         {
             Some(v) => *v,
-            None => 1.5,
+            None => 1.,
         }
     }
 

@@ -47,11 +47,11 @@ mod path_utils;
 mod view_bounds_utils;
 fn main() {
     let dist = DimensionParams {
-        size: 16,
+        size: 26,
         bounds: [5., 30.],
     };
     let view = DimensionParams {
-        size: 2048,
+        size: 4 * 2048,
         bounds: [0., 0.5_f32.sqrt()],
     };
     let angle = DimensionParams {
@@ -70,7 +70,6 @@ fn main() {
             DistanceVelocityPaths::new()
         });
     }
-    // analyze_distance_velocity(&dist_vel_paths, &dist, &angle);
 
     let all_paths_sample;
     {
@@ -115,7 +114,8 @@ fn main() {
         });
     }
 
+    analyze_distance_velocity(&dist_vel_paths, &dist, &angle);
     analyze_approximations(&all_paths_sample, &all_approx, &dist, &angle);
-    // analyze_view_bounds(&view_bounds);
-    // analyze_paths(&all_paths_sample, &angle);
+    analyze_view_bounds(&view_bounds);
+    analyze_paths(&all_paths_sample, &angle);
 }

@@ -111,17 +111,18 @@ impl State {
         let black_hole = BlackHole {
             disc_bounds: [2., 12.],
             distance_bounds: [5., 30.],
-            radius: [1.5],
+            radius: [1.0],
         };
         let (black_hole_buffer, _) = black_hole.to_buffer(&device);
         let render_params = RenderParams {
             observer_matrix: Mat4::IDENTITY.to_cols_array(),
             cursor_pos: [0., 0.],
-            cache_dim: [0., 0.],
             resolution: [1., 1.],
             distance: [10.],
             time_s: [1.],
             view_width: [2. * f32::tan(std::f32::consts::PI * 60. / 360.)],
+            coords_scale: [1., 1.],
+            coords_offset: [0., 0.],
         };
         let (render_params_buffer, _) = render_params.to_buffer(&device);
 

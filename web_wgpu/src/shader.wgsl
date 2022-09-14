@@ -16,14 +16,13 @@ struct VertexOutput {
 struct RenderParams {
     observer_matrix: mat4x4<f32>,
     cursor_pos: vec2<f32>,
+    coords_scale: vec2<f32>,
+    coords_offset: vec2<f32>,
     resolution: vec2<f32>,
-    cache_dim: vec2<f32>,
     distance: f32,
     time_s: f32,
     view_width: f32,
     temp: f32,
-    temp2: f32,
-    temp3: f32,
 }
 
 struct BlackHole {
@@ -197,6 +196,7 @@ let is_secondary = step(2.,d_secondary) - step(12.,d_secondary);
   let secondary_c = has_secondary*is_secondary*disc_color((d_secondary - 2.) / 10., other_angle_01.y);
 
 return vec4( main_c.w * main_c.xyz + (1. - main_c.w)*secondary_c.xyz, main_c.w + (1. - main_c.w)*secondary_c.w);
+//return vec4(0.);
 }
 fn background_color(start_dir: vec3<f32>, d_01: f32,coords:vec2<f32>) -> vec3<f32> {
 
@@ -209,38 +209,30 @@ let params = get_params(d_01, coords);
    let final_dir = (rot*final_dir).xzy;
     let final_dir = (render_params.observer_matrix * vec4(final_dir,0.)).xyz;
     let theta = (atan2(final_dir.y, length(final_dir.xz)) +0.5* PI) / PI;
-    let phi = (atan2(final_dir.z,final_dir.x)+PI) / TAU;
+    let phi = ((atan2(final_dir.z,final_dir.x)+TAU) / TAU) % 1.;
     return (1.-hit_black_hole)*textureSample(galaxy_t,galaxy_s,vec2(phi, theta)).xyz;
+}
+
+// returns normalized coords. If < 0. or 1. >, then there should be letterboxes
+fn to_coords(tex_coords: vec2<f32>) -> vec2<f32> {
+    return (tex_coords + render_params.coords_offset) * render_params.coords_scale;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let pixel_xy = render_params.resolution * in.tex_coords;
-    let resolution = render_params.resolution;
-    let min_dim=min(render_params.resolution.x,render_params.resolution.y);
-    let max_dim=max(render_params.resolution.x,render_params.resolution.y);
-    let diff=max_dim-min_dim;
-    let lower=diff/2.;
-    let upper=min_dim+lower;
-    let delta=1./vec2(min_dim);
-    var offset=vec2(lower)*vec2(step(resolution.y, resolution.x),step(resolution.x,resolution.y));
   
     let distance = render_params.distance;
     let distance_bounds = black_hole.distance_bounds;
     let d_01 =clamp((distance-distance_bounds.x)/(distance_bounds.y-distance_bounds.x),0.,1.);
-    let coords = (pixel_xy - offset)*delta - 0.5;
+    let coords = to_coords(in.tex_coords) - 0.5;
     let start_dir = normalize(vec3(render_params.view_width*coords, 1.));
     let background_color=background_color(start_dir,d_01,coords);
     let disc_color = get_disc_color(start_dir, coords, d_01);
     let final_color =disc_color.w* disc_color.xyz + (1.-disc_color.w)*background_color;
-    if(render_params.resolution.x > render_params.resolution.y){
-        if(pixel_xy.x < lower || pixel_xy.x > upper){
-            return vec4(vec3(0.),1.);
-        } 
-    }else{
-        if(pixel_xy.y < lower || pixel_xy.y > upper){
-            return vec4(vec3(0.),1.);
-        } 
+   
+   
+    if (coords.x <-0.5 || coords.y < -0.5 || coords.x >0.5 || coords.y >0.5) {
+        return vec4(vec3(0.),1.);
     }
   
     return vec4(final_color, 1.0);
